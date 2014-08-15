@@ -1,0 +1,11 @@
+{
+    "dependencies": {
+        "sonos-discovery": "git+https://github.com/jishi/node-sonos-discovery.git#master",
+        "sonos-web-controller": "git+https://github.com/jishi/node-sonos-web-controller.git#master"
+    },
+    "devDependencies": {
+        "grunt": "~0.4.4",
+        "grunt-contrib-jshint": "~0.10.0",
+        "grunt-jscs": "~0.6.1"
+    }
+}
