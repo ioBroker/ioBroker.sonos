@@ -10,7 +10,7 @@
         "mode":                     "daemon",
         "loglevel":                 "info",
         "messagebox":               true,
-        "icon":                     'sonos.png'
+        "icon":                     "sonos.png"
     },
     "native": {
         "webserver": {
