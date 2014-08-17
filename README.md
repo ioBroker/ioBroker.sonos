@@ -1,3 +1,4 @@
+![architecture](www/sonos.png)
 ioBroker.sonos
 ==============
 
