@@ -9,7 +9,8 @@
         "platform":                 "Javascript/Node.js",
         "mode":                     "daemon",
         "loglevel":                 "info",
-        "messagebox":               true
+        "messagebox":               true,
+        "icon":                     'sonos.png'
     },
     "native": {
         "webserver": {

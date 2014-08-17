@@ -13,72 +13,80 @@ var adapter = require(__dirname + '/../../lib/adapter.js')({
 
     },
 
+    // {"val": state, "ack":false, "ts":1408294295, "from":"admin.0", "lc":1408294295}
+    // id = sonos.0.192_168_1_55.state
     stateChange: function (id, state) {
-        adapter.log.info ("adapter sonos  try to control id " + id + " with " + val);
+        if (state.ack) return;
+        adapter.log.info ("adapter sonos  try to control id " + id + " with " + JSON.stringify(state));
+        // Try to find the object
+        var id = adapter.idToDCS(id);
 
-        if (val === "false") { val = false; }
-        if (val === "true")  { val = true; }
-        if (parseInt(val) == val) { val = parseInt(val); }
+        if (id && id.channel && channels[id.channel]) {
+            if (state.val === "false") state.val = false;
+            if (state.val === "true")  state.val = true;
+            if (parseInt(state.val) == state.val) state.val = parseInt(state.val);
 
-
-        var player = dev.player;
-        if (!player) {
-            player = discovery.getPlayerByUUID(dev.uuid);
-            dev.player = player;
-        }
-        if (player) {
-            if (id == dev.DPs.STATE) {
-                if (val === 0)
-                    player.pause();
-                else
-                    player.play();
+            var player = channels[id.channel].player;
+            if (!player) {
+                player = discovery.getPlayerByUUID(channels[id.channel].uuid);
+                channels[id.channel].player = player;
             }
-            else
-            if (id == dev.DPs.MUTED) {
-                player.mute (!!val); // !! is toBoolean()
-            }
-            else
-            if (id == dev.DPs.VOLUME) {
-                player.setVolume(val);
-            }
-            else
-            if (id == dev.DPs.CONTROL) {
-                if (val == "stop") {
-                    player.pause ();
-                } else
-                if (val == "play") {
-                    player.play ();
-                } else
-                if (val == "pause") {
-                    player.pause ();
-                } else
-                if (val == "next") {
-                    player.nextTrack ();
-                } else
-                if (val == "prev") {
-                    player.previousTrack ();
-                } else
-                if (val == "mute") {
-                    player.mute (true);
-                }
-                if (val == "unmute") {
-                    player.mute (false);
-                }
-            }
-            else if (id == dev.DPs.FAVORITE_SET) {
-                player.replaceWithFavorite(val, function (success) {
-                    if (success) {
+            if (player) {
+                if (id.state == 'state_simple') {
+                    if (!state.val)
+                        player.pause();
+                    else
                         player.play();
-                        adapter.setState(dev.DPs.CURRENT_ALBUM,  val);
-                        adapter.setState(dev.DPs.CURRENT_ARTIST, val);
+                }
+                else
+                if (id.state == 'muted') {
+                    player.mute(!!state.val); // !! is toBoolean()
+                }
+                else
+                if (id.state == 'volume') {
+                    player.setVolume(state.val);
+                }
+                else //stop,play,pause,next,previous,mute,unmute
+                if (id.state == 'state') {
+                    state.val = state.val.toLowerCase();
+                    if (state.val == "stop") {
+                        player.pause ();
+                    } else
+                    if (state.val == "play") {
+                        player.play ();
+                    } else
+                    if (state.val == "pause") {
+                        player.pause ();
+                    } else
+                    if (state.val == "next") {
+                        player.nextTrack ();
+                    } else
+                    if (state.val == "previous") {
+                        player.previousTrack ();
+                    } else
+                    if (state.val == "mute") {
+                        player.mute (true);
                     }
-                });
+                    if (state.val == "unmute") {
+                        player.mute (false);
+                    }
+                }
+                else if (id.state == 'favorite_set') {
+                    player.replaceWithFavorite(state.val, function (success) {
+                        if (success) {
+                            player.play();
+                            adapter.setState({device: 'root', channel: id.channel, state: 'current_album'},  {val: val, ack: true});
+                            adapter.setState({device: 'root', channel: id.channel, state: 'current_artist'}, {val: val, ack: true});
+                        }
+                    });
+                }
+                else
+                    adapter.log.warn("adapter sonos  try to control unknown id " + id);
             }
-            else
-                adapter.log.warn("adapter sonos  try to control unknown id " + id);
+            else {
+                adapter.log.warn("adapter sonos   SONOS " + channels[id.channel].uuid + " not found");
+            }
         }
-        else
-            adapter.log.warn("adapter sonos   SONOS " + dev.uuid + " not found");
     },
 
     install: function () {
@@ -130,14 +138,6 @@ var adapter = require(__dirname + '/../../lib/adapter.js')({
         }
 
         return true;
-
-        /*"_1": {
-            "ip":    "0.0.0.0",
-                "name":  "",
-                "rooms": [],
-                "funcs": []
-        }*/
-
     }
 
 });
@@ -167,24 +167,22 @@ function toFormattedTime(time) {
 
 function createChannel(ip, rooms) {
     var states = {
-        'state': {             // media.state -            Text state of player: stop, play, pause (read, write)
-            def:    'pause',
-            type:   'string',
-            read:   'true',
-            write:  'true',
-            values: 'play,stop,pause',
-            role:   'media.state',
-            desc:   'Play, stop, or pause'
-        },
-        'playing': {           // media.playing -          true if playing, false if stopped or paused (read, write)
+        'state_simple': {      // media.state -            Text state of player: stop, play, pause (read, write)
             def:    'false',
             type:   'boolean',
             read:   'true',
             write:  'true',
-            role:   'media.playing',
-            min:    'false',
-            max:    'true',
-            desc:   'Is playing or stopped/paused'
+            role:   'media.state',
+            desc:   'Play or pause'
+        },
+        'state': {             // media.state -            Text state of player: stop, play, pause (read, write)
+            def:    'stop',
+            type:   'string',
+            read:   'true',
+            write:  'true',
+            values: 'stop,play,pause,next,previous,mute,unmute',
+            role:   'media.state',
+            desc:   'Play, stop, or pause, next, previous, mute, unmute'
         },
         'volume': {            // media.volume -           volume level (read, write)
             def:    'number',
@@ -254,14 +252,6 @@ function createChannel(ip, rooms) {
             write:  'false',
             unit:   'seconds',
             role:   'media.current.duration',
-            desc:   'Duration of current played song in seconds'
-        },
-        'control': {           // media.player.control  -  control as text: play, stop, next, previous, pause (write only)
-            type:   'string',
-            read:   'false',
-            write:  'true',
-            values: 'play,stop,pause,previous,next',
-            role:   'media.current.control',
             desc:   'Duration of current played song in seconds'
         },
         'alive': {             // indicator.reachable -    if player alive (read only)
@@ -338,11 +328,10 @@ function addChannel (ip, rooms) {
 }
 
 function takeSonosState (ip, sonosState) {
-    var channelName = ip;
-
-    adapter.setState(channelName + '.alive', true);
+    adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
     if (sonosState.playerState != "TRANSITIONING") {
-        adapter.setState(channelName + '.state', (sonosState.playerState == "PAUSED_PLAYBACK") ? 'pause' : ((sonosState.playerState == "PLAYING") ? 'play' : 'stop'));
+        adapter.setState({device: 'root', channel: ip, state: 'state_simple'}, {val: sonosState.playerState == "PLAYING", ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'state'}, {val: (sonosState.playerState == "PAUSED_PLAYBACK") ? 'pause' : ((sonosState.playerState == "PLAYING") ? 'play' : 'stop'), ack: true});
         if (sonosState.playerState == "PLAYING") {
             if (!channels[ip].elapsedTimer) {
                 channels[ip].elapsedTimer = setInterval(function (ip_) {
@@ -352,8 +341,8 @@ function takeSonosState (ip, sonosState) {
                         channels[ip_].elapsed = channels[ip_].duration;
                     }
 
-                    adapter.setState(channelName + '.current_elapsed',   channels[ip_].elapsed);
-                    adapter.setState(channelName + '.current_elapsed_s', toFormattedTime(channels[ip_].elapsed));
+                    adapter.setState({device: 'root', channel: ip, state: 'current_elapsed'},   {val: channels[ip_].elapsed, ack: true});
+                    adapter.setState({device: 'root', channel: ip, state: 'current_elapsed_s'}, {val: toFormattedTime(channels[ip_].elapsed), ack: true});
 
                 }, adapter.config.elapsedInterval || 5000, ip);
             }
@@ -366,19 +355,19 @@ function takeSonosState (ip, sonosState) {
         }
     }
     // elapsed time
-    adapter.setState(channelName + '.current_album',      sonosState.currentTrack.album);
-    adapter.setState(channelName + '.current_artist',     sonosState.currentTrack.artist);
-    adapter.setState(channelName + '.current_title',      sonosState.currentTrack.title);
-    adapter.setState(channelName + '.current_duration',   sonosState.currentTrack.duration);
-    adapter.setState(channelName + '.current_duration_s', toFormattedTime(sonosState.currentTrack.duration));
-    adapter.setState(channelName + '.current_cover',      "http://" + 1 + /*settings.binrpc.listenIp + */ ":" + adapter.config.webserver.port + sonosState.currentTrack.albumArtURI);
-    adapter.setState(channelName + '.current_elapsed',    sonosState.elapsedTime);
+    adapter.setState({device: 'root', channel: ip, state: 'current_album'},      {val: sonosState.currentTrack.album, ack: true});
+    adapter.setState({device: 'root', channel: ip, state: 'current_artist'},     {val: sonosState.currentTrack.artist, ack: true});
+    adapter.setState({device: 'root', channel: ip, state: 'current_title'},      {val: sonosState.currentTrack.title, ack: true});
+    adapter.setState({device: 'root', channel: ip, state: 'current_duration'},   {val: sonosState.currentTrack.duration, ack: true});
+    adapter.setState({device: 'root', channel: ip, state: 'current_duration_s'}, {val: toFormattedTime(sonosState.currentTrack.duration), ack: true});
+    adapter.setState({device: 'root', channel: ip, state: 'current_cover'},      {val: "http://" + 1 + /*settings.binrpc.listenIp + */ ":" + adapter.config.webserver.port + sonosState.currentTrack.albumArtURI, ack: true});
+    adapter.setState({device: 'root', channel: ip, state: 'current_elapsed'},    {val: sonosState.elapsedTime, ack: true});
     channels[ip].elapsed  = sonosState.elapsedTime;
     channels[ip].duration = sonosState.currentTrack.duration;
-    adapter.setState(channelName + '.current_elapsed_s',  sonosState.elapsedTimeFormatted);
-    adapter.setState(channelName + '.volume',             sonosState.volume);
+    adapter.setState({device: 'root', channel: ip, state: 'current_elapsed_s'},  {val: sonosState.elapsedTimeFormatted, ack: true});
+    adapter.setState({device: 'root', channel: ip, state: 'volume'},             {val: sonosState.volume, ack: true});
     if (sonosState.groupState) {
-        adapter.setState(channelName + '.muted',          sonosState.groupState.mute);
+        adapter.setState({device: 'root', channel: ip, state: 'muted'},          {val: sonosState.groupState.mute, ack: true});
     }
 }
 
@@ -390,7 +379,7 @@ function takeSonosFavorites(ip, favorites) {
         }
 	}
 	
-    adapter.setState(ip + '.favorites_list', sFavorites);
+    adapter.setState({device: 'root', channel: ip, state: 'favorites_list'}, {val: sFavorites, ack: true});
 }
 
 function processSonosEvents(event, data) {
@@ -400,45 +389,45 @@ function processSonosEvents(event, data) {
         if (data.length > 1) {
             for (var i = 0; i < data[1]; i++) {
                 if (!discovery.players[data[0].uuid]._address) {
-                    discovery.players[data[0].uuid]._address = discovery.players[data[0].uuid].address.replace(/\./g, '_');
+                    discovery.players[data[0].uuid]._address = discovery.players[data[0].uuid].address.replace(/[.\s]+/g, '_');
                 }
-                var ip = adapter.namespace + '.root.' + discovery.players[data[0].uuid]._address;
+
+                var ip = discovery.players[data[0].uuid]._address;
                 if (channels[ip]) {
-                    adapter.setState('root.' + ip + '.alive', true);
+                    adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
                     channels[ip].uuid = data[0].uuid;
                 }
             }
         } else if (data.length) {
             for (var i = 0; i < data.length; i++) {
-                if (!discovery.players[data[i].uuid]._address) {
-                    discovery.players[data[i].uuid]._address = discovery.players[data[0].uuid].address.replace(/\./g, '_');
+                if (!discovery.players[data[0].uuid]._address) {
+                    discovery.players[data[0].uuid]._address = discovery.players[data[0].uuid].address.replace(/[.\s]+/g, '_');
                 }
-                var ip = adapter.namespace + '.root.' + discovery.players[data[i].uuid]._address;
+                var ip = discovery.players[data[i].uuid]._address;
                 if (channels[ip]) {
-                    adapter.setState('root.' + ip + '.alive', true);
+                    adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
                     channels[ip].uuid = data[i].uuid;
                 }
             }
         }
     } else if (event == "transport-state") {
-        // Get ccu.io id
         if (!discovery.players[data.uuid]._address) {
-            discovery.players[data.uuid]._address = discovery.players[data.uuid].address.replace(/\./g, '_');
+            discovery.players[ddata.uuid]._address = discovery.players[data.uuid].address.replace(/[.\s]+/g, '_');
         }
-        var ip = adapter.namespace + '.root.' + discovery.players[data.uuid]._address;
+        var ip = discovery.players[data.uuid]._address;
         if (channels[ip]) {
-            takeSonosState (ip, data.state);
+            takeSonosState(ip, data.state);
             channels[ip].uuid = data.uuid;
         }
     } else if (event == "group-volume") {
         for (var s in data.playerVolumes) {
             if (!discovery.players[s]._address) {
-                discovery.players[s]._address = discovery.players[s].address.replace(/\./g, '_');
+                discovery.players[s]._address = discovery.players[s].address.replace(/[.\s]+/g, '_');
             }
-            var ip = adapter.namespace + '.root.' + discovery.players[s]._address;
+            var ip = discovery.players[s]._address;
             if (channels[ip]) {
-                adapter.setState ('root.' + ip + '.volume', data.playerVolumes[s]);
-                adapter.setState ('root.' + ip + '.muted',  data.groupState.mute);
+                adapter.setState({device: 'root', channel: ip, state: 'volume'}, {val: data.playerVolumes[s], ack: true});
+                adapter.setState({device: 'root', channel: ip, state: 'muted'},  {val: data.groupState.mute, ack: true});
                 channels[ip].uuid = s;
             }
         }
@@ -446,16 +435,16 @@ function processSonosEvents(event, data) {
         // Go through all players
         for (var uuid in discovery.players) {
             if (!discovery.players[uuid]._address) {
-                discovery.players[uuid]._address = discovery.players[uuid].address.replace(/\./g, '_');
+                discovery.players[duuid]._address = discovery.players[uuid].address.replace(/[.\s]+/g, '_');
             }
-            var ip = adapter.namespace + '.root.' + discovery.players[uuid]._address;
+            var ip = discovery.players[uuid]._address;
         	if (channels[ip]) {
             	takeSonosFavorites(ip, data);
     	 	}
         }
     }
     else {
-        console.log (event + ' ' + data);
+        console.log(event + ' ' + data);
     }
 }
 
@@ -466,24 +455,23 @@ function sonosInit() {
     delete channels;
     channels = {};
 
-    adapter.getDevices(function (err, obj) {
-        if (obj) {
-            for (var i = 0; i < obj.length; i++) {
-                if (obj[i].children) {
-                    for (var j = 0; j < obj[i].children.length; j++) {
-                        channels[obj[i].children[j]] = {
+    adapter.getDevices(function (err, devices) {
+        if (devices) {
+            // Go through all devices
+            for (var i = 0; i < devices.length; i++) {
+                adapter.getChannels(devices[i].common.name, function (err, _channels) {
+                    for (var j = 0; j < _channels.length; j++) {
+                        var ip = _channels[j].common.name.replace(/[.\s]+/g, '_');
+
+                        channels[ip] = {
                             uuid:     "",
                             player:   null,
                             duration: 0,
-                            elapsed:  0
+                            elapsed:  0,
+                            obj:      _channels[j]
                         };
-                        adapter.objects.getObject(obj[i].children[j], function (err, _obj) {
-                            if (_obj) {
-                                channels[_obj._id].obj = _obj;
-                            }
-                        });
                     }
-                }
+                });
             }
         }
     });
@@ -496,6 +484,8 @@ var queues      = {};
 
 function main () {
     sonosInit ();
+    adapter.subscribeStates('*');
+
     discovery = new sonosDiscovery();
 // from here the code is mostly from https://github.com/jishi/node-sonos-web-controller/blob/master/server.js
 
