@@ -96,7 +96,7 @@ var adapter = require(__dirname + '/../../lib/adapter.js')({
     unload: function (callback) {
         try {
             adapter.log.info('terminating');
-            if (adapter.config.webserver.enabled) {
+            if (adapter.config.webserverEnabled) {
                 socketServer.server.close();
             }
             callback();
@@ -319,6 +319,7 @@ function addChannel (ip, rooms) {
     adapter.getObject("root", function (err, obj) {
         var channels = [];
         if (err || !obj) {
+            // TODO if root does not exist, channel will not be created
             adapter.createDevice('root', [], function () {
                 createChannel(ip, rooms);
             });
@@ -557,7 +558,7 @@ function main () {
     discovery = new sonosDiscovery();
 // from here the code is mostly from https://github.com/jishi/node-sonos-web-controller/blob/master/server.js
 
-    if (adapter.config.webserver.enabled) {
+    if (adapter.config.webserverEnabled) {
         var cacheDir    = __dirname + '/cache';
         var fileServer  = new static.Server(__dirname + '/node_modules/sonos-web-controller/static');
 
@@ -830,8 +831,8 @@ function main () {
         }
     }
 
-    if (adapter.config.webserver.enabled) {
-        server.listen(adapter.config.webserver.port);
-        console.log("http sonos server listening on port", adapter.config.webserver.port);
+    if (adapter.config.webserverEnabled) {
+        server.listen(adapter.config.webserverPort);
+        console.log("http sonos server listening on port", adapter.config.webserverPort);
     }
 }

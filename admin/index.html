@@ -1,0 +1,107 @@
+<html>
+
+<!-- these 4 files always have to be included -->
+<link rel="stylesheet" type="text/css" href="../../lib/css/themes/jquery-ui/redmond/jquery-ui.min.css"/>
+<script type="text/javascript" src="../../lib/js/jquery-1.11.1.min.js"></script>
+<script type="text/javascript" src="../../socket.io/socket.io.js"></script>
+<script type="text/javascript" src="../../lib/js/jquery-ui-1.10.3.full.min.js"></script>
+
+
+<!-- optional: use jqGrid
+<link rel="stylesheet" type="text/css" href="../../lib/css/jqGrid/ui.jqgrid-4.5.4.css"/>
+<script type="text/javascript" src="../../lib/js/jqGrid/jquery.jqGrid-4.5.4.min.js"></script>
+<script type="text/javascript" src="../../lib/js/jqGrid/i18n/grid.locale-en.js"></script>
+-->
+
+<!-- optional: use multiselect
+<link rel="stylesheet" type="text/css" href="../../lib/css/jquery.multiselect-1.13.css"/>
+<script type="text/javascript" src="../../lib/js/jquery.multiselect-1.13.min.js"></script>
+-->
+
+<!-- these two file always have to be included -->
+<link rel="stylesheet" type="text/css" href="../../css/adapter.css"/>
+<script type="text/javascript" src="../../js/adapter-settings.js"></script>
+
+
+<!-- you have to define 2 functions in the global scope: -->
+<script type="text/javascript">
+    function init() {
+        getState('system.adapter.sonos.' + instance + '.alive', function (obj) {
+            if (!obj || !obj.val) {
+                $('#devices').append('<tr><td>' + 'Please start SONOS adapter to get live list of devices' + '</td></tr>');
+            } else {
+
+            }
+        });
+        getObject('sonos.' + instance + '.root', function (obj) {
+            if (obj && obj.children) {
+                for (var i = 0; i < obj.children; i++) {
+                    $('#devices').append('<tr><td>' + obj.children[i].replace(/_/g, '.') + '</td><td></td><td><button class="delete" data-ip="obj.children[i]"></button></td>');
+                }
+            }
+        });
+        $('#detect').button().click(function () {
+            sendMessage('sonos.' + instance, 'browse', function(list) {
+                console.log(JSON.stringify(list));
+            });
+        });
+    }
+
+
+    // the function loadSettings has to exist ...
+    function load(settings) {
+        if (!settings) return;
+
+        for (var key in settings) {
+            for (var key in settings) {
+                // example: select elements with id=key and class=value and insert value
+                if ($('#' + key + '.value').attr('type') == 'checkbox') {
+                    $('#' + key + '.value').prop('checked', settings[key]);
+                } else {
+                    $('#' + key + '.value').val(settings[key]);
+                }
+            }
+        }
+
+        init ();
+    }
+
+    // ... and the function save has to exist.
+    // you have to make sure the callback is called with the settings object as first param!
+    function save(callback) {
+        // example: select elements with class=value and build settings object
+        var obj = {};
+        $('.value').each(function () {
+            var $this = $(this);
+            if ($this.attr('type') == 'checkbox') {
+                obj[$this.attr('id')] = $this.prop('checked');
+            } else {
+                obj[$this.attr('id')] = $this.val();
+            }
+        });
+        callback(obj);
+    }
+</script>
+
+<!-- you have to put your config page in a div with id adapter-container -->
+<div id="adapter-container">
+
+    <table><tr><td><img src="sonos.png"></td><td><h3>SONOS adapter settings</h3></td></tr></table>
+
+    <table>
+        <tr><td>Web server:</td><td>    <input  class="value" id="webserverEnabled" type="checkbox" /></td></tr>
+        <tr><td>Port:</td><td>          <input  class="value" id="webserverPort"    size="5"  maxsize="5"/></td></tr>
+        <tr><td>Update of elapsed time(ms):</td><td><input  class="value" id="elapsedInterval"  size="6"  maxsize="6"/></td></tr>
+    </table>
+    <button id="detect">Detect</button>
+    <table id="devices"></table>
+    <p>
+        On save the adapter restarts with new configuration immediately.
+    </p>
+
+</div>
+<script type="text/javascript">
+    // Read somehow, where belongs this adapter to and read the ip addresses of this host
+    //getObject("system.host")
+</script>
+</html>
