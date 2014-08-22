@@ -150,9 +150,10 @@ var io             = require('./node_modules/sonos-web-controller/node_modules/s
     sonosDiscovery = require('sonos-discovery');
 var path           = require('path');
 
-var channels    = {},
-    server,        // Sonos HTTP server
-    socketServer;  // Sonos socket for HTTP Server
+var channels    = {};
+var server;        // Sonos HTTP server
+var socketServer;  // Sonos socket for HTTP Server
+var lastCover =   null;
 
 function toFormattedTime(time) {
     var hours = Math.floor(time / 3600);
@@ -360,7 +361,73 @@ function takeSonosState (ip, sonosState) {
     adapter.setState({device: 'root', channel: ip, state: 'current_title'},      {val: sonosState.currentTrack.title, ack: true});
     adapter.setState({device: 'root', channel: ip, state: 'current_duration'},   {val: sonosState.currentTrack.duration, ack: true});
     adapter.setState({device: 'root', channel: ip, state: 'current_duration_s'}, {val: toFormattedTime(sonosState.currentTrack.duration), ack: true});
-    adapter.setState({device: 'root', channel: ip, state: 'current_cover'},      {val: "http://" + 1 + /*settings.binrpc.listenIp + */ ":" + adapter.config.webserver.port + sonosState.currentTrack.albumArtURI, ack: true});
+    if (lastCover != sonosState.currentTrack.albumArtURI) {
+        var md5url     = crypto.createHash('md5').update(sonosState.currentTrack.albumArtURI).digest('hex');
+        var fileName   = __dirname + '/cache/' + md5url;
+        var stateName  = adapter.namespace + '.root.' + ip + '.cover.png';
+        var defaultImg = __dirname + '/node_modules/sonos-web-controller/lib/browse_missing_album_art.png';
+
+        if (!fs.existsSync(fileName)) {
+            console.log('fetching album art from', discovery.players[channels[ip].uuid].address);
+            http.get({
+                hostname: discovery.players[channels[ip].uuid].address,
+                port: 1400,
+                path: sonosState.currentTrack.albumArtURI
+            }, function (res2) {
+                console.log(res2.statusCode);
+                if (res2.statusCode == 200) {
+                    if (!fs.exists(fileName)) {
+                        var cacheStream = fs.createWriteStream(fileName);
+                        res2.pipe(cacheStream);
+                    } else { res2.resume(); }
+                } else if (res2.statusCode == 404) {
+                    // no image exists! link it to the default image.
+                    fileName = defaultImg;
+                    res2.resume();
+                }
+
+                res2.on('end', function () {
+                    var fileData = null;
+                    try {
+                        fileData = fs.readFileSync(fileName);
+                    } catch (e) {
+                        adapter.log.warn("Cannot read file: " + e);
+                    }
+                    // If error or null length file, read standart cover file
+                    if (!fileData) {
+                        try {
+                            fileData = fs.readFileSync(defaultImg);
+                        } catch (e) {
+                            adapter.log.warn("Cannot read file: " + e);
+                        }
+                    }
+                    if (fileData) adapter.setBinaryState(stateName, fileData);
+                });
+            }).on('error', function(e) {
+                console.log("Got error: " + e.message);
+            });
+        }
+        else {
+            var fileData = null;
+            try {
+                fileData = fs.readFileSync(fileName);
+            } catch (e) {
+                adapter.log.warn("Cannot read file: " + e);
+            }
+            // If error or null length file, read standart cover file
+            if (!fileData) {
+                try {
+                    fileData = fs.readFileSync(defaultImg);
+                } catch (e) {
+                    adapter.log.warn("Cannot read file: " + e);
+                }
+            }
+            if (fileData) adapter.setBinaryState(stateName, fileData);
+        }
+
+        lastCover = sonosState.currentTrack.albumArtURI;
+    }
+    adapter.setState({device: 'root', channel: ip, state: 'current_cover'},      {val: '/state/' + adapter.namespace + '.' + sonosState.currentTrack.albumArtURI, ack: true});
     adapter.setState({device: 'root', channel: ip, state: 'current_elapsed'},    {val: sonosState.elapsedTime, ack: true});
     channels[ip].elapsed  = sonosState.elapsedTime;
     channels[ip].duration = sonosState.currentTrack.duration;
@@ -394,8 +461,8 @@ function processSonosEvents(event, data) {
 
                 var ip = discovery.players[data[0].uuid]._address;
                 if (channels[ip]) {
-                    adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
                     channels[ip].uuid = data[0].uuid;
+                    adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
                 }
             }
         } else if (data.length) {
@@ -405,19 +472,19 @@ function processSonosEvents(event, data) {
                 }
                 var ip = discovery.players[data[i].uuid]._address;
                 if (channels[ip]) {
-                    adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
                     channels[ip].uuid = data[i].uuid;
+                    adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
                 }
             }
         }
     } else if (event == "transport-state") {
         if (!discovery.players[data.uuid]._address) {
-            discovery.players[ddata.uuid]._address = discovery.players[data.uuid].address.replace(/[.\s]+/g, '_');
+            discovery.players[data.uuid]._address = discovery.players[data.uuid].address.replace(/[.\s]+/g, '_');
         }
         var ip = discovery.players[data.uuid]._address;
         if (channels[ip]) {
-            takeSonosState(ip, data.state);
             channels[ip].uuid = data.uuid;
+            takeSonosState(ip, data.state);
         }
     } else if (event == "group-volume") {
         for (var s in data.playerVolumes) {
@@ -426,20 +493,21 @@ function processSonosEvents(event, data) {
             }
             var ip = discovery.players[s]._address;
             if (channels[ip]) {
+                channels[ip].uuid = s;
                 adapter.setState({device: 'root', channel: ip, state: 'volume'}, {val: data.playerVolumes[s], ack: true});
                 adapter.setState({device: 'root', channel: ip, state: 'muted'},  {val: data.groupState.mute, ack: true});
-                channels[ip].uuid = s;
             }
         }
     } else if (event == "favorites") {
         // Go through all players
         for (var uuid in discovery.players) {
             if (!discovery.players[uuid]._address) {
-                discovery.players[duuid]._address = discovery.players[uuid].address.replace(/[.\s]+/g, '_');
+                discovery.players[uuid]._address = discovery.players[uuid].address.replace(/[.\s]+/g, '_');
             }
             var ip = discovery.players[uuid]._address;
         	if (channels[ip]) {
-            	takeSonosFavorites(ip, data);
+                channels[ip].uuid = uuid;
+                takeSonosFavorites(ip, data);
     	 	}
         }
     }

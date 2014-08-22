@@ -14,11 +14,9 @@
         "keywords":                 ["sonos", "player", "music"]
     },
     "native": {
-        "webserver": {
-            "enabled": true,
-            "port":    8083
-        },
-        "elapsedInterval": 2000
+        "webserverEnabled": true,
+        "webserverPort":    8083,
+        "elapsedInterval":  2000
     },
     "objects": [
 
