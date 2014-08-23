@@ -15,11 +15,11 @@ var adapter = require(__dirname + '/../../lib/adapter.js')({
 
     // {"val": state, "ack":false, "ts":1408294295, "from":"admin.0", "lc":1408294295}
     // id = sonos.0.192_168_1_55.state
-    stateChange: function (id, state) {
+    stateChange: function (_id, state) {
         if (state.ack) return;
-        adapter.log.info ("adapter sonos  try to control id " + id + " with " + JSON.stringify(state));
+        adapter.log.info ("adapter sonos  try to control id " + _id + " with " + JSON.stringify(state));
         // Try to find the object
-        var id = adapter.idToDCS(id);
+        var id = adapter.idToDCS(_id);
 
         if (id && id.channel && channels[id.channel]) {
             if (state.val === "false") state.val = false;
@@ -111,6 +111,7 @@ var adapter = require(__dirname + '/../../lib/adapter.js')({
 
     // New message arrived. obj is array with current messages
     message: function (obj) {
+        var wait = false;
         if (obj) {
             switch(obj.command) {
                 case 'send':
@@ -118,22 +119,35 @@ var adapter = require(__dirname + '/../../lib/adapter.js')({
                     break;
 
                 case 'add':
-                    addChannel(obj.message);
+                    wait = true;
+                    addChannel(obj.message, [], function (err) {
+                        if (obj.callback) adapter.sendTo(obj.from, obj.command, err, obj.callback);
+                    });
+                    break;
+
+                case 'browse':
+                    browse(function(res) {
+                        if (obj.callback) adapter.sendTo(obj.from, obj.command, res, obj.callback);
+                    });
+                    wait = true;
                     break;
 
                 case 'del':
                 case 'delete':
-                    adapter.deleteChannel("root", obj.message, function () {
+                    wait = true;
+                    adapter.deleteChannel("root", obj.message, function (err) {
                         sonosInit();
+                        if (obj.callback) adapter.sendTo(obj.from, obj.command, err, obj.callback);
                     });
                     break;
 
                 default:
-                    this.log.warn("Unknown command: " + obj.command);
+                    adapter.log.warn("Unknown command: " + obj.command);
+                    break;
             }
         }
 
-        if (obj.callback) {
+        if (!wait && obj.callback) {
             adapter.sendTo(obj.from, obj.command, obj.message, obj.callback);
         }
 
@@ -147,8 +161,9 @@ var io             = require('./node_modules/sonos-web-controller/node_modules/s
     static         = require('./node_modules/sonos-web-controller/node_modules/node-static'),
     fs             = require('fs'),
     crypto         = require('crypto'),
-    sonosDiscovery = require('sonos-discovery');
-var path           = require('path');
+    sonosDiscovery = require('sonos-discovery'),
+    path           = require('path'),
+    dgram          = require("dgram");
 
 var channels    = {};
 var server;        // Sonos HTTP server
@@ -166,7 +181,7 @@ function toFormattedTime(time) {
     return hours + min + ":" + sec;
 }
 
-function createChannel(ip, rooms) {
+function createChannel(ip, rooms, callback) {
     var states = {
         'state_simple': {      // media.state -            Text state of player: stop, play, pause (read, write)
             def:    'false',
@@ -305,6 +320,7 @@ function createChannel(ip, rooms) {
 
     adapter.createChannel('root', ip, states_list, 'media.music', function () {
         sonosInit();
+        if (callback) callback();
     });
 
     /*if (rooms) {
@@ -315,13 +331,65 @@ function createChannel(ip, rooms) {
     }
 }
 
-function addChannel (ip, rooms) {
+function browse(callback) {
+    var result = [];
+    for (var uuid in discovery.players) {
+        result.push({roomName: discovery.players[uuid].roomName, ip: discovery.players[uuid].address});
+    }
+
+    if (callback) callback(result);
+
+    /*
+    var strngtoXmit = new Buffer(["M-SEARCH * HTTP/1.1",
+        "HOST: 239.255.255.250:reservedSSDPport",
+        "MAN: ssdp:discover",
+        "MX: 1",
+        "ST: urn:schemas-upnp-org:device:ZonePlayer:1"].join("\r\n"));
+
+    // Create a new socket
+    var server = dgram.createSocket('udp4');
+    var result = [];
+
+    if (server) {
+        server.on("error", function (err) {
+            console.log("ERROR: " + err);
+            server.close();
+            if (callback) callback('ERROR - Cannot send request: ' + err);
+        });
+
+        server.bind (53004, "0.0.0.0");
+
+        server.on("message", function (msg, rinfo) {
+            var str = msg.toString();
+            if (str.indexOf ("Sonos") != -1) {
+                console.log (rinfo.address);
+                result.push({name: rinfo.name, ip: rinfo.address});
+            }
+        });
+
+        setTimeout (function () {
+            server.close();
+            console.log ("Send:" + result);
+            if (callback) callback(result);
+        }, 2000);
+
+        server.send (strngtoXmit, 0, strngtoXmit.length, 1900, "239.255.255.250", function (err, bytes) {
+            if (err) {
+                console.log("ERROR - Cannot send request: " + err);
+                server.close();
+                if (callback) callback('ERROR - Cannot send request: ' + err);
+            }
+        });
+    }*/
+}
+
+function addChannel (ip, rooms, callback) {
     adapter.getObject("root", function (err, obj) {
         var channels = [];
         if (err || !obj) {
             // TODO if root does not exist, channel will not be created
             adapter.createDevice('root', [], function () {
-                createChannel(ip, rooms);
+                createChannel(ip, rooms, callback);
             });
         } else {
             createChannel(ip, rooms);
@@ -452,7 +520,7 @@ function takeSonosFavorites(ip, favorites) {
 
 function processSonosEvents(event, data) {
     var ids;
-
+    var ip;
     if (event == "topology-change") {
         if (data.length > 1) {
             for (var i = 0; i < data[1]; i++) {
@@ -460,7 +528,7 @@ function processSonosEvents(event, data) {
                     discovery.players[data[0].uuid]._address = discovery.players[data[0].uuid].address.replace(/[.\s]+/g, '_');
                 }
 
-                var ip = discovery.players[data[0].uuid]._address;
+                ip = discovery.players[data[0].uuid]._address;
                 if (channels[ip]) {
                     channels[ip].uuid = data[0].uuid;
                     adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
@@ -471,7 +539,7 @@ function processSonosEvents(event, data) {
                 if (!discovery.players[data[0].uuid]._address) {
                     discovery.players[data[0].uuid]._address = discovery.players[data[0].uuid].address.replace(/[.\s]+/g, '_');
                 }
-                var ip = discovery.players[data[i].uuid]._address;
+                ip = discovery.players[data[i].uuid]._address;
                 if (channels[ip]) {
                     channels[ip].uuid = data[i].uuid;
                     adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
@@ -482,7 +550,7 @@ function processSonosEvents(event, data) {
         if (!discovery.players[data.uuid]._address) {
             discovery.players[data.uuid]._address = discovery.players[data.uuid].address.replace(/[.\s]+/g, '_');
         }
-        var ip = discovery.players[data.uuid]._address;
+        ip = discovery.players[data.uuid]._address;
         if (channels[ip]) {
             channels[ip].uuid = data.uuid;
             takeSonosState(ip, data.state);
@@ -492,7 +560,7 @@ function processSonosEvents(event, data) {
             if (!discovery.players[s]._address) {
                 discovery.players[s]._address = discovery.players[s].address.replace(/[.\s]+/g, '_');
             }
-            var ip = discovery.players[s]._address;
+            ip = discovery.players[s]._address;
             if (channels[ip]) {
                 channels[ip].uuid = s;
                 adapter.setState({device: 'root', channel: ip, state: 'volume'}, {val: data.playerVolumes[s], ack: true});
@@ -505,14 +573,13 @@ function processSonosEvents(event, data) {
             if (!discovery.players[uuid]._address) {
                 discovery.players[uuid]._address = discovery.players[uuid].address.replace(/[.\s]+/g, '_');
             }
-            var ip = discovery.players[uuid]._address;
+            ip = discovery.players[uuid]._address;
         	if (channels[ip]) {
                 channels[ip].uuid = uuid;
                 takeSonosFavorites(ip, data);
     	 	}
         }
-    }
-    else {
+    } else {
         console.log(event + ' ' + data);
     }
 }

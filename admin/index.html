@@ -25,28 +25,93 @@
 
 <!-- you have to define 2 functions in the global scope: -->
 <script type="text/javascript">
-    function init() {
-        getState('system.adapter.sonos.' + instance + '.alive', function (obj) {
-            if (!obj || !obj.val) {
-                $('#devices').append('<tr><td>' + 'Please start SONOS adapter to get live list of devices' + '</td></tr>');
-            } else {
+    var rooms = [];
+    var roomsSelect = "";
+    var devices = [];
+    var processed = 1000;
+    var isStarted = false;
 
+    function showDevices() {
+        $('#devices').html('');
+
+        roomsSelect = '';
+        if (rooms && rooms.length) {
+            for (var i = 0; i < rooms.length; i++) {
+                roomsSelect += '<option value="' + rooms[i] + '">' +
+                        rooms[i].substring(0, 1).toUpperCase() + rooms[i].substring(1).toLowerCase() + '</option>';
             }
-        });
-        getObject('sonos.' + instance + '.root', function (obj) {
-            if (obj && obj.children) {
-                for (var i = 0; i < obj.children; i++) {
-                    $('#devices').append('<tr><td>' + obj.children[i].replace(/_/g, '.') + '</td><td></td><td><button class="delete" data-ip="obj.children[i]"></button></td>');
-                }
-            }
-        });
-        $('#detect').button().click(function () {
-            sendMessage('sonos.' + instance, 'browse', function(list) {
-                console.log(JSON.stringify(list));
+        }
+        $('#devices').append('<tr><td>IP</td><td>Room</td><td></td></tr>')
+        for (var i = 0; i < devices.length; i++) {
+            $('#devices').append('<tr><td>' + devices[i].obj.common.name + '</td>' +
+                '<td><select data-id="' + devices[i].id + '" class="room">' + roomsSelect + '</select></td>' +
+                '<td></td><td><button class="delete" data-id="' + devices[i].id + '">Delete</button></td>');
+            $('.room[data-id="' + devices[i].id + '"]').val('');
+        }
+        $('.delete').button().click(function () {
+            sendTo('sonos.' + instance, 'del', $(this).attr('data-id'), function () {
+                readDevices();
             });
+        });
+        if (!isStarted) {
+            $('.delete').hide();
+        }
+    }
+
+    function getInfoForOneDevice (id) {
+        getObject(id, function (err, obj) {
+            if (obj && obj.common && obj.common.name) {
+                devices.push({id: id, obj: obj});
+            }
+            processed--;
+            if (!processed) {
+                showDevices();
+            }
         });
     }
 
+    function readDevices () {
+        getObject('sonos.' + instance + '.root', function (err, obj) {
+            if (obj && obj.children) {
+                processed = obj.children.length;
+
+                for (var i = 0; i < obj.children.length; i++) {
+                    getInfoForOneDevice(obj.children[i]);
+                }
+            }
+        });
+    }
+
+    function init() {
+        getState('system.adapter.sonos.' + instance + '.alive', function (err, obj) {
+            if (!obj || !obj.val) {
+                $('#add_warning').show();
+                $('.delete').hide();
+            } else {
+                $('#add_line').show();
+                $('.delete').show();
+            }
+        });
+        getEnums("rooms", function (err, list) {
+            rooms = list;
+            readDevices();
+        });
+        $('#detect').button().click(function () {
+            sendTo('sonos.' + instance, 'browse', null, function(list) {
+                $('#ips').html();
+                if (list && list.length) {
+                    for (var i = 0; i < list.length; i++) {
+                        $('#ips').append('<option value="' + list[i].ip + '">' + list[i].roomName + '[' + list[i].ip + ']</option>');
+                    }
+                }
+            });
+        });
+        $('#add').button().click(function () {
+            sendTo('sonos.' + instance, 'add', $('#add_ip').val(), function() {
+                readDevices();
+            });
+        });
+    }
 
     // the function loadSettings has to exist ...
     function load(settings) {
@@ -93,15 +158,19 @@
         <tr><td>Port:</td><td>          <input  class="value" id="webserverPort"    size="5"  maxsize="5"/></td></tr>
         <tr><td>Update of elapsed time(ms):</td><td><input  class="value" id="elapsedInterval"  size="6"  maxsize="6"/></td></tr>
     </table>
+
     <button id="detect">Detect</button>
+
+    <table id="add_line" style="display:none"><tr><td><input id="add_ip" type="text" maxsize="40" size="16"/>&lt;<=</td>
+        <td><select id="ips"></select></td>
+        <td><button id="add">add</button></td></tr></table>
+    <div id="add_warning" style="display:none">Enable adapter first to add or delete the devices</div>
+
     <table id="devices"></table>
+
     <p>
         On save the adapter restarts with new configuration immediately.
     </p>
 
 </div>
-<script type="text/javascript">
-    // Read somehow, where belongs this adapter to and read the ip addresses of this host
-    //getObject("system.host")
-</script>
 </html>
