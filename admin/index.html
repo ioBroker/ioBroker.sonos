@@ -22,7 +22,12 @@
 <link rel="stylesheet" type="text/css" href="../../css/adapter.css"/>
 <script type="text/javascript" src="../../js/adapter-settings.js"></script>
 
-
+<style>
+    .table_header {
+        background-color: blue;
+        color: white;
+    }
+</style>
 <!-- you have to define 2 functions in the global scope: -->
 <script type="text/javascript">
     var rooms = [];
@@ -41,7 +46,7 @@
                         rooms[i].substring(0, 1).toUpperCase() + rooms[i].substring(1).toLowerCase() + '</option>';
             }
         }
-        $('#devices').append('<tr><td>IP</td><td>Room</td><td></td></tr>')
+        $('#devices').append('<tr class="table_header"><td>IP</td><td>Room</td><td></td></tr>')
         for (var i = 0; i < devices.length; i++) {
             $('#devices').append('<tr><td>' + devices[i].obj.common.name + '</td>' +
                 '<td><select data-id="' + devices[i].id + '" class="room">' + roomsSelect + '</select></td>' +
@@ -99,18 +104,41 @@
         $('#detect').button().click(function () {
             sendTo('sonos.' + instance, 'browse', null, function(list) {
                 $('#ips').html();
+                $('#add_ip').show();
+                $('#ips').append('<option value="">' + 'User defined' + '</option>');
+
                 if (list && list.length) {
                     for (var i = 0; i < list.length; i++) {
                         $('#ips').append('<option value="' + list[i].ip + '">' + list[i].roomName + '[' + list[i].ip + ']</option>');
                     }
+
+                    $('#ips').change(function () {
+                        if ($(this).val() == '') {
+                            $("#add").button( "option", "disabled", $('#add_ip').val() == "");
+                            $('#add_ip').show(true);
+                        } else {
+                            $('#add_ip').show(false);
+                            $("#add").button( "option", "disabled", false);
+                        }
+                    });
                 }
+
             });
         });
         $('#add').button().click(function () {
-            sendTo('sonos.' + instance, 'add', $('#add_ip').val(), function() {
+            var ip = $('#ips').val();
+
+            if (ip == "") {
+                ip = $('#add_ip').val();
+            }
+
+            sendTo('sonos.' + instance, 'add', ip, function() {
                 readDevices();
             });
         });
+        $('#add_ip').keyup(function() {
+            $("#add").button( "option", "disabled", $(this).val() == '');
+        })
     }
 
     // the function loadSettings has to exist ...
