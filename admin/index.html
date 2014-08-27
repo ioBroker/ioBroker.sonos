@@ -175,13 +175,11 @@
         if (!settings) return;
 
         for (var key in settings) {
-            for (var key in settings) {
-                // example: select elements with id=key and class=value and insert value
-                if ($('#' + key + '.value').attr('type') == 'checkbox') {
-                    $('#' + key + '.value').prop('checked', settings[key]);
-                } else {
-                    $('#' + key + '.value').val(settings[key]);
-                }
+            // example: select elements with id=key and class=value and insert value
+            if ($('#' + key + '.value').attr('type') == 'checkbox') {
+                $('#' + key + '.value').prop('checked', settings[key]);
+            } else {
+                $('#' + key + '.value').val(settings[key]);
             }
         }
 
