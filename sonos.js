@@ -17,7 +17,7 @@ var adapter = require(__dirname + '/../../lib/adapter.js')({
     // id = sonos.0.192_168_1_55.state
     stateChange: function (_id, state) {
         if (state.ack) return;
-        adapter.log.info ("adapter sonos  try to control id " + _id + " with " + JSON.stringify(state));
+        adapter.log.info("adapter sonos  try to control id " + _id + " with " + JSON.stringify(state));
         // Try to find the object
         var id = adapter.idToDCS(_id);
 
@@ -115,14 +115,20 @@ var adapter = require(__dirname + '/../../lib/adapter.js')({
         if (obj) {
             switch(obj.command) {
                 case 'send':
-                    text2speech(obj.message);
+                    if (obj.message) {
+                        text2speech(obj.message);
+                    }
                     break;
 
                 case 'add':
                     wait = true;
-                    addChannel(obj.message, [], function (err) {
-                        if (obj.callback) adapter.sendTo(obj.from, obj.command, err, obj.callback);
-                    });
+                    if (obj.message) {
+                        addChannel(obj.message, [], function (err) {
+                            if (obj.callback) adapter.sendTo(obj.from, obj.command, err, obj.callback);
+                        });
+                    } else {
+                        if (obj.callback) adapter.sendTo(obj.from, obj.command, "Invalid IP address: " + obj.message, obj.callback);
+                    }
                     break;
 
                 case 'browse':
@@ -135,10 +141,14 @@ var adapter = require(__dirname + '/../../lib/adapter.js')({
                 case 'del':
                 case 'delete':
                     wait = true;
-                    adapter.deleteChannel("root", obj.message, function (err) {
-                        sonosInit();
-                        if (obj.callback) adapter.sendTo(obj.from, obj.command, err, obj.callback);
-                    });
+                    if (obj.message) {
+                        adapter.deleteChannel("root", obj.message, function (err) {
+                            sonosInit();
+                            if (obj.callback) adapter.sendTo(obj.from, obj.command, err, obj.callback);
+                        });
+                    } else {
+                        if (obj.callback) adapter.sendTo(obj.from, obj.command, "Invalid IP address: " + obj.message, obj.callback);
+                    }
                     break;
 
                 default:
@@ -383,6 +393,26 @@ function browse(callback) {
     }*/
 }
 
+function text2speech(fileName, callback) {
+
+    for (var uuid in discovery.players) {
+        // Use the preset action to play the tts file
+        var tts_params = {
+            "players": [{
+                    "roomName": discovery.players[uuid], // TODO get room name
+                    "volume":   discovery.players[uuid].getState().volume
+                }
+            ],
+            "state": "play",
+            "uri": "http://" + discovery.localEndpoint + ":" + adapter.config.webserverPort + "/tts/" + filename,
+            "playMode": "NORMAL"
+        };
+        discovery.applyPreset(tts_params);
+    }
+
+    if (callback) callback();
+}
+
 function addChannel (ip, rooms, callback) {
     adapter.getObject("root", function (err, obj) {
         var channels = [];
@@ -392,7 +422,7 @@ function addChannel (ip, rooms, callback) {
                 createChannel(ip, rooms, callback);
             });
         } else {
-            createChannel(ip, rooms);
+            createChannel(ip, rooms, callback);
         }
     });
 }

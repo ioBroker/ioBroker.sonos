@@ -27,14 +27,26 @@
         background-color: blue;
         color: white;
     }
+    h4 {
+        width: 370px;
+        padding-left:5px;
+        padding-right: 5px;
+        padding-top: 2px;
+        padding-bottom: 2px;
+        background-color: lightblue;
+    }
+    .ip {
+        width: 150px;
+        text-align: right;
+    }
 </style>
 <!-- you have to define 2 functions in the global scope: -->
 <script type="text/javascript">
-    var rooms = [];
+    var rooms =       [];
     var roomsSelect = "";
-    var devices = [];
-    var processed = 1000;
-    var isStarted = false;
+    var devices =     [];
+    var processed =   1000;
+    var isStarted =   null;
 
     function showDevices() {
         $('#devices').html('');
@@ -46,16 +58,22 @@
                         rooms[i].substring(0, 1).toUpperCase() + rooms[i].substring(1).toLowerCase() + '</option>';
             }
         }
-        $('#devices').append('<tr class="table_header"><td>IP</td><td>Room</td><td></td></tr>')
+        $('#devices').append('<tr class="table_header ui-widget-header"><td style="width:150px;text-align: center">IP</td><td style="width:100px;text-align: center"" class="translate">Room</td><td></td></tr>')
+
         for (var i = 0; i < devices.length; i++) {
-            $('#devices').append('<tr><td>' + devices[i].obj.common.name + '</td>' +
+            $('#devices').append('<tr><td class="ip">' + devices[i].obj.common.name + '</td>' +
                 '<td><select data-id="' + devices[i].id + '" class="room">' + roomsSelect + '</select></td>' +
-                '<td></td><td><button class="delete" data-id="' + devices[i].id + '">Delete</button></td>');
+                '<td><button class="delete" data-id="' + devices[i].id + '" /></td>');
             $('.room[data-id="' + devices[i].id + '"]').val('');
         }
-        $('.delete').button().click(function () {
-            sendTo('sonos.' + instance, 'del', $(this).attr('data-id'), function () {
-                readDevices();
+
+        $('.delete').button({icons: {primary: "ui-icon-trash"}}).click(function () {
+            sendTo('sonos.' + instance, 'del', $(this).attr('data-id'), function (err) {
+                if (!err || typeof err != "string") {
+                    readDevices();
+                } else {
+                    alert(err);
+                }
             });
         });
         if (!isStarted) {
@@ -77,12 +95,15 @@
 
     function readDevices () {
         getObject('sonos.' + instance + '.root', function (err, obj) {
-            if (obj && obj.children) {
+            devices = [];
+            if (obj && obj.children && obj.children.length) {
                 processed = obj.children.length;
 
                 for (var i = 0; i < obj.children.length; i++) {
                     getInfoForOneDevice(obj.children[i]);
                 }
+            } else {
+                showDevices();
             }
         });
     }
@@ -92,53 +113,61 @@
             if (!obj || !obj.val) {
                 $('#add_warning').show();
                 $('.delete').hide();
+                isStarted = false;
             } else {
                 $('#add_line').show();
                 $('.delete').show();
+                isStarted = true;
+
+                // Read list of sonos devices
+                sendTo('sonos.' + instance, 'browse', null, function(list) {
+                    $('#ips').html();
+                    $('#add_ip').show();
+                    $('#ips').append('<option value="" class="translate">' + 'User defined' + '</option>');
+
+                    if (list && list.length) {
+                        for (var i = 0; i < list.length; i++) {
+                            $('#ips').append('<option value="' + list[i].ip + '">' + list[i].roomName + ' [' + list[i].ip + ']</option>');
+                        }
+                    }
+                });
+
             }
         });
         getEnums("rooms", function (err, list) {
             rooms = list;
             readDevices();
         });
-        $('#detect').button().click(function () {
-            sendTo('sonos.' + instance, 'browse', null, function(list) {
-                $('#ips').html();
-                $('#add_ip').show();
-                $('#ips').append('<option value="">' + 'User defined' + '</option>');
 
-                if (list && list.length) {
-                    for (var i = 0; i < list.length; i++) {
-                        $('#ips').append('<option value="' + list[i].ip + '">' + list[i].roomName + '[' + list[i].ip + ']</option>');
-                    }
+        $('#add').button({icons: {primary: "ui-icon-plusthick"}}).click(function (err) {
+            if (!err || typeof err != "string") {
+                var ip = $('#ips').val();
 
-                    $('#ips').change(function () {
-                        if ($(this).val() == '') {
-                            $("#add").button( "option", "disabled", $('#add_ip').val() == "");
-                            $('#add_ip').show(true);
-                        } else {
-                            $('#add_ip').show(false);
-                            $("#add").button( "option", "disabled", false);
-                        }
-                    });
+                if (ip == "") {
+                    ip = $('#add_ip').val();
                 }
 
-            });
-        });
-        $('#add').button().click(function () {
-            var ip = $('#ips').val();
-
-            if (ip == "") {
-                ip = $('#add_ip').val();
+                sendTo('sonos.' + instance, 'add', ip, function() {
+                    readDevices();
+                });
+            } else {
+                alert(err);
             }
+        }).button("option", "disabled", true);
 
-            sendTo('sonos.' + instance, 'add', ip, function() {
-                readDevices();
-            });
-        });
         $('#add_ip').keyup(function() {
-            $("#add").button( "option", "disabled", $(this).val() == '');
-        })
+            $("#add").button("option", "disabled", $(this).val() == '');
+        });
+
+        $('#ips').change(function () {
+            if ($(this).val() == '') {
+                $("#add").button( "option", "disabled", $('#add_ip').val() == "");
+                $('#add_ip').show();
+            } else {
+                $('#add_ip').hide();
+                $("#add").button( "option", "disabled", false);
+            }
+        });
     }
 
     // the function loadSettings has to exist ...
@@ -179,26 +208,28 @@
 <!-- you have to put your config page in a div with id adapter-container -->
 <div id="adapter-container">
 
-    <table><tr><td><img src="sonos.png"></td><td><h3>SONOS adapter settings</h3></td></tr></table>
+    <table><tr>
+        <td><img src="sonos.png"></td>
+        <td style="padding-top: 20px;padding-left: 10px"><h3 class="translate">SONOS adapter settings</h3></td>
+    </tr></table>
 
+    <h4 class="translate">SONOS Server settings</h4>
     <table>
-        <tr><td>Web server:</td><td>    <input  class="value" id="webserverEnabled" type="checkbox" /></td></tr>
-        <tr><td>Port:</td><td>          <input  class="value" id="webserverPort"    size="5"  maxsize="5"/></td></tr>
-        <tr><td>Update of elapsed time(ms):</td><td><input  class="value" id="elapsedInterval"  size="6"  maxsize="6"/></td></tr>
+        <tr><td class="translate">Web server:</td><td>    <input  class="value" id="webserverEnabled" type="checkbox" /></td></tr>
+        <tr><td class="translate">Port:</td><td>          <input  class="value" id="webserverPort"    size="5"  maxsize="5"/></td></tr>
+        <tr><td class="translate">Update of elapsed time(ms):</td><td><input  class="value" id="elapsedInterval"  size="5"  maxsize="5"/></td></tr>
     </table>
 
-    <button id="detect">Detect</button>
-
-    <table id="add_line" style="display:none"><tr><td><input id="add_ip" type="text" maxsize="40" size="16"/>&lt;<=</td>
-        <td><select id="ips"></select></td>
-        <td><button id="add">add</button></td></tr></table>
-    <div id="add_warning" style="display:none">Enable adapter first to add or delete the devices</div>
-
+    <br>
+    <h4 class="translate">SONOS devices</h4>
     <table id="devices"></table>
+    <br>
+    <table id="add_line" style="display:none"><tr><td><select id="ips"></select></td>
+        <td><input id="add_ip" type="text" maxsize="40" size="16"/></td>
+        <td><button id="add" /></td></tr></table>
+    <div id="add_warning" style="display:none" class="translate">Enable adapter first to add or delete the devices</div>
 
-    <p>
-        On save the adapter restarts with new configuration immediately.
-    </p>
+    <p class="translate">On save the adapter restarts with new configuration immediately.</p>
 
 </div>
 </html>
