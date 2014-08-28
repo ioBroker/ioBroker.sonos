@@ -10,6 +10,7 @@
         "mode":                     "daemon",
         "loglevel":                 "info",
         "messagebox":               true,
+        "enabled":                  true,
         "icon":                     "sonos.png",
         "keywords":                 ["sonos", "player", "music"]
     },
