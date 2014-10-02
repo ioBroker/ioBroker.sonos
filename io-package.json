@@ -12,7 +12,8 @@
         "messagebox":               true,
         "enabled":                  true,
         "icon":                     "sonos.png",
-        "keywords":                 ["sonos", "player", "music"]
+        "keywords":                 ["sonos", "player", "music"],
+        "extIcon":                  "https://raw.githubusercontent.com/ioBroker/ioBroker.sonos/master/admin/sonos.png"
     },
     "native": {
         "webserverEnabled": true,
