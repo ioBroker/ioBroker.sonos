@@ -1,7 +1,7 @@
 {
     "common": {
         "name":                     "sonos",
-        "version":                  "0.0.1",
+        "version":                  "0.0.2",
         "title":                    "SONOS Adapter",
         "desc":                     "This adapter allows to monitor and control SONOS players from ioBroker",
         "authors":                  ["bluefox <bluefox@ccu.io>"],
@@ -18,7 +18,10 @@
     "native": {
         "webserverEnabled": true,
         "webserverPort":    8083,
-        "elapsedInterval":  2000
+        "elapsedInterval":  2000,
+        "devices": [
+            {"name": "Sonos1", "ip" : "0.0.0.0", "room": ""}
+        ]
     },
     "objects": [
 

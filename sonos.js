@@ -5,175 +5,167 @@
  *      Version 0.3
  *      derived from https://github.com/jishi/node-sonos-web-controller by Jimmy Shimizu
  */
-var adapter = require(__dirname + '/../../lib/adapter.js')({
+var adapter = require(__dirname + '/../../lib/adapter.js')('sonos');
 
-    name:           'sonos',
-
-    objectChange: function (id, obj) {
-
-    },
-
-    // {"val": state, "ack":false, "ts":1408294295, "from":"admin.0", "lc":1408294295}
-    // id = sonos.0.192_168_1_55.state
-    stateChange: function (_id, state) {
-        if (state.ack) return;
-        adapter.log.info("adapter sonos  try to control id " + _id + " with " + JSON.stringify(state));
-        // Try to find the object
-        var id = adapter.idToDCS(_id);
-
-        if (id && id.channel && channels[id.channel]) {
-            if (state.val === "false") state.val = false;
-            if (state.val === "true")  state.val = true;
-            if (parseInt(state.val) == state.val) state.val = parseInt(state.val);
-
-            var player = channels[id.channel].player;
-            if (!player) {
-                player = discovery.getPlayerByUUID(channels[id.channel].uuid);
-                channels[id.channel].player = player;
-            }
-            if (player) {
-                if (id.state == 'state_simple') {
-                    if (!state.val)
-                        player.pause();
-                    else
-                        player.play();
-                }
-                else
-                if (id.state == 'muted') {
-                    player.mute(!!state.val); // !! is toBoolean()
-                }
-                else
-                if (id.state == 'volume') {
-                    player.setVolume(state.val);
-                }
-                else //stop,play,pause,next,previous,mute,unmute
-                if (id.state == 'state') {
-                    state.val = state.val.toLowerCase();
-                    if (state.val == "stop") {
-                        player.pause ();
-                    } else
-                    if (state.val == "play") {
-                        player.play ();
-                    } else
-                    if (state.val == "pause") {
-                        player.pause ();
-                    } else
-                    if (state.val == "next") {
-                        player.nextTrack ();
-                    } else
-                    if (state.val == "previous") {
-                        player.previousTrack ();
-                    } else
-                    if (state.val == "mute") {
-                        player.mute (true);
-                    }
-                    if (state.val == "unmute") {
-                        player.mute (false);
-                    }
-                }
-                else if (id.state == 'favorite_set') {
-                    player.replaceWithFavorite(state.val, function (success) {
-                        if (success) {
-                            player.play();
-                            adapter.setState({device: 'root', channel: id.channel, state: 'current_album'},  {val: val, ack: true});
-                            adapter.setState({device: 'root', channel: id.channel, state: 'current_artist'}, {val: val, ack: true});
-                        }
-                    });
-                }
-                else
-                    adapter.log.warn("adapter sonos  try to control unknown id " + id);
-            }
-            else {
-                adapter.log.warn("adapter sonos   SONOS " + channels[id.channel].uuid + " not found");
-            }
-        }
-    },
-
-    install: function () {
-        adapter.createDevice("root", []);
-    },
-
-    unload: function (callback) {
-        try {
-            adapter.log.info('terminating');
-            if (adapter.config.webserverEnabled) {
-                socketServer.server.close();
-            }
-            callback();
-        } catch (e) {
-            callback();
-        }
-    },
-
-    ready: function () {
-        main();
-    },
-
-    // New message arrived. obj is array with current messages
-    message: function (obj) {
-        var wait = false;
-        if (obj) {
-            switch(obj.command) {
-                case 'send':
-                    if (obj.message) {
-                        text2speech(obj.message);
-                    }
-                    break;
-
-                case 'add':
-                    wait = true;
-                    if (obj.message) {
-                        addChannel(obj.message, [], function (err) {
-                            if (obj.callback) adapter.sendTo(obj.from, obj.command, err, obj.callback);
-                        });
-                    } else {
-                        if (obj.callback) adapter.sendTo(obj.from, obj.command, "Invalid IP address: " + obj.message, obj.callback);
-                    }
-                    break;
-
-                case 'browse':
-                    browse(function(res) {
-                        if (obj.callback) adapter.sendTo(obj.from, obj.command, res, obj.callback);
-                    });
-                    wait = true;
-                    break;
-
-                case 'del':
-                case 'delete':
-                    wait = true;
-                    if (obj.message) {
-                        adapter.deleteChannel("root", obj.message, function (err) {
-                            sonosInit();
-                            if (obj.callback) adapter.sendTo(obj.from, obj.command, err, obj.callback);
-                        });
-                    } else {
-                        if (obj.callback) adapter.sendTo(obj.from, obj.command, "Invalid IP address: " + obj.message, obj.callback);
-                    }
-                    break;
-
-                default:
-                    adapter.log.warn("Unknown command: " + obj.command);
-                    break;
-            }
-        }
-
-        if (!wait && obj.callback) {
-            adapter.sendTo(obj.from, obj.command, obj.message, obj.callback);
-        }
-
-        return true;
-    }
+adapter.on('objectChange', function (id, obj) {
 
 });
 
-var io             = require('./node_modules/sonos-web-controller/node_modules/socket.io'),
-    http           = require('http'),
-    static         = require('./node_modules/sonos-web-controller/node_modules/node-static'),
-    fs             = require('fs'),
-    crypto         = require('crypto'),
-    sonosDiscovery = require('sonos-discovery'),
-    path           = require('path'),
-    dgram          = require("dgram");
+// {"val": state, "ack":false, "ts":1408294295, "from":"admin.0", "lc":1408294295}
+// id = sonos.0.192_168_1_55.state
+adapter.on('stateChange', function (_id, state) {
+    if (state.ack) return;
+    adapter.log.info("try to control id " + _id + " with " + JSON.stringify(state));
+    // Try to find the object
+    var id = adapter.idToDCS(_id);
+
+    if (id && id.channel && channels[id.channel]) {
+        if (state.val === "false") state.val = false;
+        if (state.val === "true")  state.val = true;
+        if (parseInt(state.val) == state.val) state.val = parseInt(state.val);
+
+        var player = channels[id.channel].player;
+        if (!player) {
+            player = discovery.getPlayerByUUID(channels[id.channel].uuid);
+            channels[id.channel].player = player;
+        }
+        if (player) {
+            if (id.state == 'state_simple') {
+                if (!state.val) {
+                    player.pause();
+                } else {
+                    player.play();
+                }
+            } else
+            if (id.state == 'muted') {
+                player.mute(!!state.val); // !! is toBoolean()
+            } else
+            if (id.state == 'volume') {
+                player.setVolume(state.val);
+            } else //stop,play,pause,next,previous,mute,unmute
+            if (id.state == 'state') {
+                state.val = state.val.toLowerCase();
+                if (state.val == "stop") {
+                    player.pause ();
+                } else
+                if (state.val == "play") {
+                    player.play ();
+                } else
+                if (state.val == "pause") {
+                    player.pause ();
+                } else
+                if (state.val == "next") {
+                    player.nextTrack ();
+                } else
+                if (state.val == "previous") {
+                    player.previousTrack ();
+                } else
+                if (state.val == "mute") {
+                    player.mute (true);
+                }
+                if (state.val == "unmute") {
+                    player.mute (false);
+                }
+            } else if (id.state == 'favorite_set') {
+                player.replaceWithFavorite(state.val, function (success) {
+                    if (success) {
+                        player.play();
+                        adapter.setState({device: 'root', channel: id.channel, state: 'current_album'},  {val: val, ack: true});
+                        adapter.setState({device: 'root', channel: id.channel, state: 'current_artist'}, {val: val, ack: true});
+                    }
+                });
+            } else {
+                adapter.log.warn("adapter sonos  try to control unknown id " + id);
+            }
+        } else {
+            adapter.log.warn("adapter sonos   SONOS " + channels[id.channel].uuid + " not found");
+        }
+    }
+});
+
+adapter.on('install', function () {
+    adapter.createDevice("root", []);
+});
+
+adapter.on('unload', function (callback) {
+    try {
+        adapter.log.info('terminating');
+        if (adapter.config.webserverEnabled) {
+            socketServer.server.close();
+        }
+        callback();
+    } catch (e) {
+        callback();
+    }
+});
+
+adapter.on('ready', function () {
+    main();
+});
+
+// New message arrived. obj is array with current messages
+adapter.on('message', function (obj) {
+    var wait = false;
+    if (obj) {
+        switch (obj.command) {
+            case 'send':
+                if (obj.message) {
+                    text2speech(obj.message);
+                }
+                break;
+
+            /*case 'add':
+                wait = true;
+                if (obj.message) {
+                    addChannel(obj.message, [], function (err) {
+                        if (obj.callback) adapter.sendTo(obj.from, obj.command, err, obj.callback);
+                    });
+                } else {
+                    if (obj.callback) adapter.sendTo(obj.from, obj.command, "Invalid IP address: " + obj.message, obj.callback);
+                }
+                break;*/
+
+            case 'browse':
+                browse(function (res) {
+                    if (obj.callback) adapter.sendTo(obj.from, obj.command, res, obj.callback);
+                });
+                wait = true;
+                break;
+
+            /*case 'del':
+            case 'delete':
+                wait = true;
+                if (obj.message) {
+                    adapter.deleteChannel("root", obj.message, function (err) {
+                        sonosInit();
+                        if (obj.callback) adapter.sendTo(obj.from, obj.command, err, obj.callback);
+                    });
+                } else {
+                    if (obj.callback) adapter.sendTo(obj.from, obj.command, "Invalid IP address: " + obj.message, obj.callback);
+                }
+                break;
+*/
+            default:
+                adapter.log.warn("Unknown command: " + obj.command);
+                break;
+        }
+    }
+
+    if (!wait && obj.callback) {
+        adapter.sendTo(obj.from, obj.command, obj.message, obj.callback);
+    }
+
+    return true;
+});
+
+var io             = require('./node_modules/sonos-web-controller/node_modules/socket.io');
+var http           = require('http');
+var static         = require('./node_modules/sonos-web-controller/node_modules/node-static');
+var fs             = require('fs');
+var crypto         = require('crypto');
+var sonosDiscovery = require('sonos-discovery');
+var path           = require('path');
+var dgram          = require("dgram");
 
 var channels    = {};
 var server;        // Sonos HTTP server
@@ -184,14 +176,14 @@ function toFormattedTime(time) {
     var hours = Math.floor(time / 3600);
     hours = (hours) ? (hours + ":") : "";
     var min = Math.floor(time / 60) % 60;
-    if (min < 10) min = "0"+min;
+    if (min < 10) min = "0" + min;
     var sec = time % 60;
-    if (sec < 10) sec = "0"+sec;
+    if (sec < 10) sec = "0" + sec;
 
     return hours + min + ":" + sec;
 }
 
-function createChannel(ip, rooms, callback) {
+function createChannel(name, ip, room, callback) {
     var states = {
         'state_simple': {      // media.state -            Text state of player: stop, play, pause (read, write)
             def:    'false',
@@ -327,17 +319,22 @@ function createChannel(ip, rooms, callback) {
     for (var state in states) {
         states_list.push(state);
     }
+    var id = ip.replace(/\./g, '_');
 
-    adapter.createChannel('root', ip, states_list, 'media.music', function () {
-        sonosInit();
+    adapter.createChannel('root', id, states_list, {
+        role: 'media.music',
+        name: name || ip
+    }, {
+        ip: ip
+    }, function () {
         if (callback) callback();
     });
 
-    /*if (rooms) {
-     chObject.rooms = adapter.config.channels[id].rooms;
-     }*/
+    if (room) {
+        adapter.addChannelToEnum('room', room, 'root', id);
+    }
     for (var j = 0; j < states_list.length; j++) {
-        adapter.createState('root', ip, states_list[j], states[states_list[j]]);
+        adapter.createState('root', id, states_list[j], states[states_list[j]]);
     }
 }
 
@@ -413,25 +410,26 @@ function text2speech(fileName, callback) {
     if (callback) callback();
 }
 
-function addChannel (ip, rooms, callback) {
+function addChannel(name, ip, room, callback) {
     adapter.getObject("root", function (err, obj) {
         var channels = [];
         if (err || !obj) {
-            // TODO if root does not exist, channel will not be created
+            // if root does not exist, channel will not be created
             adapter.createDevice('root', [], function () {
-                createChannel(ip, rooms, callback);
+                createChannel(name, ip, room, callback);
             });
         } else {
-            createChannel(ip, rooms, callback);
+            createChannel(name, ip, room, callback);
         }
     });
 }
 
-function takeSonosState (ip, sonosState) {
+function takeSonosState(ip, sonosState) {
     adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
     if (sonosState.playerState != "TRANSITIONING") {
-        adapter.setState({device: 'root', channel: ip, state: 'state_simple'}, {val: sonosState.playerState == "PLAYING", ack: true});
-        adapter.setState({device: 'root', channel: ip, state: 'state'}, {val: (sonosState.playerState == "PAUSED_PLAYBACK") ? 'pause' : ((sonosState.playerState == "PLAYING") ? 'play' : 'stop'), ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'state_simple'}, {val:  sonosState.playerState == "PLAYING", ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'state'},        {val: (sonosState.playerState == "PAUSED_PLAYBACK") ? 'pause' : ((sonosState.playerState == "PLAYING") ? 'play' : 'stop'), ack: true});
+
         if (sonosState.playerState == "PLAYING") {
             if (!channels[ip].elapsedTimer) {
                 channels[ip].elapsedTimer = setInterval(function (ip_) {
@@ -446,8 +444,7 @@ function takeSonosState (ip, sonosState) {
 
                 }, adapter.config.elapsedInterval || 5000, ip);
             }
-        }
-        else {
+        } else {
             if (channels[ip].elapsedTimer) {
                 clearInterval (channels[ip].elapsedTimer);
                 channels[ip].elapsedTimer = null;
@@ -478,7 +475,9 @@ function takeSonosState (ip, sonosState) {
                     if (!fs.exists(fileName)) {
                         var cacheStream = fs.createWriteStream(fileName);
                         res2.pipe(cacheStream);
-                    } else { res2.resume(); }
+                    } else {
+                        res2.resume();
+                    }
                 } else if (res2.statusCode == 404) {
                     // no image exists! link it to the default image.
                     fileName = defaultImg;
@@ -502,11 +501,10 @@ function takeSonosState (ip, sonosState) {
                     }
                     if (fileData) adapter.setBinaryState(stateName, fileData);
                 });
-            }).on('error', function(e) {
+            }).on('error', function (e) {
                 console.log("Got error: " + e.message);
             });
-        }
-        else {
+        } else {
             var fileData = null;
             try {
                 fileData = fs.readFileSync(fileName);
@@ -539,7 +537,7 @@ function takeSonosState (ip, sonosState) {
 
 function takeSonosFavorites(ip, favorites) {
 	var sFavorites = "";
-	for (var favorite in favorites){
+	for (var favorite in favorites) {
         if (favorites[favorite].title) {
             sFavorites += ((sFavorites) ? ", ": "") + favorites[favorite].title;
         }
@@ -551,23 +549,22 @@ function takeSonosFavorites(ip, favorites) {
 function processSonosEvents(event, data) {
     var ids;
     var ip;
+    var i;
     if (event == "topology-change") {
-        if (data.length > 1) {
-            for (var i = 0; i < data[1]; i++) {
-                if (!discovery.players[data[0].uuid]._address) {
-                    discovery.players[data[0].uuid]._address = discovery.players[data[0].uuid].address.replace(/[.\s]+/g, '_');
-                }
+        if (typeof data.length == 'undefined') {
+            if (!discovery.players[data.uuid]._address) {
+                discovery.players[data.uuid]._address = discovery.players[data.uuid].address.replace(/[.\s]+/g, '_');
+            }
 
-                ip = discovery.players[data[0].uuid]._address;
-                if (channels[ip]) {
-                    channels[ip].uuid = data[0].uuid;
-                    adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
-                }
+            ip = discovery.players[data.uuid]._address;
+            if (channels[ip]) {
+                channels[ip].uuid = data.uuid;
+                adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
             }
         } else if (data.length) {
-            for (var i = 0; i < data.length; i++) {
-                if (!discovery.players[data[0].uuid]._address) {
-                    discovery.players[data[0].uuid]._address = discovery.players[data[0].uuid].address.replace(/[.\s]+/g, '_');
+            for (i = 0; i < data.length; i++) {
+                if (!discovery.players[data[i].uuid]._address) {
+                    discovery.players[data[i].uuid]._address = discovery.players[data[i].uuid].address.replace(/[.\s]+/g, '_');
                 }
                 ip = discovery.players[data[i].uuid]._address;
                 if (channels[ip]) {
@@ -577,9 +574,8 @@ function processSonosEvents(event, data) {
             }
         }
     } else if (event == "transport-state") {
-        if (!discovery.players[data.uuid]._address) {
-            discovery.players[data.uuid]._address = discovery.players[data.uuid].address.replace(/[.\s]+/g, '_');
-        }
+        if (!discovery.players[data.uuid]._address) discovery.players[data.uuid]._address = discovery.players[data.uuid].address.replace(/[.\s]+/g, '_');
+
         ip = discovery.players[data.uuid]._address;
         if (channels[ip]) {
             channels[ip].uuid = data.uuid;
@@ -587,9 +583,8 @@ function processSonosEvents(event, data) {
         }
     } else if (event == "group-volume") {
         for (var s in data.playerVolumes) {
-            if (!discovery.players[s]._address) {
-                discovery.players[s]._address = discovery.players[s].address.replace(/[.\s]+/g, '_');
-            }
+            if (!discovery.players[s]._address) discovery.players[s]._address = discovery.players[s].address.replace(/[.\s]+/g, '_');
+
             ip = discovery.players[s]._address;
             if (channels[ip]) {
                 channels[ip].uuid = s;
@@ -600,42 +595,82 @@ function processSonosEvents(event, data) {
     } else if (event == "favorites") {
         // Go through all players
         for (var uuid in discovery.players) {
-            if (!discovery.players[uuid]._address) {
-                discovery.players[uuid]._address = discovery.players[uuid].address.replace(/[.\s]+/g, '_');
-            }
+            if (!discovery.players[uuid]._address) discovery.players[uuid]._address = discovery.players[uuid].address.replace(/[.\s]+/g, '_');
+
             ip = discovery.players[uuid]._address;
-        	if (channels[ip]) {
+            if (channels[ip]) {
                 channels[ip].uuid = uuid;
                 takeSonosFavorites(ip, data);
-    	 	}
+            }
         }
     } else {
         console.log(event + ' ' + data);
     }
 }
 
-function sonosInit() {
+function syncConfig() {
     var dp;
     var chnDp;
     var devChannels = [];
-    delete channels;
     channels = {};
 
     adapter.getDevices(function (err, devices) {
         if (devices) {
             // Go through all devices
             for (var i = 0; i < devices.length; i++) {
-                adapter.getChannels(devices[i].common.name, function (err, _channels) {
-                    for (var j = 0; j < _channels.length; j++) {
-                        var ip = _channels[j].common.name.replace(/[.\s]+/g, '_');
+                adapter.getChannelsOf(devices[i].common.name, function (err, _channels) {
+                    var configToDelete = [];
+                    var configToAdd    = [];
+                    var k;
+                    if (adapter.config.devices) {
+                        for (k = 0; k < adapter.config.devices.length; k++) {
+                            configToAdd.push(adapter.config.devices[k].ip);
+                        }
+                    }
 
-                        channels[ip] = {
+                    for (var j = 0; j < _channels.length; j++) {
+                        var ip = _channels[j].native.ip;
+                        var pos = configToAdd.indexOf(ip);
+                        if (pos != -1) {
+                            configToAdd.splice(pos, 1);
+                            // Check name and room
+                            for (var u = 0; u < adapter.config.devices.length; u++) {
+                                if (adapter.config.devices[u].ip == ip) {
+                                    if (_channels[j].common.name != (adapter.config.devices[u].name || adapter.config.devices[u].ip)) {
+                                        adapter.extendObject(_channels[j]._id, {common: {name: (adapter.config.devices[u].name || adapter.config.devices[u].ip)}});
+                                    }
+                                    if (adapter.config.devices[u].room) {
+                                        adapter.addChannelToEnum('room', adapter.config.devices[u].room, 'root', _channels[j]._id);
+                                    } else {
+                                        adapter.deleteChannelFromEnum('room', 'root', _channels[j]._id);
+                                    }
+                                }
+                            }
+                        } else {
+                            configToDelete.push(ip);
+                        }
+                        channels[ip.replace(/[.\s]+/g, '_')] = {
                             uuid:     "",
                             player:   null,
                             duration: 0,
                             elapsed:  0,
                             obj:      _channels[j]
                         };
+                    }
+
+                    if (configToAdd.length) {
+                        for (var r = 0; r < adapter.config.devices.length; r++) {
+                            if (configToAdd.indexOf(adapter.config.devices[r].ip) != -1) {
+                                addChannel(adapter.config.devices[r].name, adapter.config.devices[r].ip, adapter.config.devices[r].room);
+                            }
+                        }
+                    }
+                    if (configToDelete.length) {
+                        for (var e = 0; e < adapter.config.devices.length; e++) {
+                            if (configToDelete.indexOf(adapter.config.devices[e].ip) != -1) {
+                                adapter.deleteChannel('root', adapter.config.devices[e].ip.replace(/\./g, '_'));
+                            }
+                        }
                     }
                 });
             }
@@ -648,8 +683,8 @@ var playerIps   = [];
 var playerCycle = 0;
 var queues      = {};
 
-function main () {
-    sonosInit ();
+function main() {
+    syncConfig ();
     adapter.subscribeStates('*');
 
     discovery = new sonosDiscovery();
@@ -696,7 +731,9 @@ function main () {
                             if (!fs.exists(fileName)) {
                                 var cacheStream = fs.createWriteStream(fileName);
                                 res2.pipe(cacheStream);
-                            } else { res2.resume(); }
+                            } else {
+                                res2.resume();
+                            }
                         } else if (res2.statusCode == 404) {
                             // no image exists! link it to the default image.
                             //console.log(res2.statusCode, 'linking', fileName)
@@ -714,7 +751,7 @@ function main () {
                             });
                             readCache.pipe(res);
                         });
-                    }).on('error', function(e) {
+                    }).on('error', function (e) {
                         console.log("Got error: " + e.message);
                     });
                 });
@@ -838,7 +875,7 @@ function main () {
 
             socket.on("error", function (e) {
                 console.log(e);
-            })
+            });
         });
     }
 
@@ -848,44 +885,38 @@ function main () {
             var player = discovery.players[uuid];
             players.push(player.convertToSimple());
         }
-        if (socketServer)
-            socketServer.sockets.emit('topology-change', players);
+        if (socketServer) socketServer.sockets.emit('topology-change', players);
 
         processSonosEvents ('topology-change', data);
     });
 
     discovery.on('transport-state', function (data) {
-        if (socketServer)
-            socketServer.sockets.emit('transport-state', data);
+        if (socketServer) socketServer.sockets.emit('transport-state', data);
         processSonosEvents ('transport-state', data);
     });
 
     discovery.on('group-volume', function (data) {
-        if (socketServer)
-            socketServer.sockets.emit('group-volume', data);
+        if (socketServer) socketServer.sockets.emit('group-volume', data);
         processSonosEvents ('group-volume', data);
     });
 
     discovery.on('group-mute', function (data) {
-        if (socketServer)
-            socketServer.sockets.emit('group-mute', data);
+        if (socketServer)socketServer.sockets.emit('group-mute', data);
     });
 
     discovery.on('mute', function (data) {
-        if (socketServer)
-            socketServer.sockets.emit('mute', data);
+        if (socketServer) socketServer.sockets.emit('mute', data);
     });
 
     discovery.on('favorites', function (data) {
-        if (socketServer)
-            socketServer.sockets.emit('favorites', data);
+        if (socketServer) socketServer.sockets.emit('favorites', data);
         processSonosEvents ('favorites', data);
     });
 
     discovery.on('queue-changed', function (data) {
         console.log('queue-changed', data);
         delete queues[data.uuid];
-        loadQueue(data.uuid, socketServer.sockets);
+        if (socketServer)loadQueue(data.uuid, socketServer.sockets);
         processSonosEvents ('queue-changed', data);
     });
 
