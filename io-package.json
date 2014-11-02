@@ -1,7 +1,7 @@
 {
     "common": {
         "name":                     "sonos",
-        "version":                  "0.0.2",
+        "version":                  "0.0.3",
         "title":                    "SONOS Adapter",
         "desc":                     "This adapter allows to monitor and control SONOS players from ioBroker",
         "authors":                  ["bluefox <bluefox@ccu.io>"],
@@ -13,7 +13,8 @@
         "enabled":                  true,
         "icon":                     "sonos.png",
         "keywords":                 ["sonos", "player", "music"],
-        "extIcon":                  "https://raw.githubusercontent.com/ioBroker/ioBroker.sonos/master/admin/sonos.png"
+        "extIcon":                  "https://raw.githubusercontent.com/ioBroker/ioBroker.sonos/master/admin/sonos.png",
+        "localLink":                "http://%ip%:8083"
     },
     "native": {
         "webserverEnabled": true,

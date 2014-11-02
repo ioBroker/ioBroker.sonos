@@ -92,7 +92,9 @@
         getIsAdapterAlive(function (isAlive) {
             getEnums("rooms", function (err, list) {
                 rooms = list;
-                var $grid = _editTable('devices', ['name', 'ip', 'room'], devices, rooms, 400);
+                var $grid = _editTable('devices', ['name', 'ip', 'room'], devices, rooms, 400, function (action, obj) {
+                    devices = getTableResult('devices', ['name', 'ip', 'room']);
+                });
                 if (isAlive) {
                     $grid.jqGrid('navButtonAdd', '#pager-devices', {
                         caption: '',
@@ -145,7 +147,7 @@
         changed = false;
         $('#save').button("disable");
 
-        callback(obj);
+        callback(obj, {localLink: obj.webserverEnabled ? 'http://%ip%:' + obj.webserverPort : ''});
     }
 </script>
 

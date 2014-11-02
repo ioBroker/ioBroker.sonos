@@ -9,6 +9,9 @@ https://github.com/jishi/node-sonos-discovery and
 https://github.com/jishi/node-sonos-web-controller
 
 ## Changelog
+### 0.0.3 (2014-11-01)
+- (bluefox) - support of text to speech and cover image
+
 ### 0.0.2 (2014-11-01)
 - (bluefox) - improve configuration edit
 
