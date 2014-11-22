@@ -747,7 +747,12 @@ function syncConfig() {
                                 for (var u = 0; u < adapter.config.devices.length; u++) {
                                     if (adapter.config.devices[u].ip == ip) {
                                         if (_channels[j].common.name != (adapter.config.devices[u].name || adapter.config.devices[u].ip)) {
-                                            adapter.extendObject(_channels[j]._id, {common: {name: (adapter.config.devices[u].name || adapter.config.devices[u].ip)}});
+                                            adapter.extendObject(_channels[j]._id, {
+                                                common: {
+                                                    name: (adapter.config.devices[u].name || adapter.config.devices[u].ip)
+                                                },
+                                                type: 'channel'
+                                            });
                                         }
                                         if (adapter.config.devices[u].room) {
                                             adapter.addChannelToEnum('room', adapter.config.devices[u].room, 'root', id);
@@ -773,7 +778,7 @@ function syncConfig() {
 
                     if (configToAdd.length) {
                         for (var r = 0; r < adapter.config.devices.length; r++) {
-                            if (configToAdd.indexOf(adapter.config.devices[r].ip) != -1) {
+                            if (adapter.config.devices[r].ip && configToAdd.indexOf(adapter.config.devices[r].ip) != -1) {
                                 addChannel(adapter.config.devices[r].name, adapter.config.devices[r].ip, adapter.config.devices[r].room, function (err, obj) {
                                     adapter.getObject(obj.id, function (err, obj) {
                                         channels[obj.native.ip.replace(/[.\s]+/g, '_')] = {
@@ -790,15 +795,18 @@ function syncConfig() {
                     }
                     if (configToDelete.length) {
                         for (var e = 0; e < configToDelete.length; e++) {
-                            var id = configToDelete[e].ip.replace(/[.\s]+/g, '_');
-                            adapter.deleteChannelFromEnum('room', 'root', id);
-                            adapter.deleteChannel('root', id);
+                            if (configToDelete[e]) {
+                                var id = configToDelete[e].replace(/[.\s]+/g, '_');
+                                adapter.deleteChannelFromEnum('room', 'root', id);
+                                adapter.deleteChannel('root', id);
+                            }
                         }
                     }
                 });
             }
         } else {
             for (var r = 0; r < adapter.config.devices.length; r++) {
+                if (!adapter.config.devices[r].ip) continue;
                 addChannel(adapter.config.devices[r].name, adapter.config.devices[r].ip, adapter.config.devices[r].room, function (err, obj) {
                     adapter.getObject(obj.id, function (err, obj) {
                         channels[obj.native.ip.replace(/[.\s]+/g, '_')] = {
