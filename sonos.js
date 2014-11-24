@@ -88,7 +88,7 @@ adapter.on('stateChange', function (_id, state) {
 });
 
 adapter.on('install', function () {
-    adapter.createDevice("root", []);
+    adapter.createDevice("root", {});
 });
 
 adapter.on('unload', function (callback) {
@@ -104,7 +104,15 @@ adapter.on('unload', function (callback) {
 });
 
 adapter.on('ready', function () {
-    main();
+    adapter.getObject(adapter.namespace + '.root', function (err, obj) {
+        if (!obj || !obj.common || !obj.common.name) {
+            adapter.createDevice("root", {}, function () {
+                main();
+            });
+        } else {
+            main ();
+        }
+    });
 });
 
 // New message arrived. obj is array with current messages
@@ -333,7 +341,7 @@ function createChannel(name, ip, room, callback) {
     }
     var id = ip.replace(/[.\s]+/g, '_');
 
-    adapter.createChannel('root', id, states_list, {
+    adapter.createChannel('root', id, {
         role: 'media.music',
         name: name || ip
     }, {
