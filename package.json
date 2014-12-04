@@ -3,6 +3,9 @@
         "type" : "git",
         "url" : "https://github.com/ioBroker/ioBroker.sonos"
     },
+    "dependencies":{
+        "sonos-web-controller": "https://github.com/jishi/node-sonos-web-controller/tarball/master/"
+    },
     "devDependencies": {
         "grunt": "~0.4.4",
         "grunt-replace": "~0.7.6",

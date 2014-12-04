@@ -9,8 +9,12 @@ https://github.com/jishi/node-sonos-discovery and
 https://github.com/jishi/node-sonos-web-controller
 
 ## Changelog
+### 0.1.0 (2014-12-04)
+- (bluefox) - use sonos-web-controller module as tarball from git
+
 ### 0.0.5 (2014-11-24)
 - (bluefox) - support of new naming concept
+
 
 ### 0.0.4 (2014-11-22)
 - (bluefox) - support of text to speech

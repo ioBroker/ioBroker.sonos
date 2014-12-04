@@ -175,7 +175,7 @@ var http           = require('http');
 var static         = require('./node_modules/sonos-web-controller/node_modules/node-static');
 var fs             = require('fs');
 var crypto         = require('crypto');
-var sonosDiscovery = require('sonos-discovery');
+var sonosDiscovery = require('./node_modules/sonos-web-controller/node_modules/sonos-discovery');
 var path           = require('path');
 var dgram          = require("dgram");
 
