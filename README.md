@@ -9,21 +9,24 @@ https://github.com/jishi/node-sonos-discovery and
 https://github.com/jishi/node-sonos-web-controller
 
 ## Changelog
+### 0.1.2 (2014-12-10)
+- (bluefox) translate grid in config dialog
+
 ### 0.1.0 (2014-12-04)
-- (bluefox) - use sonos-web-controller module as tarball from git
+- (bluefox) use sonos-web-controller module as tarball from git
 
 ### 0.0.5 (2014-11-24)
-- (bluefox) - support of new naming concept
+- (bluefox) support of new naming concept
 
 
 ### 0.0.4 (2014-11-22)
-- (bluefox) - support of text to speech
+- (bluefox) support of text to speech
 
 ### 0.0.3 (2014-11-01)
-- (bluefox) - support of text to speech and cover image
+- (bluefox) support of text to speech and cover image
 
 ### 0.0.2 (2014-11-01)
-- (bluefox) - improve configuration edit
+- (bluefox) improve configuration edit
 
 ## Configuration
 - Web server - [optional] If web server enabled or not
