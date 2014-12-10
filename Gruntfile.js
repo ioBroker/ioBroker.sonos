@@ -5,16 +5,6 @@
 /*jslint node: true */
 "use strict";
 
-
-console.log('TODO: Automate it. Important!!!: ');
-console.log(' To update sonos git');
-console.log(' add to package.json');
-console.log('     "dependencies": {');
-console.log('         "sonos-discovery": "jishi/node-sonos-discovery",');
-console.log('         "sonos-web-controller": "jishi/node-sonos-web-controller.git"');
-console.log('      },');
-console.log(' And call npm install');
-
 module.exports = function (grunt) {
 
     var srcDir    = __dirname + '/';
@@ -27,7 +17,7 @@ module.exports = function (grunt) {
         pkg: pkg,
         clean: {
             all: ['tmp/*.json', 'tmp/*.zip', 'tmp/*.jpg', 'tmp/*.jpeg', 'tmp/*.png',
-                    dstDir + '*.json', dstDir + '*.zip', dstDir + '*.jpg', dstDir + '*.jpeg', dstDir + '*.png']
+                  dstDir + '*.json', dstDir + '*.zip', dstDir + '*.jpg', dstDir + '*.jpeg', dstDir + '*.png']
         },
         replace: {
             core: {
@@ -159,8 +149,8 @@ module.exports = function (grunt) {
                 ]
             }
         }
-
     });
+
     grunt.registerTask('updateReadme', function () {
         var readme = grunt.file.read('README.md');
         var pos = readme.indexOf('## Changelog\r\n');

@@ -1,6 +1,5 @@
 <html>
 
-<!-- these 4 files always have to be included -->
 <link rel="stylesheet" type="text/css" href="../../lib/css/themes/jquery-ui/redmond/jquery-ui.min.css"/>
 <link rel="stylesheet" type="text/css" href="../../lib/css/jqGrid/ui.jqgrid-4.5.4.css"/>
 <link rel="stylesheet" type="text/css" href="../../lib/css/jquery.multiselect-1.13.css"/>
@@ -10,19 +9,6 @@
 <script type="text/javascript" src="../../lib/js/jqGrid/jquery.jqGrid-4.5.4.min.js"></script>
 <script type="text/javascript" src="../../lib/js/jqGrid/i18n/grid.locale-en.js"></script>
 
-
-<!-- optional: use jqGrid
-<link rel="stylesheet" type="text/css" href="../../lib/css/jqGrid/ui.jqgrid-4.5.4.css"/>
-<script type="text/javascript" src="../../lib/js/jqGrid/jquery.jqGrid-4.5.4.min.js"></script>
-<script type="text/javascript" src="../../lib/js/jqGrid/i18n/grid.locale-en.js"></script>
--->
-
-<!-- optional: use multiselect
-<link rel="stylesheet" type="text/css" href="../../lib/css/jquery.multiselect-1.13.css"/>
-<script type="text/javascript" src="../../lib/js/jquery.multiselect-1.13.min.js"></script>
--->
-
-<!-- these two file always have to be included -->
 <link rel="stylesheet" type="text/css" href="../../css/adapter.css"/>
 <script type="text/javascript" src="../../js/translate.js"></script>
 <script type="text/javascript" src="../../js/adapter-settings.js"></script>
@@ -37,10 +23,25 @@
         text-align: right;
     }
 </style>
-<!-- you have to define 2 functions in the global scope: -->
+
 <script type="text/javascript">
     var rooms =   [];
     var devices = [];
+    systemDictionary = {
+        "SONOS adapter settings": {"en": "SONOS adapter settings", "de": "SONOS Adaptereinstellungen", "ru": "Настройки драйвера SONOS "},
+        "SONOS Server settings":  {"en": "SONOS Server settings",  "de": "SONOS Servereinstellungen",  "ru": "Настройки веб сервера SONOS"},
+        "Web server:":            {"en": "Web server:",            "de": "Web-Server:",                "ru": "Веб сервер:"},
+        "Port:":                  {"en": "Port:",                  "de": "Port:",                      "ru": "Порт:"},
+        "Update of elapsed time(ms):": {
+            "en": "Update of elapsed time(ms):",
+            "de": "Update von Lieds-timer(ms):",
+            "ru": "Обновления таймера композиции (мс):"
+        },
+        "SONOS devices":          {"en": "SONOS devices",          "de": "SONOS Geräte",               "ru": "SONOS Устройства"},
+        "name":                   {"en": "Name",                   "de": "Name",                       "ru": "Название"},
+        "ip":                     {"en": "IP Address",             "de": "IP Adresse",                 "ru": "IP Адрес"},
+        "room":                   {"en": "Room",                   "de": "Raum",                       "ru": "Комната"}
+    };
 
     function setValue(id, value) {
         // example: select elements with id=key and class=value and insert value
