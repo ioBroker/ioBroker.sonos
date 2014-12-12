@@ -9,6 +9,9 @@ https://github.com/jishi/node-sonos-discovery and
 https://github.com/jishi/node-sonos-web-controller
 
 ## Changelog
+### 0.1.2 (2014-12-04)
+- (bluefox) - redirect logging messages to ioBroker
+
 ### 0.1.0 (2014-12-04)
 - (bluefox) - use sonos-web-controller module as tarball from git
 

@@ -6,6 +6,8 @@
  *      derived from https://github.com/jishi/node-sonos-web-controller by Jimmy Shimizu
  */
 var adapter = require(__dirname + '/../../lib/adapter.js')('sonos');
+var loglevel = process.argv[3] || 'info';
+var logger = require(__dirname + '/../../lib/logger.js')(loglevel, ['iobroker.log'], undefined, 'sonos');
 
 adapter.on('objectChange', function (id, obj) {
 
@@ -841,7 +843,7 @@ function main() {
     syncConfig ();
     adapter.subscribeStates('*');
 
-    discovery = new sonosDiscovery();
+    discovery = new sonosDiscovery({household: null, log: logger});
 // from here the code is mostly from https://github.com/jishi/node-sonos-web-controller/blob/master/server.js
 
     if (adapter.config.webserverEnabled) {
@@ -1140,6 +1142,6 @@ function main() {
 
     if (adapter.config.webserverEnabled) {
         server.listen(adapter.config.webserverPort);
-        console.log("http sonos server listening on port", adapter.config.webserverPort);
+        adapter.log.info("http sonos server listening on port " + adapter.config.webserverPort);
     }
 }
