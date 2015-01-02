@@ -1,7 +1,7 @@
 {
     "common": {
         "name":                     "sonos",
-        "version":                  "0.1.2",
+        "version":                  "0.1.3",
         "title":                    "SONOS Adapter",
         "desc":                     "This adapter allows to monitor and control SONOS players from ioBroker",
         "authors":                  ["bluefox <bluefox@ccu.io>"],

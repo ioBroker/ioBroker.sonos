@@ -2,12 +2,13 @@
  *      CCU.IO Sonos Adapter
  *      12'2013-2014 Bluefox
  *
- *      Version 0.3
+ *      Version 0.4
  *      derived from https://github.com/jishi/node-sonos-web-controller by Jimmy Shimizu
  */
-var adapter = require(__dirname + '/../../lib/adapter.js')('sonos');
 var loglevel = process.argv[3] || 'info';
-var logger = require(__dirname + '/../../lib/logger.js')(loglevel, ['iobroker.log'], undefined, 'sonos');
+var utils =    require(__dirname + '/lib/utils'); // Get common adapter utils
+var logger =   require(utils.controllerDir + '/lib/logger.js')(loglevel, ['iobroker.log'], undefined, 'sonos');
+var adapter =  utils.adapter('sonos');
 
 adapter.on('objectChange', function (id, obj) {
 

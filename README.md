@@ -9,6 +9,9 @@ https://github.com/jishi/node-sonos-discovery and
 https://github.com/jishi/node-sonos-web-controller
 
 ## Changelog
+### 0.1.3 (2015-01-02)
+- (bluefox) enable npm install
+
 ### 0.1.2 (2014-12-12)
 - (bluefox) redirect logging messages to ioBroker
 
