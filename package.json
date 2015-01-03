@@ -1,7 +1,7 @@
 {
   "name": "iobroker.sonos",
   "description": "The adapter opens a webserver for the ioBroker admin UI.",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "contributors": [
     "bluefox <bluefox@ccu.io>"
   ],

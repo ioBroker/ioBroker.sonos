@@ -17,7 +17,7 @@ adapter.on('objectChange', function (id, obj) {
 // {"val": state, "ack":false, "ts":1408294295, "from":"admin.0", "lc":1408294295}
 // id = sonos.0.192_168_1_55.state
 adapter.on('stateChange', function (_id, state) {
-    if (state.ack) return;
+    if (!state || state.ack) return;
     adapter.log.info("try to control id " + _id + " with " + JSON.stringify(state));
     // Try to find the object
     var id = adapter.idToDCS(_id);

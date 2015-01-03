@@ -9,6 +9,9 @@ https://github.com/jishi/node-sonos-discovery and
 https://github.com/jishi/node-sonos-web-controller
 
 ## Changelog
+### 0.1.4 (2015-01-04)
+- (bluefox) catch errors if states deleted
+
 ### 0.1.3 (2015-01-02)
 - (bluefox) enable npm install
 
