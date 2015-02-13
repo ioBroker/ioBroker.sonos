@@ -18,13 +18,13 @@ adapter.on('objectChange', function (id, obj) {
 // id = sonos.0.192_168_1_55.state
 adapter.on('stateChange', function (_id, state) {
     if (!state || state.ack) return;
-    adapter.log.info("try to control id " + _id + " with " + JSON.stringify(state));
+    adapter.log.info('try to control id ' + _id + ' with ' + JSON.stringify(state));
     // Try to find the object
     var id = adapter.idToDCS(_id);
 
     if (id && id.channel && channels[id.channel]) {
-        if (state.val === "false") state.val = false;
-        if (state.val === "true")  state.val = true;
+        if (state.val === 'false') state.val = false;
+        if (state.val === 'true')  state.val = true;
         if (parseInt(state.val) == state.val) state.val = parseInt(state.val);
 
         var player = channels[id.channel].player;
@@ -79,13 +79,13 @@ adapter.on('stateChange', function (_id, state) {
                 });
             } else
             if (id.state == 'tts') {
-                adapter.log.debug("Play TTS file " + state.val + ' on ' + id);
+                adapter.log.debug('Play TTS file ' + state.val + ' on ' + id);
                 text2speech(state.val, id.channel);
             } else {
-                adapter.log.warn("try to control unknown id " + id);
+                adapter.log.warn('try to control unknown id ' + id);
             }
         } else {
-            adapter.log.warn("SONOS " + channels[id.channel].uuid + " not found");
+            adapter.log.warn('SONOS ' + channels[id.channel].uuid + ' not found');
         }
     }
 });
@@ -415,22 +415,34 @@ function browse(callback) {
 
 var currentFileNum = 0;
 function text2speech(fileName, sonosIp, callback) {
-    if (!adapter.config.webserverEnabled) {
-        adapter.log.warn("Web server must be enabled to play TTS");
-        return;
+    // Extract volume
+    var volume = null;
+
+    var pos = fileName.indexOf(';');
+    if (pos != -1) {
+        volume = fileName.substring(0, pos);
+        fileName = fileName.substring(pos + 1);
     }
 
-    var parts = fileName.split('.');
-    var dest  = 'tts' + (currentFileNum++) + '.' + parts[parts.length - 1];
-    if (currentFileNum > 10) currentFileNum = 0;
-    // Copy this file
-    if (fileName != path.join(cacheDir, dest)) {
-        try {
-            fs.createReadStream(fileName).pipe(fs.createWriteStream(path.join(cacheDir, dest)));
-        } catch (e) {
-            adapter.log.error (e);
+    if (!fileName.match(/^http(s)?:\/\//)) {
+        if (!adapter.config.webserverEnabled) {
+            adapter.log.warn("Web server must be enabled to play TTS");
             return;
         }
+
+        var parts = fileName.split('.');
+        var dest  = 'tts' + (currentFileNum++) + '.' + parts[parts.length - 1];
+        if (currentFileNum > 10) currentFileNum = 0;
+        // Copy this file
+        if (fileName != path.join(cacheDir, dest)) {
+            try {
+                fs.createReadStream(fileName).pipe(fs.createWriteStream(path.join(cacheDir, dest)));
+            } catch (e) {
+                adapter.log.error(e);
+                return;
+            }
+        }
+        fileName = "http://" + discovery.localEndpoint + ":" + adapter.config.webserverPort + "/tts/" + dest;
     }
     if (sonosIp) sonosIp = sonosIp.replace(/[.\s]+/g, '_');
 
@@ -441,14 +453,13 @@ function text2speech(fileName, sonosIp, callback) {
         var ip = discovery.players[uuid]._address;
 
         if (sonosIp && ip != sonosIp) continue;
-
-        setTimeout (playOnSonos, 10, "http://" + discovery.localEndpoint + ":" + adapter.config.webserverPort + "/tts/" + dest, uuid);
+        setTimeout(playOnSonos, 10, fileName, uuid, volume);
     }
 
     if (callback) callback();
 }
 
-function playOnSonos(uri, sonosUuid) {
+function playOnSonos(uri, sonosUuid, volume) {
     if (!discovery.players[sonosUuid].tts) {
         discovery.players[sonosUuid].tts = discovery.players[sonosUuid].getState();
         discovery.players[sonosUuid].tts.time = (new Date()).getTime();
@@ -459,18 +470,11 @@ function playOnSonos(uri, sonosUuid) {
         return;
     }
 
-    // TODO Set volume, unmute
-    // Use the preset action to play the tts file
-    /*var tts_params = {
-        "players": [{
-            "roomName": discovery.players[sonosUuid].roomName,
-            "volume":   discovery.players[sonosUuid].getState().volume
-        }],
-        "state": "play",
-        "uri":   uri,
-        "playMode": "NORMAL"
-    };
-    discovery.applyPreset(tts_params);*/
+    var oldVolume = discovery.players[sonosUuid]._volume;
+    var oldIsMute = discovery.players[sonosUuid]._isMute;
+    if (oldVolume != volume) discovery.players[sonosUuid].setVolume(volume);
+    if (oldIsMute) discovery.players[sonosUuid].groupMute(false);
+
     discovery.players[sonosUuid].addURIToQueue(uri, '', function (code, res) {
         if (code) {
             // Find out added track
@@ -487,8 +491,18 @@ function playOnSonos(uri, sonosUuid) {
                     pos = data.indexOf('<');
                     if (pos != -1) {
                         data = data.substring(0, pos);
+                        if (!discovery.players[sonosUuid].tts) {
+                            adapter.log.warn('Cannot restore sonos state');
+                            return;
+                        }
+
                         discovery.players[sonosUuid].tts.addedTrack = parseInt(data, 10);
                         discovery.players[sonosUuid].seek(discovery.players[sonosUuid].tts.addedTrack, function (code) {
+                            // Set old volume
+                            if (oldVolume != volume) discovery.players[sonosUuid].setVolume(oldVolume);
+                            if (oldIsMute) discovery.players[sonosUuid].groupMute(true);
+
+                            // Restore playing
                             if (discovery.players[sonosUuid].tts.playerState != 'PLAYING') {
                                 discovery.players[sonosUuid].play();
                             }
@@ -711,7 +725,9 @@ function processSonosEvents(event, data) {
             if (channels[ip]) {
                 channels[ip].uuid = s;
                 adapter.setState({device: 'root', channel: ip, state: 'volume'}, {val: data.playerVolumes[s], ack: true});
-                adapter.setState({device: 'root', channel: ip, state: 'muted'},  {val: data.groupState.mute, ack: true});
+                adapter.setState({device: 'root', channel: ip, state: 'muted'},  {val: data.groupState.mute,  ack: true});
+                discovery.players[s]._isMuted = data.groupState.mute;
+                discovery.players[s]._volume  = data.playerVolumes[s];
             }
         }
     } else if (event == "favorites") {
