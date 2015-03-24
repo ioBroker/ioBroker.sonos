@@ -49,25 +49,25 @@ adapter.on('stateChange', function (_id, state) {
             if (id.state == 'state') {
                 state.val = state.val.toLowerCase();
                 if (state.val == "stop") {
-                    player.pause ();
+                    player.pause();
                 } else
                 if (state.val == "play") {
-                    player.play ();
+                    player.play();
                 } else
                 if (state.val == "pause") {
-                    player.pause ();
+                    player.pause();
                 } else
                 if (state.val == "next") {
-                    player.nextTrack ();
+                    player.nextTrack();
                 } else
                 if (state.val == "previous") {
-                    player.previousTrack ();
+                    player.previousTrack();
                 } else
                 if (state.val == "mute") {
-                    player.mute (true);
+                    player.mute(true);
                 }
                 if (state.val == "unmute") {
-                    player.mute (false);
+                    player.mute(false);
                 }
             } else if (id.state == 'favorites_set') {
                 player.replaceWithFavorite(state.val, function (success) {
@@ -124,9 +124,7 @@ adapter.on('message', function (obj) {
     if (obj) {
         switch (obj.command) {
             case 'send':
-                if (obj.message) {
-                    text2speech(obj.message);
-                }
+                if (obj.message) text2speech(obj.message);
                 break;
 
             /*case 'add':
@@ -459,12 +457,17 @@ function text2speech(fileName, sonosIp, callback) {
     if (callback) callback();
 }
 
+var audioExtensions = ["mp3", "aiff", "flac", "less", "wav"];
+
 function playOnSonos(uri, sonosUuid, volume) {
-    if (!discovery.players[sonosUuid].tts) {
-        discovery.players[sonosUuid].tts = discovery.players[sonosUuid].getState();
-        discovery.players[sonosUuid].tts.time = (new Date()).getTime();
+    var now = (new Date()).getTime();
+
+    if (!discovery.players[sonosUuid].tts || now - discovery.players[sonosUuid].tts.time > 30000) {
+        adapter.log.info('Play on sonos[' + sonosUuid + ']: ' + uri + ', Volume: ' + volume);
+        discovery.players[sonosUuid].tts = JSON.parse(JSON.stringify(discovery.players[sonosUuid].getState()));
+        discovery.players[sonosUuid].tts.time = now;
     } else {
-        adapter.log.warn('Play text2speech during another still playing');
+        adapter.log.info('Queue on sonos[' + sonosUuid + ']: ' + uri + ', Volume: ' + volume);
         discovery.players[sonosUuid].queuedTts = discovery.players[sonosUuid].queuedTts || [];
         discovery.players[sonosUuid].queuedTts.push(uri);
         return;
@@ -472,46 +475,66 @@ function playOnSonos(uri, sonosUuid, volume) {
 
     var oldVolume = discovery.players[sonosUuid]._volume;
     var oldIsMute = discovery.players[sonosUuid]._isMute;
-    if (oldVolume != volume) discovery.players[sonosUuid].setVolume(volume);
+
+    if (volume === 'null' || volume === 'undefined') volume = 0;
+
+    if (volume && oldVolume != volume) {
+        discovery.players[sonosUuid].setVolume(volume);
+    }
     if (oldIsMute) discovery.players[sonosUuid].groupMute(false);
 
-    discovery.players[sonosUuid].addURIToQueue(uri, '', function (code, res) {
-        if (code) {
-            // Find out added track
-            var data = "";
-            res.setEncoding('utf8');
-            res.on('data', function (chunk) {
-                data += chunk.toString();
-            });
-            res.on('end', function () {
-                // Find queued element
-                var pos = data.indexOf('<FirstTrackNumberEnqueued>');
-                if (pos != -1) {
-                    data = data.substring(pos + '<FirstTrackNumberEnqueued>'.length);
-                    pos = data.indexOf('<');
+    var parts = discovery.players[sonosUuid].tts.currentTrack.uri ? discovery.players[sonosUuid].tts.currentTrack.uri.split('.') : ['none'];
+
+    //console.log('Current uri: ' + discovery.players[sonosUuid].tts.currentTrack.uri);
+
+    if (discovery.players[sonosUuid].tts.currentTrack.uri &&
+         ((discovery.players[sonosUuid].tts.currentTrack.uri.indexOf("x-file-cifs:") != -1) ||
+          (discovery.players[sonosUuid].tts.currentTrack.uri.indexOf("x-sonos-spotify:") != -1) ||
+          (audioExtensions.indexOf(parts[parts.length - 1]) != -1))
+       ) {
+        discovery.players[sonosUuid].tts.radio = false;
+        discovery.players[sonosUuid].addURIToQueue(uri, '', function (code, res) {
+            if (code) {
+                // Find out added track
+                var data = "";
+                res.setEncoding('utf8');
+                res.on('data', function (chunk) {
+                    data += chunk.toString();
+                });
+                res.on('end', function () {
+                    // Find queued element
+                    var pos = data.indexOf('<FirstTrackNumberEnqueued>');
                     if (pos != -1) {
-                        data = data.substring(0, pos);
-                        if (!discovery.players[sonosUuid].tts) {
-                            adapter.log.warn('Cannot restore sonos state');
-                            return;
-                        }
+                        data = data.substring(pos + '<FirstTrackNumberEnqueued>'.length);
+                        pos = data.indexOf('<');
+                        if (pos != -1) {
+                            data = data.substring(0, pos);
 
-                        discovery.players[sonosUuid].tts.addedTrack = parseInt(data, 10);
-                        discovery.players[sonosUuid].seek(discovery.players[sonosUuid].tts.addedTrack, function (code) {
-                            // Set old volume
-                            if (oldVolume != volume) discovery.players[sonosUuid].setVolume(oldVolume);
-                            if (oldIsMute) discovery.players[sonosUuid].groupMute(true);
-
-                            // Restore playing
-                            if (discovery.players[sonosUuid].tts.playerState != 'PLAYING') {
-                                discovery.players[sonosUuid].play();
+                            if (!discovery.players[sonosUuid].tts) {
+                                adapter.log.warn('Cannot restore sonos state');
+                                return;
                             }
-                        });
+                            discovery.players[sonosUuid].tts.addedTrack = parseInt(data, 10);
+
+                            discovery.players[sonosUuid].seek(discovery.players[sonosUuid].tts.addedTrack, function (code) {
+                                // Send command PLAY
+                                if (discovery.players[sonosUuid].tts.playerState != 'PLAYING') {
+                                    discovery.players[sonosUuid].play();
+                                }
+                            });
+                        }
                     }
-                }
-            });
-        }
-    });
+                });
+            }
+        });
+    } else {
+        // Radio
+        discovery.players[sonosUuid].tts.radio = true;
+        discovery.players[sonosUuid].setAVTransportURI(uri, '', function (code, res) {
+            // Send command PLAY
+            discovery.players[sonosUuid].play();
+        });
+    }
 }
 
 function addChannel(name, ip, room, callback) {
@@ -530,6 +553,16 @@ function addChannel(name, ip, room, callback) {
 function takeSonosState(ip, sonosState) {
     adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
 
+    // If other files queued
+    if (!discovery.players[channels[ip].uuid].tts &&
+        discovery.players[channels[ip].uuid].queuedTts && discovery.players[channels[ip].uuid].queuedTts.length) {
+        var uri = discovery.players[channels[ip].uuid].queuedTts.pop();
+        var uuid = channels[ip].uuid;
+        setTimeout(function () {
+            playOnSonos(uri, uuid);
+        }, 0);
+    }
+
     if (sonosState.playerState != "TRANSITIONING") {
         adapter.setState({device: 'root', channel: ip, state: 'state_simple'}, {val:  sonosState.playerState == "PLAYING", ack: true});
         adapter.setState({device: 'root', channel: ip, state: 'state'},        {val: (sonosState.playerState == "PAUSED_PLAYBACK") ? 'pause' : ((sonosState.playerState == "PLAYING") ? 'play' : 'stop'), ack: true});
@@ -541,32 +574,40 @@ function takeSonosState(ip, sonosState) {
 
             var player = discovery.players[channels[ip].uuid];
             var tts = player.tts;
-            player.tts = null;
-
-            // Remove added track
-            player.removeTrackFromQueue(tts.addedTrack);
 
             // Restore state before tts
+            adapter.log.info('Restore state: volume - ' +  tts.volume + ', mute: ' + tts.mute + ', uri: ' + tts.currentTrack.uri);
             player.setVolume(tts.volume);
             player.mute(tts.mute);
 
-            // Set old track nomber
-            player.seek(tts.trackNo, function (code, res) {
-                // Set elapsed time
-                player.trackSeek(tts.elapsedTime, function (code, res) {
-
-                    // If other files queued
-                    if (discovery.players[channels[ip].uuid].queuedTts && discovery.players[channels[ip].uuid].queuedTts.length) {
-                        playOnSonos(discovery.players[channels[ip].uuid].queuedTts.pop(), channels[ip].uuid);
-                    } else
+            if (tts.radio) {
+                if (tts.playerState != "PLAYING") {
+                    player.tts = null;
+                }
+                player.setAVTransportURI(tts.currentTrack.uri, '', function (code, res) {
+                    player.tts = null;
                     // Restore play state if was play
                     if (tts.playerState == "PLAYING") {
                         player.play();
                     }
                 });
-            });
-        }
+            } else {
+                // Remove added track
+                player.removeTrackFromQueue(tts.addedTrack);
 
+                // Set old track nomber
+                player.seek(tts.trackNo, function (code, res) {
+                    player.tts = null;
+                    // Set elapsed time
+                    player.trackSeek(tts.elapsedTime, function (code, res) {
+                        // Restore play state if was play
+                        if (tts.playerState == "PLAYING") {
+                            player.play();
+                        }
+                    });
+                });
+            }
+        }
 
         if (sonosState.playerState == "PLAYING") {
             if (!channels[ip].elapsedTimer) {

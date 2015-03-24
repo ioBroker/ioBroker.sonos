@@ -1,7 +1,7 @@
 {
     "common": {
         "name":                     "sonos",
-        "version":                  "0.1.5",
+        "version":                  "0.1.6",
         "title":                    "SONOS Adapter",
         "desc":                     "This adapter allows to monitor and control SONOS players from ioBroker",
         "authors":                  ["bluefox <bluefox@ccu.io>"],
@@ -10,11 +10,13 @@
         "mode":                     "daemon",
         "loglevel":                 "info",
         "messagebox":               true,
+        "readme":                   "https://github.com/ioBroker/ioBroker.sonos/blob/master/README.md",
         "enabled":                  true,
         "icon":                     "sonos.png",
         "keywords":                 ["sonos", "player", "music"],
         "extIcon":                  "https://raw.githubusercontent.com/ioBroker/ioBroker.sonos/master/admin/sonos.png",
-        "localLink":                "http://%ip%:8083"
+        "localLink":                "http://%ip%:8083",
+		"type":                     "media"
     },
     "native": {
         "webserverEnabled": true,

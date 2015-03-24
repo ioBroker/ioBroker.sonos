@@ -9,8 +9,12 @@ https://github.com/jishi/node-sonos-discovery and
 https://github.com/jishi/node-sonos-web-controller
 
 ## Changelog
+### 0.1.6 (2015-02-25)
+- (bluefox) implement tts if radio is playing
+
 ### 0.1.5 (2015-02-13)
 - (bluefox) set volume by TTS
+
 
 ### 0.1.4 (2015-01-04)
 - (bluefox) catch errors if states deleted
