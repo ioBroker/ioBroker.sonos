@@ -15,7 +15,7 @@
         "icon":                     "sonos.png",
         "keywords":                 ["sonos", "player", "music"],
         "extIcon":                  "https://raw.githubusercontent.com/ioBroker/ioBroker.sonos/master/admin/sonos.png",
-        "localLink":                "http://%ip%:8083",
+        "localLink":                "http://%ip%:%webserverPort%",
 		"type":                     "media"
     },
     "native": {
