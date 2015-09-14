@@ -73,8 +73,8 @@ adapter.on('stateChange', function (_id, state) {
                 player.replaceWithFavorite(state.val, function (success) {
                     if (success) {
                         player.play();
-                        adapter.setState({device: 'root', channel: id.channel, state: 'current_album'},  {val: val, ack: true});
-                        adapter.setState({device: 'root', channel: id.channel, state: 'current_artist'}, {val: val, ack: true});
+                        adapter.setState({device: 'root', channel: id.channel, state: 'current_album'},  {val: state.val, ack: true});
+                        adapter.setState({device: 'root', channel: id.channel, state: 'current_artist'}, {val: state.val, ack: true});
                     }
                 });
             } else
