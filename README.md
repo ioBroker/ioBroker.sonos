@@ -9,6 +9,9 @@ https://github.com/jishi/node-sonos-discovery and
 https://github.com/jishi/node-sonos-web-controller
 
 ## Changelog
+### 0.1.7 (2015-09-14)
+- (bluefox) fix favorites set
+
 ### 0.1.6 (2015-02-25)
 - (bluefox) implement tts if radio is playing
 
