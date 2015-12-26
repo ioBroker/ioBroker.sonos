@@ -79,10 +79,10 @@ adapter.on('stateChange', function (_id, state) {
                 });
             } else
             if (id.state == 'tts') {
-                adapter.log.debug('Play TTS file ' + state.val + ' on ' + id);
+                adapter.log.debug('Play TTS file ' + state.val + ' on ' + id.channel);
                 text2speech(state.val, id.channel);
             } else {
-                adapter.log.warn('try to control unknown id ' + id);
+                adapter.log.warn('try to control unknown id ' + JSON.stringify(id));
             }
         } else {
             adapter.log.warn('SONOS ' + channels[id.channel].uuid + ' not found');
