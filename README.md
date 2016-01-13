@@ -8,6 +8,8 @@ Used packets from Jimmy Shimizu
 https://github.com/jishi/node-sonos-discovery and 
 https://github.com/jishi/node-sonos-web-controller
 
+To allow using sayIt adapter with sonos, be sure that web adapter is instatiated and running too. Web adapter is required to enable SONOS to read the generated MP3 file from sayIt.
+
 ## Changelog
 ### 0.1.7 (2015-09-14)
 - (bluefox) fix favorites set
