@@ -285,6 +285,15 @@ function createChannel(name, ip, room, callback) {
             role:   'media.current.duration',
             desc:   'Duration of current played song in seconds'
         },
+        'current_type': {             // media.type -            type of stream (read only)
+            def:    '',
+            type:   'string',
+            read:   'true',
+            write:  'false',
+            role:   'media.current.type',
+            values: '0,1',
+            desc:   'Type of Stream (0 = track, 1 = radio)'
+        },
         'alive': {             // indicator.reachable -    if player alive (read only)
             type:   'boolean',
             read:   'true',
@@ -630,10 +639,33 @@ function takeSonosState(ip, sonosState) {
             }
         }
     }
+
+    // [hraab]
+    // type: radio|track
+    // when radio:
+    //   radioShowMetaData (current show, contains an id separated by comma)
+    //   streamInfo (kind of currently played title and artist info)
+    //   title (== station)
+    //
+    // Still work to do:
+    // - Tracks w/o Album name keeps album name from previous track or some random album. Don't know if this is already wrong from SONOS API.
+
+    if (sonosState.currentTrack.type == 'radio') {
+        var idx = sonosState.currentTrack.radioShowMetaData.lastIndexOf(',');
+        var show = (idx > -1 ? sonosState.currentTrack.radioShowMetaData.substr(0, idx) : sonosState.currentTrack.radioShowMetaData);
+        adapter.setState({device: 'root', channel: ip, state: 'current_album'},      {val: show, ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'current_artist'},     {val: sonosState.currentTrack.streamInfo, ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'current_title'},      {val: sonosState.currentTrack.title, ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'current_type'},   {val: '1', ack: true});
+    }
+    else {
+        adapter.setState({device: 'root', channel: ip, state: 'current_album'},      {val: sonosState.currentTrack.album, ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'current_artist'},     {val: sonosState.currentTrack.artist, ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'current_title'},      {val: sonosState.currentTrack.title, ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'current_type'},   {val: '0', ack: true});
+    }
+
     // elapsed time
-    adapter.setState({device: 'root', channel: ip, state: 'current_album'},      {val: sonosState.currentTrack.album, ack: true});
-    adapter.setState({device: 'root', channel: ip, state: 'current_artist'},     {val: sonosState.currentTrack.artist, ack: true});
-    adapter.setState({device: 'root', channel: ip, state: 'current_title'},      {val: sonosState.currentTrack.title, ack: true});
     adapter.setState({device: 'root', channel: ip, state: 'current_duration'},   {val: sonosState.currentTrack.duration, ack: true});
     adapter.setState({device: 'root', channel: ip, state: 'current_duration_s'}, {val: toFormattedTime(sonosState.currentTrack.duration), ack: true});
 
@@ -644,52 +676,45 @@ function takeSonosState(ip, sonosState) {
         var defaultImg = __dirname + '/node_modules/sonos-web-controller/lib/browse_missing_album_art.png';
 
         if (!fs.existsSync(fileName)) {
+            adapter.log.debug("Cover file does not exist. Fetching via HTTP");
             http.get({
                 hostname: discovery.players[channels[ip].uuid].address,
                 port: 1400,
                 path: sonosState.currentTrack.albumArtURI
             }, function (res2) {
+                adapter.log.debug("HTTP status code " + res2.statusCode);
                 if (res2.statusCode == 200) {
-                    if (!fs.exists(fileName)) {
+                    if (!fs.existsSync(fileName)) {
                         var cacheStream = fs.createWriteStream(fileName);
-                        res2.pipe(cacheStream);
+                        res2.pipe(cacheStream).on('finish', function() {
+                            readCoverFileToState(fileName, stateName, ip);
+                        });
                     } else {
+                        adapter.log.debug("Not writing to cache");
                         res2.resume();
                     }
                 } else if (res2.statusCode == 404) {
                     // no image exists! link it to the default image.
                     fileName = defaultImg;
                     res2.resume();
+                    readCoverFileToState(fileName, stateName, ip);
                 }
 
                 res2.on('end', function () {
-                    var fileData = null;
-                    try {
-                        fileData = fs.readFileSync(fileName);
-                    } catch (e) {
-                        adapter.log.warn("Cannot read file: " + e);
-                    }
-                    // If error or null length file, read standart cover file
-                    if (!fileData) {
-                        try {
-                            fileData = fs.readFileSync(defaultImg);
-                        } catch (e) {
-                            adapter.log.warn("Cannot read file: " + e);
-                        }
-                    }
-                    if (fileData) adapter.setBinaryState(stateName, fileData);
+                    adapter.log.debug("Response 'end' event");
                 });
             }).on('error', function (e) {
                 adapter.log.warn("Got error: " + e.message);
             });
         } else {
+            adapter.log.debug("Cover exists. Try reading from fs");
             var fileData = null;
             try {
                 fileData = fs.readFileSync(fileName);
             } catch (e) {
                 adapter.log.warn("Cannot read file: " + e);
             }
-            // If error or null length file, read standart cover file
+            // If error or null length file, read standard cover file
             if (!fileData) {
                 try {
                     fileData = fs.readFileSync(defaultImg);
@@ -697,11 +722,12 @@ function takeSonosState(ip, sonosState) {
                     adapter.log.warn("Cannot read file: " + e);
                 }
             }
-            if (fileData) adapter.setBinaryState(stateName, fileData);
+            if (fileData) adapter.setBinaryState(stateName, fileData, function () {
+                adapter.setState({device: 'root', channel: ip, state: 'current_cover'}, {val: '/state/' + stateName, ack: true});
+            });
         }
 
         lastCover = sonosState.currentTrack.albumArtURI;
-        adapter.setState({device: 'root', channel: ip, state: 'current_cover'},      {val: '/state/' + stateName, ack: true});
     }
     adapter.setState({device: 'root', channel: ip, state: 'current_elapsed'},    {val: sonosState.elapsedTime, ack: true});
     channels[ip].elapsed  = sonosState.elapsedTime;
@@ -712,6 +738,28 @@ function takeSonosState(ip, sonosState) {
         adapter.setState({device: 'root', channel: ip, state: 'muted'},          {val: sonosState.groupState.mute, ack: true});
     }
 }
+
+function readCoverFileToState(fileName, stateName, ip) {
+    var fileData = null;
+    try {
+        fileData = fs.readFileSync(fileName);
+    } catch (e) {
+        adapter.log.warn("Cannot read file: " + e);
+    }
+    // If error or null length file, read standard cover file
+    if (!fileData) {
+        try {
+            fileData = fs.readFileSync(defaultImg);
+        } catch (e) {
+            adapter.log.warn("Cannot read file: " + e);
+        }
+    }
+    if (fileData) adapter.setBinaryState(stateName, fileData, function () {
+        adapter.setState({device: 'root', channel: ip, state: 'current_cover'}, {val: '/state/' + stateName, ack: true});
+    });
+}
+
+
 
 function takeSonosFavorites(ip, favorites) {
 	var sFavorites = "";
