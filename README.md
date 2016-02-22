@@ -11,6 +11,11 @@ https://github.com/jishi/node-sonos-web-controller
 To allow using sayIt adapter with sonos, be sure that web adapter is instatiated and running too. Web adapter is required to enable SONOS to read the generated MP3 file from sayIt.
 
 ## Changelog
+### 0.1.8 (2016-02-22)
+- (hagen) - Better handling of radio stations (show -> album, streamInfo -> artist)
+- (hagen) New state 'current_type' to tell if a track or radio is playing
+- (hagen) (Hopefully) fixed the unreliable cover art update
+
 ### 0.1.7 (2015-09-14)
 - (bluefox) fix favorites set
 
@@ -58,7 +63,7 @@ To allow using sayIt adapter with sonos, be sure that web adapter is instatiated
 
 The MIT License (MIT)
 
-Copyright (c) 2014, bluefox
+Copyright (c) 2014-2016, bluefox
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
