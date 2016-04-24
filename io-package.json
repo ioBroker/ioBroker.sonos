@@ -20,7 +20,7 @@
     },
     "native": {
         "webserverEnabled": true,
-        "webserverPort":    8083,
+        "webserverPort":    8080,
         "elapsedInterval":  2000,
         "devices": [
             {"name": "Sonos1", "ip" : "0.0.0.0", "room": ""}
