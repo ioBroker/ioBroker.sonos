@@ -2,6 +2,12 @@
 ioBroker.sonos
 ==============
 
+[![NPM version](http://img.shields.io/npm/v/iobroker.sonos.svg)](https://www.npmjs.com/package/iobroker.sonos)
+[![Downloads](https://img.shields.io/npm/dm/iobroker.sonos.svg)](https://www.npmjs.com/package/iobroker.sonos)
+
+[![NPM](https://nodei.co/npm/iobroker.sonos.png?downloads=true)](https://nodei.co/npm/iobroker.sonos/)
+
+
 Control and monitor SONOS player from ioBroker.
 
 Used packets from Jimmy Shimizu
@@ -11,6 +17,9 @@ https://github.com/jishi/node-sonos-web-controller
 To allow using sayIt adapter with sonos, be sure that web adapter is instatiated and running too. Web adapter is required to enable SONOS to read the generated MP3 file from sayIt.
 
 ## Changelog
+### 0.1.9 (2016-05-20)
+- (bluefox) change default port to 8080
+
 ### 0.1.8 (2016-02-22)
 - (hagen) - Better handling of radio stations (show -> album, streamInfo -> artist)
 - (hagen) New state 'current_type' to tell if a track or radio is playing
