@@ -17,6 +17,9 @@ https://github.com/jishi/node-sonos-web-controller
 To allow using sayIt adapter with sonos, be sure that web adapter is instatiated and running too. Web adapter is required to enable SONOS to read the generated MP3 file from sayIt.
 
 ## Changelog
+### 0.1.10 (2016-05-26)
+- (bluefox) check type of "state"
+
 ### 0.1.9 (2016-05-20)
 - (bluefox) change default port to 8080
 

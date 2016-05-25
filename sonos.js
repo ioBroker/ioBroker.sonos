@@ -33,43 +33,49 @@ adapter.on('stateChange', function (_id, state) {
             channels[id.channel].player = player;
         }
         if (player) {
-            if (id.state == 'state_simple') {
+            if (id.state === 'state_simple') {
                 if (!state.val) {
                     player.pause();
                 } else {
                     player.play();
                 }
             } else
-            if (id.state == 'muted') {
+            if (id.state === 'muted') {
                 player.mute(!!state.val); // !! is toBoolean()
             } else
-            if (id.state == 'volume') {
+            if (id.state === 'volume') {
                 player.setVolume(state.val);
             } else //stop,play,pause,next,previous,mute,unmute
-            if (id.state == 'state') {
-                state.val = state.val.toLowerCase();
-                if (state.val == "stop") {
-                    player.pause();
-                } else
-                if (state.val == "play") {
-                    player.play();
-                } else
-                if (state.val == "pause") {
-                    player.pause();
-                } else
-                if (state.val == "next") {
-                    player.nextTrack();
-                } else
-                if (state.val == "previous") {
-                    player.previousTrack();
-                } else
-                if (state.val == "mute") {
-                    player.mute(true);
+            if (id.state === 'state') {
+                if (state.val && typeof state.val === 'string') {
+                    state.val = state.val.toLowerCase();
+                    if (state.val === 'stop') {
+                        player.pause();
+                    } else
+                    if (state.val === 'play') {
+                        player.play();
+                    } else
+                    if (state.val === 'pause') {
+                        player.pause();
+                    } else
+                    if (state.val === 'next') {
+                        player.nextTrack();
+                    } else
+                    if (state.val == 'previous') {
+                        player.previousTrack();
+                    } else
+                    if (state.val === 'mute') {
+                        player.mute(true);
+                    } else
+                    if (state.val === 'unmute') {
+                        player.mute(false);
+                    } else {
+                        adapter.log.warn('Unknown state: ' + state.val);
+                    }
+                } else {
+                    adapter.log.warn('Invalid state: ' + state.val);
                 }
-                if (state.val == "unmute") {
-                    player.mute(false);
-                }
-            } else if (id.state == 'favorites_set') {
+            } else if (id.state === 'favorites_set') {
                 player.replaceWithFavorite(state.val, function (success) {
                     if (success) {
                         player.play();
@@ -78,7 +84,7 @@ adapter.on('stateChange', function (_id, state) {
                     }
                 });
             } else
-            if (id.state == 'tts') {
+            if (id.state === 'tts') {
                 adapter.log.debug('Play TTS file ' + state.val + ' on ' + id.channel);
                 text2speech(state.val, id.channel);
             } else {
@@ -91,7 +97,7 @@ adapter.on('stateChange', function (_id, state) {
 });
 
 adapter.on('install', function () {
-    adapter.createDevice("root", {});
+    adapter.createDevice('root', {});
 });
 
 adapter.on('unload', function (callback) {

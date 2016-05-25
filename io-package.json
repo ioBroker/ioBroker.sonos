@@ -1,10 +1,17 @@
 {
     "common": {
         "name":                     "sonos",
-        "version":                  "0.1.9",
+        "version":                  "0.1.10",
+        "news": {
+            "0.1.10": {
+                "en": "check type of \"state\"",
+                "de": "check type of \"state\"",
+                "ru": "check type of \"state\""
+            }
+        },
         "title":                    "SONOS Adapter",
         "desc":                     "This adapter allows to monitor and control SONOS players from ioBroker",
-        "authors":                  ["bluefox <bluefox@ccu.io>"],
+        "authors":                  ["bluefox <dogafox@gmail.com>"],
         "license":                  "MIT",
         "platform":                 "Javascript/Node.js",
         "mode":                     "daemon",
