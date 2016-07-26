@@ -565,6 +565,9 @@ function addChannel(name, ip, room, callback) {
     });
 }
 
+var lastMetaData = '',
+    lastFavoriteUri = '';
+
 function takeSonosState(ip, sonosState) {
     adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
 
@@ -599,12 +602,32 @@ function takeSonosState(ip, sonosState) {
                 if (tts.playerState != "PLAYING") {
                     player.tts = null;
                 }
-                player.setAVTransportURI(tts.currentTrack.uri, '', function (code, res) {
-                    player.tts = null;
-                    // Restore play state if was play
-                    if (tts.playerState == "PLAYING") {
-                        player.play();
+
+                function setUri() {
+                    player.setAVTransportURI(tts.currentTrack.uri, lastMetaData, function (code, res) {
+                        player.tts = null;
+                        // Restore play state if was play
+                        if (tts.playerState == "PLAYING") {
+                            player.play();
+                        }
+                    });
+                }
+
+                if (lastFavoriteUri == tts.currentTrack.uri) {
+                     setUri();
+                } else player.getFavorites(function (success, favorites) {
+                    lastMetaData = '';
+                    lastFavoriteUri = '';
+                    if (success) {
+                        for (var i in favorites) {
+                            if (favorites[i].uri == tts.currentTrack.uri) {
+                                lastMetaData = favorites[i].metaData;
+                                lastFavoriteUri = tts.currentTrack.uri;
+                                break;
+                            }
+                        }
                     }
+                    setUri();
                 });
             } else {
                 // Remove added track
