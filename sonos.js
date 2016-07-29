@@ -6,13 +6,10 @@
  *      derived from https://github.com/jishi/node-sonos-web-controller by Jimmy Shimizu
  */
 var loglevel = process.argv[3] || 'info';
-var utils =    require(__dirname + '/lib/utils'); // Get common adapter utils
-var logger =   require(utils.controllerDir + '/lib/logger.js')(loglevel, ['iobroker.log'], undefined, 'sonos');
-var adapter =  utils.adapter('sonos');
-
-adapter.on('objectChange', function (id, obj) {
-
-});
+var utils    = require(__dirname + '/lib/utils'); // Get common adapter utils
+var tools    = require(utils.controllerDir + '/lib/tools.js');
+var logger   = require(utils.controllerDir + '/lib/logger.js')(loglevel, [utils.appName], undefined, 'sonos');
+var adapter  = utils.adapter('sonos');
 
 // {"val": state, "ack":false, "ts":1408294295, "from":"admin.0", "lc":1408294295}
 // id = sonos.0.192_168_1_55.state
@@ -177,12 +174,12 @@ adapter.on('message', function (obj) {
     return true;
 });
 
-var io             = require('./node_modules/sonos-web-controller/node_modules/socket.io');
+var io             = require('socket.io');
 var http           = require('http');
-var Static         = require('./node_modules/sonos-web-controller/node_modules/node-static');
+var Static         = require('node-static');
 var fs             = require('fs');
 var crypto         = require('crypto');
-var sonosDiscovery = require('./node_modules/sonos-web-controller/node_modules/sonos-discovery');
+var sonosDiscovery = require('sonos-discovery');
 var path           = require('path');
 var dgram          = require('dgram');
 
@@ -195,11 +192,11 @@ function toFormattedTime(time) {
     var hours = Math.floor(time / 3600);
     hours = (hours) ? (hours + ":") : "";
     var min = Math.floor(time / 60) % 60;
-    if (min < 10) min = "0" + min;
+    if (min < 10) min = '0' + min;
     var sec = time % 60;
-    if (sec < 10) sec = "0" + sec;
+    if (sec < 10) sec = '0' + sec;
 
-    return hours + min + ":" + sec;
+    return hours + min + ':' + sec;
 }
 
 function createChannel(name, ip, room, callback) {
@@ -565,8 +562,8 @@ function addChannel(name, ip, room, callback) {
     });
 }
 
-var lastMetaData = '',
-    lastFavoriteUri = '';
+var lastMetaData = '';
+var lastFavoriteUri = '';
 
 function takeSonosState(ip, sonosState) {
     adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
@@ -788,8 +785,6 @@ function readCoverFileToState(fileName, stateName, ip) {
     });
 }
 
-
-
 function takeSonosFavorites(ip, favorites) {
 	var sFavorites = '';
 	for (var favorite in favorites) {
@@ -978,13 +973,22 @@ function main() {
     syncConfig ();
     adapter.subscribeStates('*');
 
-    discovery = new sonosDiscovery({household: null, log: logger});
-// from here the code is mostly from https://github.com/jishi/node-sonos-web-controller/blob/master/server.js
+    var path = tools.getConfigFileName().split('/');
+    path.pop();
+    cacheDir = path.join('/') + '/sonosCache/';
+
+    discovery = new sonosDiscovery({
+        household:  null,
+        log:        logger,
+        cacheDir:   cacheDir,
+        port:       adapter.config.webserverPort
+    });
+    // from here the code is mostly from https://github.com/jishi/node-sonos-web-controller/blob/master/server.js
 
     if (adapter.config.webserverEnabled) {
         var fileServer  = new Static.Server(__dirname + '/node_modules/sonos-web-controller/static');
 
-        cacheDir = __dirname + (adapter.config.cacheDir || '/cache/');
+        cacheDir = adapter.config.cacheDir ? (__dirname + adapter.config.cacheDir) : cacheDir;
         // Remove last "/"
         if (cacheDir[cacheDir.length - 1] != '/') cacheDir += '/';
 
@@ -1022,8 +1026,8 @@ function main() {
             } else
             if (/^\/getaa/.test(req.url)) {
                 // this is a resource, download from player and put in cache folder
-                var md5url   = crypto.createHash('md5').update(req.url).digest('hex');
-                fileName = path.join(cacheDir, md5url);
+                var md5url = crypto.createHash('md5').update(req.url).digest('hex');
+                var fileName = path.join(cacheDir, md5url);
 
                 if (playerIps.length === 0) {
                     for (var i in discovery.players) {
@@ -1107,6 +1111,7 @@ function main() {
                 if (!player) return;
 
                 // invoke action
+                //console.log(data)
                 player[data.state]();
             });
 
@@ -1116,7 +1121,6 @@ function main() {
                 if (!player) return;
 
                 // invoke action
-                //console.log(data)
                 player.groupSetVolume(data.volume);
             });
 
@@ -1192,6 +1196,10 @@ function main() {
                 player.trackSeek(data.elapsed);
             });
 
+            socket.on('search', function (data) {
+                search(data.term, socket);
+            });
+            
             socket.on('error', function (e) {
                 adapter.log.error(e);
             });
@@ -1211,35 +1219,38 @@ function main() {
 
     discovery.on('transport-state', function (data) {
         if (socketServer) socketServer.sockets.emit('transport-state', data);
-        processSonosEvents ('transport-state', data);
+        processSonosEvents('transport-state', data);
     });
 
     discovery.on('group-volume', function (data) {
         if (socketServer) socketServer.sockets.emit('group-volume', data);
-        processSonosEvents ('group-volume', data);
+        processSonosEvents('group-volume', data);
     });
 
     discovery.on('group-mute', function (data) {
         if (socketServer)socketServer.sockets.emit('group-mute', data);
+        processSonosEvents ('group-mute', data);
     });
 
     discovery.on('mute', function (data) {
         if (socketServer) socketServer.sockets.emit('mute', data);
+        processSonosEvents ('mute', data);
     });
 
     discovery.on('favorites', function (data) {
         if (socketServer) socketServer.sockets.emit('favorites', data);
-        processSonosEvents ('favorites', data);
+        processSonosEvents('favorites', data);
     });
 
     discovery.on('queue-changed', function (data) {
+        console.log('queue-changed', data);
         delete queues[data.uuid];
-        if (socketServer)loadQueue(data.uuid, socketServer.sockets);
+        if (socketServer) loadQueue(data.uuid, socketServer.sockets);
         processSonosEvents ('queue-changed', data);
     });
 
-
     function loadQueue(uuid, socket) {
+        console.time('loading-queue');
         var maxRequestedCount = 600;
         function getQueue(startIndex, requestedCount) {
             var player = discovery.getPlayerByUUID(uuid);
@@ -1248,7 +1259,7 @@ function main() {
                     if (!success) return;
                     socket.emit('queue', {uuid: uuid, queue: queue});
 
-                    if (!queues[uuid] || queue.startIndex === 0) {
+                    if (!queues[uuid] || !queue.startIndex) {
                         queues[uuid] = queue;
                     } else {
                         queues[uuid].items = queues[uuid].items.concat(queue.items);
@@ -1273,6 +1284,55 @@ function main() {
                 getQueue(queue.items.length, maxRequestedCount);
             }
         }
+    }
+
+    function search(term, socket) {
+        //console.log('search for', term)
+        var playerCycle = 0;
+        var players = [];
+
+        for (var i in discovery.players) {
+            players.push(discovery.players[i]);
+        }
+
+        function getPlayer() {
+            var player = players[playerCycle++%players.length];
+            return player;
+        }
+
+        var response = {};
+
+        async.parallelLimit([
+            function (callback) {
+                var player = getPlayer();
+                //console.log('fetching from', player.address);
+                player.browse('A:ARTIST:' + term, 0, 600, function (success, result) {
+                    //console.log(success, result)
+                    response.byArtist = result;
+                    callback(null, 'artist');
+                });
+            },
+            function (callback) {
+                var player = getPlayer();
+                //console.log('fetching from', player.address);
+                player.browse('A:TRACKS:' + term, 0, 600, function (success, result) {
+                    response.byTrack = result;
+                    callback(null, 'track');
+                });
+            },
+            function (callback) {
+                var player = getPlayer();
+                //console.log('fetching from', player.address);
+                player.browse('A:ALBUM:' + term, 0, 600, function (success, result) {
+                    response.byAlbum = result;
+                    callback(null, 'album');
+                });
+            }
+        ], players.length, function (err, result) {
+            adapter.log.error(err);
+
+            socket.emit('search-result', response);
+        });
     }
 
     if (adapter.config.webserverEnabled) {

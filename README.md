@@ -14,9 +14,16 @@ Used packets from Jimmy Shimizu
 https://github.com/jishi/node-sonos-discovery and 
 https://github.com/jishi/node-sonos-web-controller
 
+**This adapter requires node 4.0.0 or higher!**
+
 To allow using sayIt adapter with sonos, be sure that web adapter is instatiated and running too. Web adapter is required to enable SONOS to read the generated MP3 file from sayIt.
 
+You can use mobile interface too. It can be found under ```http://ipaddress:8083/m/```
+
 ## Changelog
+### 0.2.0 (2016-07-28)
+- (soef) fixed restore of radio after sayIt
+
 ### 0.1.10 (2016-05-26)
 - (bluefox) check type of "state"
 
@@ -36,7 +43,6 @@ To allow using sayIt adapter with sonos, be sure that web adapter is instatiated
 
 ### 0.1.5 (2015-02-13)
 - (bluefox) set volume by TTS
-
 
 ### 0.1.4 (2015-01-04)
 - (bluefox) catch errors if states deleted
