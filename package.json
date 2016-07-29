@@ -25,8 +25,8 @@
     "url": "https://github.com/ioBroker/ioBroker.sonos"
   },
   "dependencies": {
-    "sonos-web-controller": "jishi/node-sonos-web-controller#860a5e1e5c9c4e756566efa96d283724f124e612",
-    "sonos-discovery": "jishi/node-sonos-discovery#0.15.6",
+    "sonos-web-controller": "https://github.com/jishi/node-sonos-web-controller/tarball/860a5e1",
+    "sonos-discovery": "https://github.com/jishi/node-sonos-discovery/tarball/b1a77d3",
     "node-static": "^0.7.8",
     "socket.io": "^1.4.8",
     "async": "^2.0.1"
