@@ -23,6 +23,8 @@ You can use mobile interface too. It can be found under ```http://ipaddress:8083
 ## Changelog
 ### 0.2.0 (2016-07-28)
 - (soef) fixed restore of radio after sayIt
+- (bluefox) fix log outputs
+- (bluefox) update libraries and use fix versions of it
 
 ### 0.1.10 (2016-05-26)
 - (bluefox) check type of "state"

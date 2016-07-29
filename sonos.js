@@ -699,7 +699,7 @@ function takeSonosState(ip, sonosState) {
         var md5url     = crypto.createHash('md5').update(sonosState.currentTrack.albumArtURI).digest('hex');
         var fileName   = cacheDir + md5url;
         var stateName  = adapter.namespace + '.root.' + ip + '.cover.png';
-        var defaultImg = __dirname + '/node_modules/sonos-web-controller/lib/browse_missing_album_art.png';
+        var defaultImg = __dirname + '/img/browse_missing_album_art.png';
 
         if (!fs.existsSync(fileName)) {
             adapter.log.debug('Cover file does not exist. Fetching via HTTP');
@@ -855,7 +855,7 @@ function processSonosEvents(event, data) {
             }
         }
     } else {
-        adapter.log.debug(event + ' ' + data);
+        adapter.log.debug(event + ' ' + (typeof data === 'object' ? JSON.stringify(data) : data));
     }
 }
 
@@ -973,9 +973,9 @@ function main() {
     syncConfig ();
     adapter.subscribeStates('*');
 
-    var path = tools.getConfigFileName().split('/');
-    path.pop();
-    cacheDir = path.join('/') + '/sonosCache/';
+    var _path = tools.getConfigFileName().split('/');
+    _path.pop();
+    cacheDir = _path.join('/') + '/sonosCache/';
 
     discovery = new sonosDiscovery({
         household:  null,
@@ -1060,7 +1060,7 @@ function main() {
                         } else if (res2.statusCode == 404) {
                             // no image exists! link it to the default image.
                             //console.log(res2.statusCode, 'linking', fileName)
-                            fs.link( __dirname + '/node_modules/sonos-web-controller/lib/browse_missing_album_art.png', fileName, function (e) {
+                            fs.link( __dirname + '/img/browse_missing_album_art.png', fileName, function (e) {
                                 res2.resume();
                                 if (e) adapter.log.warn (e);
                             });
@@ -1243,7 +1243,7 @@ function main() {
     });
 
     discovery.on('queue-changed', function (data) {
-        console.log('queue-changed', data);
+        //console.log('queue-changed', data);
         delete queues[data.uuid];
         if (socketServer) loadQueue(data.uuid, socketServer.sockets);
         processSonosEvents ('queue-changed', data);
