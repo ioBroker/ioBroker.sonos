@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "sonos-web-controller": "https://github.com/jishi/node-sonos-web-controller/tarball/860a5e1",
-    "sonos-discovery": "https://github.com/jishi/node-sonos-discovery/tarball/b1a77d3",
+    "sonos-discovery": "https://github.com/jishi/node-sonos-discovery/tarball/f3b09a3",
     "node-static": "^0.7.8",
     "socket.io": "^1.4.8",
     "async": "^2.0.1"
