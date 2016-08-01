@@ -6,13 +6,15 @@
  *      derived from https://github.com/jishi/node-sonos-web-controller by Jimmy Shimizu
  */
 var loglevel = process.argv[3] || 'info';
-var utils =    require(__dirname + '/lib/utils'); // Get common adapter utils
-var logger =   require(utils.controllerDir + '/lib/logger.js')(loglevel, ['iobroker.log'], undefined, 'sonos');
-var adapter =  utils.adapter('sonos');
+var utils    = require(__dirname + '/lib/utils'); // Get common adapter utils
+var tools    = require(utils.controllerDir + '/lib/tools.js');
+var logger   = require(utils.controllerDir + '/lib/logger.js')(loglevel, [utils.appName], undefined, 'sonos');
+var adapter  = utils.adapter('sonos');
 
-adapter.on('objectChange', function (id, obj) {
 
-});
+
+var REMOVE_FROM_GROUP = 'remove_from_group';
+var ADD_TO_GROUP = 'add_to_group';
 
 // {"val": state, "ack":false, "ts":1408294295, "from":"admin.0", "lc":1408294295}
 // id = sonos.0.192_168_1_55.state
@@ -49,28 +51,31 @@ adapter.on('stateChange', function (_id, state) {
             if (id.state === 'state') {
                 if (state.val && typeof state.val === 'string') {
                     state.val = state.val.toLowerCase();
-                    if (state.val === 'stop') {
-                        player.pause();
-                    } else
-                    if (state.val === 'play') {
-                        player.play();
-                    } else
-                    if (state.val === 'pause') {
-                        player.pause();
-                    } else
-                    if (state.val === 'next') {
-                        player.nextTrack();
-                    } else
-                    if (state.val == 'previous') {
-                        player.previousTrack();
-                    } else
-                    if (state.val === 'mute') {
-                        player.mute(true);
-                    } else
-                    if (state.val === 'unmute') {
-                        player.mute(false);
-                    } else {
-                        adapter.log.warn('Unknown state: ' + state.val);
+                    switch (state.val) {
+                        case 'stop':
+                            player.pause();
+                            break;
+                        case 'play':
+                            player.play();
+                            break;
+                        case 'pause':
+                            player.pause();
+                            break;
+                        case 'next':
+                            player.nextTrack();
+                            break;
+                        case 'previous':
+                            player.previousTrack();
+                            break;
+                        case 'mute':
+                            player.mute(true);
+                            break;
+                        case 'unmute':
+                            player.mute(false);
+                            break;
+                        default:
+                            adapter.log.warn('Unknown state: ' + state.val);
+                            break;
                     }
                 } else {
                     adapter.log.warn('Invalid state: ' + state.val);
@@ -87,6 +92,10 @@ adapter.on('stateChange', function (_id, state) {
             if (id.state === 'tts') {
                 adapter.log.debug('Play TTS file ' + state.val + ' on ' + id.channel);
                 text2speech(state.val, id.channel);
+            } else if (id.state === 'add_to_group') {
+                addToGroup(state.val, player); //xxxx
+            } else if (id.state === 'remove_from_group') {
+                removeFromGroup(state.val, player);
             } else {
                 adapter.log.warn('try to control unknown id ' + JSON.stringify(id));
             }
@@ -177,12 +186,12 @@ adapter.on('message', function (obj) {
     return true;
 });
 
-var io             = require('./node_modules/sonos-web-controller/node_modules/socket.io');
+var io             = require('socket.io');
 var http           = require('http');
-var Static         = require('./node_modules/sonos-web-controller/node_modules/node-static');
+var Static         = require('node-static');
 var fs             = require('fs');
 var crypto         = require('crypto');
-var sonosDiscovery = require('./node_modules/sonos-web-controller/node_modules/sonos-discovery');
+var sonosDiscovery = require('sonos-discovery');
 var path           = require('path');
 var dgram          = require('dgram');
 
@@ -195,11 +204,11 @@ function toFormattedTime(time) {
     var hours = Math.floor(time / 3600);
     hours = (hours) ? (hours + ":") : "";
     var min = Math.floor(time / 60) % 60;
-    if (min < 10) min = "0" + min;
+    if (min < 10) min = '0' + min;
     var sec = time % 60;
-    if (sec < 10) sec = "0" + sec;
+    if (sec < 10) sec = '0' + sec;
 
-    return hours + min + ":" + sec;
+    return hours + min + ':' + sec;
 }
 
 function createChannel(name, ip, room, callback) {
@@ -348,7 +357,25 @@ function createChannel(name, ip, room, callback) {
             write:  'true',
             role:   'media',
             desc:   'Set text2speech mp3 file to play'
+        },
+
+        'add_to_group': {
+            def:    '',
+            type:   'string',
+            read:   'false',
+            write:  'true',
+            role:   'media',
+            desc:   'Add a Player to a Group (Player to remove, Coordinator)'
+        },
+        'remove_from_group': {
+            def:    '',
+            type:   'string',
+            read:   'false',
+            write:  'true',
+            role:   'media',
+            desc:   'Remove a Player to a Group (Player to remove, Coordinator)'
         }
+
     };
 
     var states_list = [];
@@ -437,7 +464,7 @@ function text2speech(fileName, sonosIp, callback) {
         fileName = fileName.substring(pos + 1);
     }
 
-    if (!fileName.match(/^http(s)?:\/\//)) {
+    if (fileName && !fileName.match(/^http(s)?:\/\//)) {
         if (!adapter.config.webserverEnabled) {
             adapter.log.warn('Web server must be enabled to play TTS');
             return;
@@ -472,43 +499,178 @@ function text2speech(fileName, sonosIp, callback) {
     if (callback) callback();
 }
 
+
+function fadeIn(player, to, step) {
+    //adapter.log.info('>> fadeIn to ' + to + ' caller: ' + (arguments.callee.caller ? arguments.callee.caller.name : 'null'));
+    player.setVolume(to);
+    return;
+
+    var vol = 1;
+    var interval = setInterval(function (_to) {
+        if (vol >= _to) {
+            this.setVolume(_to);
+            adapter.log.info('fadeIn - final - setVolume: ' + to);
+            clearInterval(interval);
+            adapter.log.info('<< fadeIn to ' + _to);
+            return;
+        }
+        this.setVolume(vol);
+        adapter.log.info('fadeIn - setVolume: ' + vol);
+        vol += (1 + (vol >> 1));
+    }.bind(player, to), 50);
+}
+
+function fadeOut(player) {
+    //adapter.log.info('>> fadeOut caller: ' + arguments.callee.caller.name);
+    if (!player._isMute && player._volume) {
+        player.setVolume(0);
+        return;
+
+        var ii = player._volume;
+        for (var i = ii-1; ; i -= (1 + ((ii-i) >> 1) )) {
+            if (i <= 0) {
+                player.setVolume(0);
+                adapter.log.info('>> fadeOut - final: setVolume: ' + 0);
+                break;
+            }
+            player.setVolume(i);
+            adapter.log.info('>> fadeOut: setVolume: ' + i);
+        }
+    }
+    adapter.log.info('<< fadeOut ');
+}
+
+
+function startPlayer(player, volume, start) {
+    //adapter.log.info('startPlayer volume: ' + volume + ' start=' + start + ' player.queuedTts.length=' + (player.queuedTts && player.queuedTts.length ? player.queuedTts.length : 0));
+    //fadeOut(player);
+    if (start) {
+        player.play();
+    }
+    fadeIn(player, volume);
+}
+
+//////////////////
+// Groupmanagement
+
+function getPlayerByName(name) {
+    for (var uuid in discovery.players) {
+        var player = discovery.players[uuid];
+        if (player.roomName === name || player.address === name || player._address === name || player.uuid === name) {
+            return player;
+        }
+    }
+}
+
+function attachTo(player, coordinator) {
+    player.setAVTransportURI('x-rincon:' + coordinator.uuid);
+}
+
+function addToGroup(playerNameToAdd, coordinator) {
+    if (typeof coordinator == 'string') coordinator = getPlayerByName(coordinator);
+    var playerToAdd = getPlayerByName(playerNameToAdd);
+    if(!coordinator || !playerToAdd) {
+        return;
+    }
+    attachTo(playerToAdd, coordinator);
+}
+
+function removeFromGroup(leavingName, coordinator) {
+    if (typeof coordinator == 'string') coordinator = getPlayerByName(coordinator);
+    var leavingPlayer = getPlayerByName(leavingName);
+    if(!coordinator || !leavingPlayer) {
+        return;
+    }
+    if (leavingPlayer.coordinator == coordinator) {
+        leavingPlayer.becomeCoordinatorOfStandaloneGroup();
+    } else {
+        attachTo(leavingPlayer, coordinator)
+    }
+}
+
+/////////////
+
 var audioExtensions = ['mp3', 'aiff', 'flac', 'less', 'wav'];
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//var GetPositionInfo = '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body>' +
+//    '<u:GetPositionInfo xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><Channel>Master</Channel></u:GetPositionInfo>';
+//
+//XmlEntities = require(__dirname + '/node_modules/sonos-discovery/node_modules/html-entities/lib/xml-entities').XmlEntities;
+//
+//function getPositionInfo(player, callback) {
+//    player.soapAction('/MediaRenderer/AVTransport/Control', '"urn:schemas-upnp-org:service:AVTransport:1#GetPositionInfo"', GetPositionInfo, function(succ, res) {
+//        if (succ) {
+//            var data = "";
+//            res.setEncoding('utf8');
+//            res.on('data', function (chunk) {
+//                data += chunk.toString();
+//            });
+//            res.on('end', function () {
+//                // Find queued element
+//
+//                var pos = data.indexOf('<TrackMetaData>');
+//                if (pos != -1) {
+//                    data = data.substring(pos + '<TrackMetaData>'.length);
+//                    pos = data.indexOf('<');
+//                    if (pos != -1) {
+//                        data = data.substring(0, pos);
+//                        callback(true, data);
+//                    }
+//                }
+//            });
+//        }
+//    });
+//}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 function playOnSonos(uri, sonosUuid, volume) {
     var now = (new Date()).getTime();
+    var player = discovery.players[sonosUuid];
 
-    if (!discovery.players[sonosUuid].tts || now - discovery.players[sonosUuid].tts.time > 30000) {
-        adapter.log.info('Play on sonos[' + sonosUuid + ']: ' + uri + ', Volume: ' + volume);
-        discovery.players[sonosUuid].tts = JSON.parse(JSON.stringify(discovery.players[sonosUuid].getState()));
-        discovery.players[sonosUuid].tts.time = now;
-    } else {
-        adapter.log.info('Queue on sonos[' + sonosUuid + ']: ' + uri + ', Volume: ' + volume);
-        discovery.players[sonosUuid].queuedTts = discovery.players[sonosUuid].queuedTts || [];
-        discovery.players[sonosUuid].queuedTts.push(uri);
+    if (!uri) { // stop aktual tts
+        if (player.tts) player.pause();
         return;
     }
 
-    var oldVolume = discovery.players[sonosUuid]._volume;
-    var oldIsMute = discovery.players[sonosUuid]._isMute;
-
-    if (volume === 'null' || volume === 'undefined') volume = 0;
-
-    if (volume && oldVolume != volume) {
-        discovery.players[sonosUuid].setVolume(volume);
+    if (!player.tts || now - player.tts.time > 30000) {
+        adapter.log.info('Play on sonos[' + sonosUuid + ']: ' + uri + ', Volume: ' + volume);
+        if (player.prevTts && now - player.prevTts.ts <= 2000) { // use prev player state also for next tts
+            player.tts = player.prevTts;
+            player.prevTts = null;
+        } else if (!player.tts) {
+            player.tts = JSON.parse(JSON.stringify(player.getState())); // only get akt payer state, if no previous
+        }
+        //adapter.log.info('player.tts= volume=' + player.tts.volume + ' currentTrack.uri=' + player.tts.currentTrack.uri + ' tts.playerState=' + player.tts.playerState);
+        //player.tts.ourUri = uri;
+        player.tts.time = now;
+    } else {
+        adapter.log.info('Queue on sonos[' + sonosUuid + ']: ' + uri + ', Volume: ' + volume);
+        player.queuedTts = player.queuedTts || [];
+        player.queuedTts.push({ uri: uri, volume: volume });
+        return;
     }
-    if (oldIsMute) discovery.players[sonosUuid].groupMute(false);
 
-    var parts = discovery.players[sonosUuid].tts.currentTrack.uri ? discovery.players[sonosUuid].tts.currentTrack.uri.split('.') : ['none'];
+    //var oldVolume = player._volume;
+    //var oldIsMute = player._isMute;
+    //
+    //if (volume === 'null' || volume === 'undefined') volume = 0;
+    //
+    //if (volume && oldVolume != volume) {
+    //    player.setVolume(volume);
+    //}
+    //if (oldIsMute) player.groupMute(false);
 
-    //console.log('Current uri: ' + discovery.players[sonosUuid].tts.currentTrack.uri);
+    var parts = player.tts.currentTrack.uri ? player.tts.currentTrack.uri.split('.') : ['none'];
 
-    if (discovery.players[sonosUuid].tts.currentTrack.uri &&
-         ((discovery.players[sonosUuid].tts.currentTrack.uri.indexOf('x-file-cifs:') != -1) ||
-          (discovery.players[sonosUuid].tts.currentTrack.uri.indexOf('x-sonos-spotify:') != -1) ||
-          (audioExtensions.indexOf(parts[parts.length - 1]) != -1))
+    if (player.tts.currentTrack.uri &&
+        ((player.tts.currentTrack.uri.indexOf('x-file-cifs:') != -1) ||
+         (player.tts.currentTrack.uri.indexOf('x-sonos-spotify:') != -1) ||
+         (audioExtensions.indexOf(parts[parts.length - 1]) != -1))
        ) {
-        discovery.players[sonosUuid].tts.radio = false;
-        discovery.players[sonosUuid].addURIToQueue(uri, '', function (code, res) {
+        player.tts.radio = false;
+
+        player.addURIToQueue(uri, '', function (code, res) {
             if (code) {
                 // Find out added track
                 var data = "";
@@ -525,17 +687,19 @@ function playOnSonos(uri, sonosUuid, volume) {
                         if (pos != -1) {
                             data = data.substring(0, pos);
 
-                            if (!discovery.players[sonosUuid].tts) {
-                                adapter.log.warn('Cannot restore sonos state');
+                            if (!player.tts) {
+                                //adapter.log.warn('Cannot restore sonos state');
+                                adapter.log.warn('Cannot add track (URI) to Sonos Queue');
                                 return;
                             }
-                            discovery.players[sonosUuid].tts.addedTrack = parseInt(data, 10);
+                            player.tts.addedTrack = parseInt(data, 10);
 
-                            discovery.players[sonosUuid].seek(discovery.players[sonosUuid].tts.addedTrack, function (code) {
+                            fadeOut(player);
+                            adapter.log.info('player.seek: ' + player.tts.addedTrack);
+
+                            player.seek(player.tts.addedTrack, function (code) {
                                 // Send command PLAY
-                                if (discovery.players[sonosUuid].tts.playerState !== 'PLAYING') {
-                                    discovery.players[sonosUuid].play();
-                                }
+                                startPlayer(player, volume, player.tts.playerState !== 'PLAYING');
                             });
                         }
                     }
@@ -544,10 +708,13 @@ function playOnSonos(uri, sonosUuid, volume) {
         });
     } else {
         // Radio
-        discovery.players[sonosUuid].tts.radio = true;
-        discovery.players[sonosUuid].setAVTransportURI(uri, '', function (code, res) {
+        player.tts.radio = true;
+        fadeOut(player);
+        adapter.log.info('setAVTransportURI: ' + uri);
+
+        player.setAVTransportURI(uri, '', function (code, res) {
             // Send command PLAY
-            discovery.players[sonosUuid].play();
+            startPlayer(player, volume, true);
         });
     }
 }
@@ -565,89 +732,120 @@ function addChannel(name, ip, room, callback) {
     });
 }
 
-var lastMetaData = '',
-    lastFavoriteUri = '';
+
+function resetTts(player) {
+    //adapter.log.info('setting tts = null' + (arguments.callee.caller.name != undefined ? arguments.callee.caller.name : 'no caller'));
+    if(!player.tts) return;
+    player.prevTts = player.tts;
+    player.prevTts.ts = (new Date()).getTime();
+    player.tts = null;
+}
+
+function _getPs(playerState) {
+    var ps = { playing:0, paused:0, transitioning:0, stopped:0 };
+    switch (playerState) {
+        case 'PLAYING': ps.playing=true; break;
+        case 'PAUSED_PLAYBACK': ps.paused=true; break;
+        case 'STOPPED': ps.stopped=true; break;
+        case 'TRANSITIONING': ps.transitioning=true; break;
+    }
+    return ps;
+}
+
+var lastMetaData = '';
+var lastFavoriteUri = '';
 
 function takeSonosState(ip, sonosState) {
     adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
+    var ps = _getPs(sonosState.playerState);
+    var player = discovery.players[channels[ip].uuid];
 
-    // If other files queued
-    if (!discovery.players[channels[ip].uuid].tts &&
-        discovery.players[channels[ip].uuid].queuedTts && discovery.players[channels[ip].uuid].queuedTts.length) {
-        var uri = discovery.players[channels[ip].uuid].queuedTts.pop();
+    if (!player.tts && player.queuedTts && player.queuedTts.length) {
+        var q = player.queuedTts.shift();
         var uuid = channels[ip].uuid;
+        adapter.log.info('Taking next queue entry, tts=' + (player.tts ? true : false) + 'playState=' + sonosState.playerState);
         setTimeout(function () {
-            playOnSonos(uri, uuid);
+            playOnSonos(q.uri, uuid, q.volume);
         }, 0);
     }
 
-    if (sonosState.playerState !== 'TRANSITIONING') {
-        adapter.setState({device: 'root', channel: ip, state: 'state_simple'}, {val:  sonosState.playerState === 'PLAYING', ack: true});
-        adapter.setState({device: 'root', channel: ip, state: 'state'},        {val: (sonosState.playerState === 'PAUSED_PLAYBACK') ? 'pause' : ((sonosState.playerState === 'PLAYING') ? 'play' : 'stop'), ack: true});
+    adapter.log.info('>  playerState: ' + sonosState.playerState + ' - ' + (sonosState.currentTrack && sonosState.currentTrack.title ? sonosState.currentTrack.title : ''));
+    if (!ps.transitioning) {
+        adapter.setState({device: 'root', channel: ip, state: 'state_simple'}, {val:  ps.playing, ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'state'},        {val: ps.paused ? 'pause' : (ps.playing ? 'play' : 'stop'), ack: true});
 
-        // If some TTS played and finished now
-        if (discovery.players[channels[ip].uuid] && discovery.players[channels[ip].uuid].tts &&
-            (sonosState.playerState === 'PAUSED_PLAYBACK' || sonosState.playerState === 'STOPPED') &&
-            ((new Date()).getTime() - discovery.players[channels[ip].uuid].tts.time > 1000)) {
+        if (ps.playing && player.tts_fadeIn) {
+            fadeIn(player, player.tts_fadeIn, 1);
+            player.tts_fadeIn = 0
+        }
 
-            var player = discovery.players[channels[ip].uuid];
-            var tts = player.tts;
+        if (player.tts && (ps.paused || ps.stopped) //{
+            /*&& (sonosState.currentTrack.uri == player.tts.ourUri)*/) {
 
-            // Restore state before tts
-            adapter.log.info('Restore state: volume - ' +  tts.volume + ', mute: ' + tts.mute + ', uri: ' + tts.currentTrack.uri);
-            player.setVolume(tts.volume);
-            player.mute(tts.mute);
+            // If other files queued
+            //if (player.queuedTts && player.queuedTts.length) {
+            //    var q = player.queuedTts.shift();
+            //    var uuid = channels[ip].uuid;
+            //    if (player.tts) player.tts.time -= 30001; // fake a timeout to force playing and using previous player state
+            //    setTimeout(function () {
+            //        playOnSonos(q.uri, uuid, q.volume);
+            //    }, 0);
+            if ((new Date()).getTime() - player.tts.time > 1000) { // else: do not restore old state, if queue is not empty
+                var tts = player.tts;
 
-            if (tts.radio) {
-                if (tts.playerState != "PLAYING") {
-                    player.tts = null;
-                }
+                // Restore state before tts
+                adapter.log.info('>> Restore state: volume - ' + tts.volume + ', mute: ' + tts.mute + ', uri: ' + tts.currentTrack.uri);
 
-                function setUri() {
-                    player.setAVTransportURI(tts.currentTrack.uri, lastMetaData, function (code, res) {
-                        player.tts = null;
-                        // Restore play state if was play
-                        if (tts.playerState == "PLAYING") {
-                            player.play();
-                        }
-                    });
-                }
+                fadeOut(player);
+                if (player._isMuted !== tts.mute) player.mute(tts.mute);
 
-                if (lastFavoriteUri == tts.currentTrack.uri) {
-                     setUri();
-                } else player.getFavorites(function (success, favorites) {
-                    lastMetaData = '';
-                    lastFavoriteUri = '';
-                    if (success) {
-                        for (var i in favorites) {
-                            if (favorites[i].uri == tts.currentTrack.uri) {
-                                lastMetaData = favorites[i].metaData;
-                                lastFavoriteUri = tts.currentTrack.uri;
-                                break;
+                if (tts.radio) {
+                    if (tts.playerState != "PLAYING") {
+                        resetTts(player);
+                    }
+
+                    function setUri() {
+                        player.setAVTransportURI(tts.currentTrack.uri, lastMetaData, function (code, res) {
+                            resetTts(player);
+                            startPlayer(player, tts.volume, tts.playerState == 'PLAYING');
+                        });
+                    }
+
+                    if (lastFavoriteUri == tts.currentTrack.uri) {
+                        setUri();
+                    } else player.getFavorites(function (success, favorites) {
+                        lastMetaData = '';
+                        lastFavoriteUri = '';
+                        if (success) {
+                            for (var i in favorites) {
+                                if (favorites[i].uri == tts.currentTrack.uri) {
+                                    lastMetaData = favorites[i].metaData;
+                                    lastFavoriteUri = tts.currentTrack.uri;
+                                    break;
+                                }
                             }
                         }
-                    }
-                    setUri();
-                });
-            } else {
-                // Remove added track
-                player.removeTrackFromQueue(tts.addedTrack);
-
-                // Set old track nomber
-                player.seek(tts.trackNo, function (code, res) {
-                    player.tts = null;
-                    // Set elapsed time
-                    player.trackSeek(tts.elapsedTime, function (code, res) {
-                        // Restore play state if was play
-                        if (tts.playerState === 'PLAYING') {
-                            player.play();
-                        }
+                        setUri();
                     });
-                });
+                } else { // if (ts.radio
+                    // Remove added track
+                    adapter.log.info('player.removeTrackFromQueue, Track=' + tts.addedTrack);
+                    player.removeTrackFromQueue(tts.addedTrack);
+
+                    fadeOut(player);
+                    // Set old track nomber
+                    player.seek(tts.trackNo, function (code, res) {
+                        resetTts(player);
+                        // Set elapsed time
+                        player.trackSeek(tts.elapsedTime, function (code, res) {
+                            startPlayer(player, tts.volume, /*true ||*/ tts.playerState === 'PLAYING');
+                        });
+                    });
+                }
             }
         }
 
-        if (sonosState.playerState == "PLAYING") {
+        if (ps.playing) {
             if (!channels[ip].elapsedTimer) {
                 channels[ip].elapsedTimer = setInterval(function (ip_) {
                     channels[ip_].elapsed += ((adapter.config.elapsedInterval || 5000) / 1000);
@@ -702,7 +900,7 @@ function takeSonosState(ip, sonosState) {
         var md5url     = crypto.createHash('md5').update(sonosState.currentTrack.albumArtURI).digest('hex');
         var fileName   = cacheDir + md5url;
         var stateName  = adapter.namespace + '.root.' + ip + '.cover.png';
-        var defaultImg = __dirname + '/node_modules/sonos-web-controller/lib/browse_missing_album_art.png';
+        var defaultImg = __dirname + '/img/browse_missing_album_art.png';
 
         if (!fs.existsSync(fileName)) {
             adapter.log.debug('Cover file does not exist. Fetching via HTTP');
@@ -788,8 +986,6 @@ function readCoverFileToState(fileName, stateName, ip) {
     });
 }
 
-
-
 function takeSonosFavorites(ip, favorites) {
 	var sFavorites = '';
 	for (var favorite in favorites) {
@@ -797,7 +993,7 @@ function takeSonosFavorites(ip, favorites) {
             sFavorites += ((sFavorites) ? ", ": "") + favorites[favorite].title;
         }
 	}
-	
+
     adapter.setState({device: 'root', channel: ip, state: 'favorites_list'}, {val: sFavorites, ack: true});
 }
 
@@ -846,6 +1042,7 @@ function processSonosEvents(event, data) {
                 adapter.setState({device: 'root', channel: ip, state: 'muted'},  {val: data.groupState.mute,  ack: true});
                 discovery.players[s]._isMuted = data.groupState.mute;
                 discovery.players[s]._volume  = data.playerVolumes[s];
+                adapter.log.debug('group-volume: Volume for ' + discovery.players[s].address + ': ' + data.playerVolumes[s]);
             }
         }
     } else if (event === 'favorites') {
@@ -860,7 +1057,7 @@ function processSonosEvents(event, data) {
             }
         }
     } else {
-        adapter.log.debug(event + ' ' + data);
+        adapter.log.debug(event + ' ' + (typeof data === 'object' ? JSON.stringify(data) : data));
     }
 }
 
@@ -978,13 +1175,22 @@ function main() {
     syncConfig ();
     adapter.subscribeStates('*');
 
-    discovery = new sonosDiscovery({household: null, log: logger});
-// from here the code is mostly from https://github.com/jishi/node-sonos-web-controller/blob/master/server.js
+    var _path = tools.getConfigFileName().split('/');
+    _path.pop();
+    cacheDir = _path.join('/') + '/sonosCache/';
+
+    discovery = new sonosDiscovery({
+        household:  null,
+        log:        logger,
+        cacheDir:   cacheDir,
+        port:       adapter.config.webserverPort
+    });
+    // from here the code is mostly from https://github.com/jishi/node-sonos-web-controller/blob/master/server.js
 
     if (adapter.config.webserverEnabled) {
         var fileServer  = new Static.Server(__dirname + '/node_modules/sonos-web-controller/static');
 
-        cacheDir = __dirname + (adapter.config.cacheDir || '/cache/');
+        cacheDir = adapter.config.cacheDir ? (__dirname + adapter.config.cacheDir) : cacheDir;
         // Remove last "/"
         if (cacheDir[cacheDir.length - 1] != '/') cacheDir += '/';
 
@@ -1022,8 +1228,8 @@ function main() {
             } else
             if (/^\/getaa/.test(req.url)) {
                 // this is a resource, download from player and put in cache folder
-                var md5url   = crypto.createHash('md5').update(req.url).digest('hex');
-                fileName = path.join(cacheDir, md5url);
+                var md5url = crypto.createHash('md5').update(req.url).digest('hex');
+                var fileName = path.join(cacheDir, md5url);
 
                 if (playerIps.length === 0) {
                     for (var i in discovery.players) {
@@ -1056,7 +1262,7 @@ function main() {
                         } else if (res2.statusCode == 404) {
                             // no image exists! link it to the default image.
                             //console.log(res2.statusCode, 'linking', fileName)
-                            fs.link( __dirname + '/node_modules/sonos-web-controller/lib/browse_missing_album_art.png', fileName, function (e) {
+                            fs.link( __dirname + '/img/browse_missing_album_art.png', fileName, function (e) {
                                 res2.resume();
                                 if (e) adapter.log.warn (e);
                             });
@@ -1107,6 +1313,7 @@ function main() {
                 if (!player) return;
 
                 // invoke action
+                //console.log(data)
                 player[data.state]();
             });
 
@@ -1116,7 +1323,6 @@ function main() {
                 if (!player) return;
 
                 // invoke action
-                //console.log(data)
                 player.groupSetVolume(data.volume);
             });
 
@@ -1192,6 +1398,10 @@ function main() {
                 player.trackSeek(data.elapsed);
             });
 
+            socket.on('search', function (data) {
+                search(data.term, socket);
+            });
+
             socket.on('error', function (e) {
                 adapter.log.error(e);
             });
@@ -1211,35 +1421,38 @@ function main() {
 
     discovery.on('transport-state', function (data) {
         if (socketServer) socketServer.sockets.emit('transport-state', data);
-        processSonosEvents ('transport-state', data);
+        processSonosEvents('transport-state', data);
     });
 
     discovery.on('group-volume', function (data) {
         if (socketServer) socketServer.sockets.emit('group-volume', data);
-        processSonosEvents ('group-volume', data);
+        processSonosEvents('group-volume', data);
     });
 
     discovery.on('group-mute', function (data) {
         if (socketServer)socketServer.sockets.emit('group-mute', data);
+        processSonosEvents ('group-mute', data);
     });
 
     discovery.on('mute', function (data) {
         if (socketServer) socketServer.sockets.emit('mute', data);
+        processSonosEvents ('mute', data);
     });
 
     discovery.on('favorites', function (data) {
         if (socketServer) socketServer.sockets.emit('favorites', data);
-        processSonosEvents ('favorites', data);
+        processSonosEvents('favorites', data);
     });
 
     discovery.on('queue-changed', function (data) {
+        //console.log('queue-changed', data);
         delete queues[data.uuid];
-        if (socketServer)loadQueue(data.uuid, socketServer.sockets);
+        if (socketServer) loadQueue(data.uuid, socketServer.sockets);
         processSonosEvents ('queue-changed', data);
     });
 
-
     function loadQueue(uuid, socket) {
+        console.time('loading-queue');
         var maxRequestedCount = 600;
         function getQueue(startIndex, requestedCount) {
             var player = discovery.getPlayerByUUID(uuid);
@@ -1248,7 +1461,7 @@ function main() {
                     if (!success) return;
                     socket.emit('queue', {uuid: uuid, queue: queue});
 
-                    if (!queues[uuid] || queue.startIndex === 0) {
+                    if (!queues[uuid] || !queue.startIndex) {
                         queues[uuid] = queue;
                     } else {
                         queues[uuid].items = queues[uuid].items.concat(queue.items);
@@ -1275,8 +1488,58 @@ function main() {
         }
     }
 
+    function search(term, socket) {
+        //console.log('search for', term)
+        var playerCycle = 0;
+        var players = [];
+
+        for (var i in discovery.players) {
+            players.push(discovery.players[i]);
+        }
+
+        function getPlayer() {
+            var player = players[playerCycle++%players.length];
+            return player;
+        }
+
+        var response = {};
+
+        async.parallelLimit([
+            function (callback) {
+                var player = getPlayer();
+                //console.log('fetching from', player.address);
+                player.browse('A:ARTIST:' + term, 0, 600, function (success, result) {
+                    //console.log(success, result)
+                    response.byArtist = result;
+                    callback(null, 'artist');
+                });
+            },
+            function (callback) {
+                var player = getPlayer();
+                //console.log('fetching from', player.address);
+                player.browse('A:TRACKS:' + term, 0, 600, function (success, result) {
+                    response.byTrack = result;
+                    callback(null, 'track');
+                });
+            },
+            function (callback) {
+                var player = getPlayer();
+                //console.log('fetching from', player.address);
+                player.browse('A:ALBUM:' + term, 0, 600, function (success, result) {
+                    response.byAlbum = result;
+                    callback(null, 'album');
+                });
+            }
+        ], players.length, function (err, result) {
+            adapter.log.error(err);
+
+            socket.emit('search-result', response);
+        });
+    }
+
     if (adapter.config.webserverEnabled) {
         server.listen(adapter.config.webserverPort);
         adapter.log.info('http sonos server listening on port ' + adapter.config.webserverPort);
     }
 }
+
