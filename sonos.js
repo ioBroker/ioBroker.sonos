@@ -1075,7 +1075,7 @@ function main() {
                             readCache.pipe(res);
                         });
                     }).on('error', function (e) {
-                        adapter.log.error("Got error: " + e.message);
+                        adapter.log.error('Got error: ' + e.message);
                     });
                 });
             } else {
