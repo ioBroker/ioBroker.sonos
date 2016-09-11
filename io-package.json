@@ -1,8 +1,13 @@
 {
     "common": {
         "name":                     "sonos",
-        "version":                  "0.1.10",
+        "version":                  "0.2.0",
         "news": {
+            "0.2.0": {
+                "en": "fixed restore of radio after sayIt",
+                "de": "fixed restore of radio after sayIt",
+                "ru": "fixed restore of radio after sayIt"
+            },
             "0.1.10": {
                 "en": "check type of \"state\"",
                 "de": "check type of \"state\"",
@@ -23,7 +28,8 @@
         "keywords":                 ["sonos", "player", "music"],
         "extIcon":                  "https://raw.githubusercontent.com/ioBroker/ioBroker.sonos/master/admin/sonos.png",
         "localLink":                "http://%ip%:%webserverPort%",
-		"type":                     "media"
+        "localLinks":               {"desktop": "http://%ip%:%webserverPort%", "mobile": "http://%ip%:%webserverPort%/m"},
+        "type":                     "media"
     },
     "native": {
         "webserverEnabled": true,
@@ -37,3 +43,4 @@
 
     ]
 }
+

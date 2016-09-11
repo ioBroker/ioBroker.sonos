@@ -211,6 +211,26 @@ function toFormattedTime(time) {
     return hours + min + ':' + sec;
 }
 
+var newGroupStates = {
+    'add_to_group': {
+        def: '',
+        type: 'string',
+        read: 'false',
+        write: 'true',
+        role: 'media',
+        desc: 'Add a Player to a Group (Player to remove, Coordinator)'
+    },
+    'remove_from_group': {
+        def: '',
+        type: 'string',
+        read: 'false',
+        write: 'true',
+        role: 'media',
+        desc: 'Remove a Player to a Group (Player to remove, Coordinator)'
+    }
+};
+
+
 function createChannel(name, ip, room, callback) {
     var states = {
         'state_simple': {      // media.state -            Text state of player: stop, play, pause (read, write)
@@ -357,26 +377,12 @@ function createChannel(name, ip, room, callback) {
             write:  'true',
             role:   'media',
             desc:   'Set text2speech mp3 file to play'
-        },
-
-        'add_to_group': {
-            def:    '',
-            type:   'string',
-            read:   'false',
-            write:  'true',
-            role:   'media',
-            desc:   'Add a Player to a Group (Player to remove, Coordinator)'
-        },
-        'remove_from_group': {
-            def:    '',
-            type:   'string',
-            read:   'false',
-            write:  'true',
-            role:   'media',
-            desc:   'Remove a Player to a Group (Player to remove, Coordinator)'
         }
-
     };
+
+    for (var g in newGroupStates) {
+        states[g] = newGroupStates[g];
+    }
 
     var states_list = [];
     for (var state in states) {
@@ -1061,6 +1067,17 @@ function processSonosEvents(event, data) {
     }
 }
 
+function checkNewGroupStates(channel) {
+    for (var g in newGroupStates) {
+        adapter.getState(channel._id + '.' + g, function (_g, err, obj) {
+            if (err || !obj) {
+                var dcs = adapter.idToDCS(channel._id + '.' + _g);
+                adapter.createState(dcs.device, dcs.channel, dcs.state, newGroupStates[_g]);
+            }
+        }.bind(null, g));
+    }
+}
+
 function syncConfig() {
     channels = {};
 
@@ -1068,6 +1085,7 @@ function syncConfig() {
         if (devices && devices.length) {
             // Go through all devices
             for (var i = 0; i < devices.length; i++) {
+
                 adapter.getChannelsOf(devices[i].common.name, function (err, _channels) {
                     var configToDelete = [];
                     var configToAdd    = [];
@@ -1084,6 +1102,7 @@ function syncConfig() {
                             var id = ip.replace(/[.\s]+/g, '_');
                             var pos = configToAdd.indexOf(ip);
                             if (pos != -1) {
+                                checkNewGroupStates(_channels[j]);
                                 configToAdd.splice(pos, 1);
                                 // Check name and room
                                 for (var u = 0; u < adapter.config.devices.length; u++) {
