@@ -1,8 +1,13 @@
 {
     "common": {
         "name":                     "sonos",
-        "version":                  "0.2.0",
+        "version":                  "0.2.1",
         "news": {
+            "0.2.1": {
+                "en": "some fixes for sayIt",
+                "de": "Verbesserungen für sayIt",
+                "ru": "Улучшения для sayIt"
+            },
             "0.2.0": {
                 "en": "fixed restore of radio after sayIt",
                 "de": "fixed restore of radio after sayIt",

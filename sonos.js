@@ -1,8 +1,7 @@
 /**
- *      CCU.IO Sonos Adapter
- *      12'2013-2014 Bluefox
+ *      ioBroker Sonos Adapter
+ *      12'2013-2016 Bluefox <dogafox@gmail.com>
  *
- *      Version 0.4
  *      derived from https://github.com/jishi/node-sonos-web-controller by Jimmy Shimizu
  */
 var loglevel = process.argv[3] || 'info';
@@ -10,6 +9,7 @@ var utils    = require(__dirname + '/lib/utils'); // Get common adapter utils
 var tools    = require(utils.controllerDir + '/lib/tools.js');
 var logger   = require(utils.controllerDir + '/lib/logger.js')(loglevel, [utils.appName], undefined, 'sonos');
 var adapter  = utils.adapter('sonos');
+var async    = require('async');
 
 // {"val": state, "ack":false, "ts":1408294295, "from":"admin.0", "lc":1408294295}
 // id = sonos.0.192_168_1_55.state
@@ -46,28 +46,31 @@ adapter.on('stateChange', function (_id, state) {
             if (id.state === 'state') {
                 if (state.val && typeof state.val === 'string') {
                     state.val = state.val.toLowerCase();
-                    if (state.val === 'stop') {
-                        player.pause();
-                    } else
-                    if (state.val === 'play') {
-                        player.play();
-                    } else
-                    if (state.val === 'pause') {
-                        player.pause();
-                    } else
-                    if (state.val === 'next') {
-                        player.nextTrack();
-                    } else
-                    if (state.val == 'previous') {
-                        player.previousTrack();
-                    } else
-                    if (state.val === 'mute') {
-                        player.mute(true);
-                    } else
-                    if (state.val === 'unmute') {
-                        player.mute(false);
-                    } else {
-                        adapter.log.warn('Unknown state: ' + state.val);
+                    switch (state.val) {
+                        case 'stop':
+                            player.pause();
+                            break;
+                        case 'play':
+                            player.play();
+                            break;
+                        case 'pause':
+                            player.pause();
+                            break;
+                        case 'next':
+                            player.nextTrack();
+                            break;
+                        case 'previous':
+                            player.previousTrack();
+                            break;
+                        case 'mute':
+                            player.mute(true);
+                            break;
+                        case 'unmute':
+                            player.mute(false);
+                            break;
+                        default:
+                            adapter.log.warn('Unknown state: ' + state.val);
+                            break;
                     }
                 } else {
                     adapter.log.warn('Invalid state: ' + state.val);
@@ -84,11 +87,15 @@ adapter.on('stateChange', function (_id, state) {
             if (id.state === 'tts') {
                 adapter.log.debug('Play TTS file ' + state.val + ' on ' + id.channel);
                 text2speech(state.val, id.channel);
+            } else if (id.state === 'add_to_group') {
+                addToGroup(state.val, player); //xxxx
+            } else if (id.state === 'remove_from_group') {
+                removeFromGroup(state.val, player);
             } else {
                 adapter.log.warn('try to control unknown id ' + JSON.stringify(id));
             }
         } else {
-            adapter.log.warn('SONOS ' + channels[id.channel].uuid + ' not found');
+            adapter.log.warn('SONOS "' + channels[id.channel].uuid + '" not found');
         }
     }
 });
@@ -112,7 +119,7 @@ adapter.on('unload', function (callback) {
 adapter.on('ready', function () {
     adapter.getObject(adapter.namespace + '.root', function (err, obj) {
         if (!obj || !obj.common || !obj.common.name) {
-            adapter.createDevice("root", {}, function () {
+            adapter.createDevice('root', {}, function () {
                 main();
             });
         } else {
@@ -137,7 +144,7 @@ adapter.on('message', function (obj) {
                         if (obj.callback) adapter.sendTo(obj.from, obj.command, err, obj.callback);
                     });
                 } else {
-                    if (obj.callback) adapter.sendTo(obj.from, obj.command, "Invalid IP address: " + obj.message, obj.callback);
+                    if (obj.callback) adapter.sendTo(obj.from, obj.command, 'Invalid IP address: ' + obj.message, obj.callback);
                 }
                 break;*/
 
@@ -152,17 +159,17 @@ adapter.on('message', function (obj) {
             case 'delete':
                 wait = true;
                 if (obj.message) {
-                    adapter.deleteChannel("root", obj.message, function (err) {
+                    adapter.deleteChannel('root', obj.message, function (err) {
                         sonosInit();
                         if (obj.callback) adapter.sendTo(obj.from, obj.command, err, obj.callback);
                     });
                 } else {
-                    if (obj.callback) adapter.sendTo(obj.from, obj.command, "Invalid IP address: " + obj.message, obj.callback);
+                    if (obj.callback) adapter.sendTo(obj.from, obj.command, 'Invalid IP address: ' + obj.message, obj.callback);
                 }
                 break;
 */
             default:
-                adapter.log.warn("Unknown command: " + obj.command);
+                adapter.log.warn('Unknown command: ' + obj.command);
                 break;
         }
     }
@@ -179,7 +186,7 @@ var http           = require('http');
 var Static         = require('node-static');
 var fs             = require('fs');
 var crypto         = require('crypto');
-var sonosDiscovery = require('sonos-discovery');
+var SonosDiscovery = require('sonos-discovery');
 var path           = require('path');
 var dgram          = require('dgram');
 
@@ -190,7 +197,7 @@ var lastCover =   null;
 
 function toFormattedTime(time) {
     var hours = Math.floor(time / 3600);
-    hours = (hours) ? (hours + ":") : "";
+    hours = (hours) ? (hours + ':') : '';
     var min = Math.floor(time / 60) % 60;
     if (min < 10) min = '0' + min;
     var sec = time % 60;
@@ -198,6 +205,24 @@ function toFormattedTime(time) {
 
     return hours + min + ':' + sec;
 }
+var newGroupStates = {
+    'add_to_group': {
+        def: '',
+        type: 'string',
+        read: 'false',
+        write: 'true',
+        role: 'media',
+        desc: 'Add a Player to a Group (Player to remove, Coordinator)'
+    },
+    'remove_from_group': {
+        def: '',
+        type: 'string',
+        read: 'false',
+        write: 'true',
+        role: 'media',
+        desc: 'Remove a Player to a Group (Player to remove, Coordinator)'
+    }
+};
 
 function createChannel(name, ip, room, callback) {
     var states = {
@@ -348,6 +373,10 @@ function createChannel(name, ip, room, callback) {
         }
     };
 
+    for (var g in newGroupStates) {
+        states[g] = newGroupStates[g];
+    }
+
     var states_list = [];
     for (var state in states) {
         states_list.push(state);
@@ -374,6 +403,7 @@ function createChannel(name, ip, room, callback) {
 function browse(callback) {
     var result = [];
     for (var uuid in discovery.players) {
+        if (!discovery.players.hasOwnProperty(uuid)) continue;
         result.push({roomName: discovery.players[uuid].roomName, ip: discovery.players[uuid].address});
     }
 
@@ -401,7 +431,7 @@ function browse(callback) {
 
         server.on("message", function (msg, rinfo) {
             var str = msg.toString();
-            if (str.indexOf ("Sonos") != -1) {
+            if (str.indexOf ("Sonos") !== -1) {
                 console.log (rinfo.address);
                 result.push({name: rinfo.name, ip: rinfo.address});
             }
@@ -429,12 +459,12 @@ function text2speech(fileName, sonosIp, callback) {
     var volume = null;
 
     var pos = fileName.indexOf(';');
-    if (pos != -1) {
+    if (pos !== -1) {
         volume = fileName.substring(0, pos);
         fileName = fileName.substring(pos + 1);
     }
 
-    if (!fileName.match(/^http(s)?:\/\//)) {
+    if (fileName && !fileName.match(/^http(s)?:\/\//)) {
         if (!adapter.config.webserverEnabled) {
             adapter.log.warn('Web server must be enabled to play TTS');
             return;
@@ -444,7 +474,7 @@ function text2speech(fileName, sonosIp, callback) {
         var dest  = 'tts' + (currentFileNum++) + '.' + parts[parts.length - 1];
         if (currentFileNum > 10) currentFileNum = 0;
         // Copy this file
-        if (fileName != path.join(cacheDir, dest)) {
+        if (fileName !== path.join(cacheDir, dest)) {
             try {
                 fs.createReadStream(fileName).pipe(fs.createWriteStream(path.join(cacheDir, dest)));
             } catch (e) {
@@ -452,63 +482,197 @@ function text2speech(fileName, sonosIp, callback) {
                 return;
             }
         }
-        fileName = "http://" + discovery.localEndpoint + ":" + adapter.config.webserverPort + "/tts/" + dest;
+        fileName = 'http://' + discovery.localEndpoint + ':' + adapter.config.webserverPort + '/tts/' + dest;
     }
     if (sonosIp) sonosIp = sonosIp.replace(/[.\s]+/g, '_');
 
     // Play on all players
     for (var uuid in discovery.players) {
+        if (!discovery.players.hasOwnProperty(uuid) || !discovery.players[uuid]) continue;
         if (!discovery.players[uuid]._address) discovery.players[uuid]._address = discovery.players[uuid].address.replace(/[.\s]+/g, '_');
 
         var ip = discovery.players[uuid]._address;
 
-        if (sonosIp && ip != sonosIp) continue;
+        if (sonosIp && ip !== sonosIp) continue;
         setTimeout(playOnSonos, 10, fileName, uuid, volume);
     }
 
     if (callback) callback();
 }
 
+
+function fadeIn(player, to, step) {
+    //adapter.log.info('>> fadeIn to ' + to + ' caller: ' + (arguments.callee.caller ? arguments.callee.caller.name : 'null'));
+    player.setVolume(to);
+
+    /*var vol = 1;
+    var interval = setInterval(function (_to) {
+        if (vol >= _to) {
+            this.setVolume(_to);
+            adapter.log.info('fadeIn - final - setVolume: ' + to);
+            clearInterval(interval);
+            adapter.log.info('<< fadeIn to ' + _to);
+            return;
+        }
+        this.setVolume(vol);
+        adapter.log.info('fadeIn - setVolume: ' + vol);
+        vol += (1 + (vol >> 1));
+    }.bind(player, to), 50);*/
+}
+
+function fadeOut(player) {
+    //adapter.log.info('>> fadeOut caller: ' + arguments.callee.caller.name);
+    if (!player._isMute && player._volume) {
+        player.setVolume(0);
+
+        /*var ii = player._volume;
+        for (var i = ii-1; ; i -= (1 + ((ii-i) >> 1) )) {
+            if (i <= 0) {
+                player.setVolume(0);
+                adapter.log.info('>> fadeOut - final: setVolume: ' + 0);
+                break;
+            }
+            player.setVolume(i);
+            adapter.log.info('>> fadeOut: setVolume: ' + i);
+        }*/
+    }
+    adapter.log.info('<< fadeOut ');
+}
+
+
+function startPlayer(player, volume, start) {
+    //adapter.log.info('startPlayer volume: ' + volume + ' start=' + start + ' player.queuedTts.length=' + (player.queuedTts && player.queuedTts.length ? player.queuedTts.length : 0));
+    //fadeOut(player);
+    if (start) {
+        player.play();
+    }
+    fadeIn(player, volume);
+}
+
+//////////////////
+// Groupmanagement
+
+function getPlayerByName(name) {
+    for (var uuid in discovery.players) {
+        var player = discovery.players[uuid];
+        if (player.roomName === name || player.address === name || player._address === name || player.uuid === name) {
+            return player;
+        }
+    }
+}
+
+function attachTo(player, coordinator) {
+    player.setAVTransportURI('x-rincon:' + coordinator.uuid);
+}
+
+function addToGroup(playerNameToAdd, coordinator) {
+    if (typeof coordinator === 'string') coordinator = getPlayerByName(coordinator);
+    var playerToAdd = getPlayerByName(playerNameToAdd);
+    if(!coordinator || !playerToAdd) {
+        return;
+    }
+    attachTo(playerToAdd, coordinator);
+}
+
+function removeFromGroup(leavingName, coordinator) {
+    if (typeof coordinator === 'string') coordinator = getPlayerByName(coordinator);
+    var leavingPlayer = getPlayerByName(leavingName);
+    if (!coordinator || !leavingPlayer) {
+        return;
+    }
+    if (leavingPlayer.coordinator === coordinator) {
+        leavingPlayer.becomeCoordinatorOfStandaloneGroup();
+    } else {
+        attachTo(leavingPlayer, coordinator)
+    }
+}
+
+/////////////
+
 var audioExtensions = ['mp3', 'aiff', 'flac', 'less', 'wav'];
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//var GetPositionInfo = '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body>' +
+//    '<u:GetPositionInfo xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><Channel>Master</Channel></u:GetPositionInfo>';
+//
+//XmlEntities = require(__dirname + '/node_modules/sonos-discovery/node_modules/html-entities/lib/xml-entities').XmlEntities;
+//
+//function getPositionInfo(player, callback) {
+//    player.soapAction('/MediaRenderer/AVTransport/Control', '"urn:schemas-upnp-org:service:AVTransport:1#GetPositionInfo"', GetPositionInfo, function(succ, res) {
+//        if (succ) {
+//            var data = "";
+//            res.setEncoding('utf8');
+//            res.on('data', function (chunk) {
+//                data += chunk.toString();
+//            });
+//            res.on('end', function () {
+//                // Find queued element
+//
+//                var pos = data.indexOf('<TrackMetaData>');
+//                if (pos !== -1) {
+//                    data = data.substring(pos + '<TrackMetaData>'.length);
+//                    pos = data.indexOf('<');
+//                    if (pos !== -1) {
+//                        data = data.substring(0, pos);
+//                        callback(true, data);
+//                    }
+//                }
+//            });
+//        }
+//    });
+//}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 function playOnSonos(uri, sonosUuid, volume) {
     var now = (new Date()).getTime();
+    var player = discovery.players[sonosUuid];
 
-    if (!discovery.players[sonosUuid].tts || now - discovery.players[sonosUuid].tts.time > 30000) {
-        adapter.log.info('Play on sonos[' + sonosUuid + ']: ' + uri + ', Volume: ' + volume);
-        discovery.players[sonosUuid].tts = JSON.parse(JSON.stringify(discovery.players[sonosUuid].getState()));
-        discovery.players[sonosUuid].tts.time = now;
-    } else {
-        adapter.log.info('Queue on sonos[' + sonosUuid + ']: ' + uri + ', Volume: ' + volume);
-        discovery.players[sonosUuid].queuedTts = discovery.players[sonosUuid].queuedTts || [];
-        discovery.players[sonosUuid].queuedTts.push(uri);
+    if (!uri) { // stop aktual tts
+        if (player.tts) player.pause();
         return;
     }
 
-    var oldVolume = discovery.players[sonosUuid]._volume;
-    var oldIsMute = discovery.players[sonosUuid]._isMute;
-
-    if (volume === 'null' || volume === 'undefined') volume = 0;
-
-    if (volume && oldVolume != volume) {
-        discovery.players[sonosUuid].setVolume(volume);
+    if (!player.tts || now - player.tts.time > 30000) {
+        adapter.log.info('Play on sonos[' + sonosUuid + ']: ' + uri + ', Volume: ' + volume);
+        if (player.prevTts && now - player.prevTts.ts <= 2000) { // use prev player state also for next tts
+            player.tts = player.prevTts;
+            player.prevTts = null;
+        } else if (!player.tts) {
+            player.tts = JSON.parse(JSON.stringify(player.getState())); // only get akt payer state, if no previous
+        }
+        //adapter.log.info('player.tts= volume=' + player.tts.volume + ' currentTrack.uri=' + player.tts.currentTrack.uri + ' tts.playerState=' + player.tts.playerState);
+        //player.tts.ourUri = uri;
+        player.tts.time = now;
+    } else {
+        adapter.log.info('Queue on sonos[' + sonosUuid + ']: ' + uri + ', Volume: ' + volume);
+        player.queuedTts = player.queuedTts || [];
+        player.queuedTts.push({uri: uri, volume: volume});
+        return;
     }
-    if (oldIsMute) discovery.players[sonosUuid].groupMute(false);
 
-    var parts = discovery.players[sonosUuid].tts.currentTrack.uri ? discovery.players[sonosUuid].tts.currentTrack.uri.split('.') : ['none'];
+    //var oldVolume = player._volume;
+    //var oldIsMute = player._isMute;
+    //
+    //if (volume === 'null' || volume === 'undefined') volume = 0;
+    //
+    //if (volume && oldVolume != volume) {
+    //    player.setVolume(volume);
+    //}
+    //if (oldIsMute) player.groupMute(false);
 
-    //console.log('Current uri: ' + discovery.players[sonosUuid].tts.currentTrack.uri);
+    var parts = player.tts.currentTrack.uri ? player.tts.currentTrack.uri.split('.') : ['none'];
 
-    if (discovery.players[sonosUuid].tts.currentTrack.uri &&
-         ((discovery.players[sonosUuid].tts.currentTrack.uri.indexOf('x-file-cifs:') != -1) ||
-          (discovery.players[sonosUuid].tts.currentTrack.uri.indexOf('x-sonos-spotify:') != -1) ||
-          (audioExtensions.indexOf(parts[parts.length - 1]) != -1))
+    if (player.tts.currentTrack.uri &&
+        ((player.tts.currentTrack.uri.indexOf('x-file-cifs:') !== -1) ||
+         (player.tts.currentTrack.uri.indexOf('x-sonos-spotify:') !== -1) ||
+          (audioExtensions.indexOf(parts[parts.length - 1]) !== -1))
        ) {
-        discovery.players[sonosUuid].tts.radio = false;
-        discovery.players[sonosUuid].addURIToQueue(uri, '', function (code, res) {
+        player.tts.radio = false;
+
+        player.addURIToQueue(uri, '', function (code, res) {
             if (code) {
                 // Find out added track
-                var data = "";
+                var data = '';
                 res.setEncoding('utf8');
                 res.on('data', function (chunk) {
                     data += chunk.toString();
@@ -516,23 +680,25 @@ function playOnSonos(uri, sonosUuid, volume) {
                 res.on('end', function () {
                     // Find queued element
                     var pos = data.indexOf('<FirstTrackNumberEnqueued>');
-                    if (pos != -1) {
+                    if (pos !== -1) {
                         data = data.substring(pos + '<FirstTrackNumberEnqueued>'.length);
                         pos = data.indexOf('<');
-                        if (pos != -1) {
+                        if (pos !== -1) {
                             data = data.substring(0, pos);
 
-                            if (!discovery.players[sonosUuid].tts) {
-                                adapter.log.warn('Cannot restore sonos state');
+                            if (!player.tts) {
+                                //adapter.log.warn('Cannot restore sonos state');
+                                adapter.log.warn('Cannot add track (URI) to Sonos Queue');
                                 return;
                             }
-                            discovery.players[sonosUuid].tts.addedTrack = parseInt(data, 10);
+                            player.tts.addedTrack = parseInt(data, 10);
 
-                            discovery.players[sonosUuid].seek(discovery.players[sonosUuid].tts.addedTrack, function (code) {
+                            fadeOut(player);
+                            adapter.log.info('player.seek: ' + player.tts.addedTrack);
+
+                            player.seek(player.tts.addedTrack, function (/* code*/) {
                                 // Send command PLAY
-                                if (discovery.players[sonosUuid].tts.playerState !== 'PLAYING') {
-                                    discovery.players[sonosUuid].play();
-                                }
+                                startPlayer(player, volume, player.tts.playerState !== 'PLAYING');
                             });
                         }
                     }
@@ -541,16 +707,19 @@ function playOnSonos(uri, sonosUuid, volume) {
         });
     } else {
         // Radio
-        discovery.players[sonosUuid].tts.radio = true;
-        discovery.players[sonosUuid].setAVTransportURI(uri, '', function (code, res) {
+        player.tts.radio = true;
+        fadeOut(player);
+        adapter.log.info('setAVTransportURI: ' + uri);
+
+        player.setAVTransportURI(uri, '', function (code, res) {
             // Send command PLAY
-            discovery.players[sonosUuid].play();
+            startPlayer(player, volume, true);
         });
     }
 }
 
 function addChannel(name, ip, room, callback) {
-    adapter.getObject("root", function (err, obj) {
+    adapter.getObject('root', function (err, obj) {
         if (err || !obj) {
             // if root does not exist, channel will not be created
             adapter.createDevice('root', [], function () {
@@ -565,59 +734,89 @@ function addChannel(name, ip, room, callback) {
 var lastMetaData = '';
 var lastFavoriteUri = '';
 
+function resetTts(player) {
+    //adapter.log.info('setting tts = null' + (arguments.callee.caller.name !== undefined ? arguments.callee.caller.name : 'no caller'));
+    if(!player.tts) return;
+    player.prevTts = player.tts;
+    player.prevTts.ts = (new Date()).getTime();
+    player.tts = null;
+}
+
+function _getPs(playerState) {
+    var ps = { playing:0, paused:0, transitioning:0, stopped:0 };
+    switch (playerState) {
+        case 'PLAYING': ps.playing=true; break;
+        case 'PAUSED_PLAYBACK': ps.paused=true; break;
+        case 'STOPPED': ps.stopped=true; break;
+        case 'TRANSITIONING': ps.transitioning=true; break;
+    }
+    return ps;
+}
+
 function takeSonosState(ip, sonosState) {
     adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
+    var ps = _getPs(sonosState.playerState);
+    var player = discovery.players[channels[ip].uuid];
 
-    // If other files queued
-    if (!discovery.players[channels[ip].uuid].tts &&
-        discovery.players[channels[ip].uuid].queuedTts && discovery.players[channels[ip].uuid].queuedTts.length) {
-        var uri = discovery.players[channels[ip].uuid].queuedTts.pop();
+    if (!player.tts && player.queuedTts && player.queuedTts.length) {
+        var q = player.queuedTts.shift();
         var uuid = channels[ip].uuid;
+        adapter.log.info('Taking next queue entry, tts=' + (player.tts ? true : false) + 'playState=' + sonosState.playerState);
         setTimeout(function () {
-            playOnSonos(uri, uuid);
+            playOnSonos(q.uri, uuid, q.volume);
         }, 0);
     }
 
-    if (sonosState.playerState !== 'TRANSITIONING') {
-        adapter.setState({device: 'root', channel: ip, state: 'state_simple'}, {val:  sonosState.playerState === 'PLAYING', ack: true});
-        adapter.setState({device: 'root', channel: ip, state: 'state'},        {val: (sonosState.playerState === 'PAUSED_PLAYBACK') ? 'pause' : ((sonosState.playerState === 'PLAYING') ? 'play' : 'stop'), ack: true});
+    adapter.log.info('>  playerState: ' + sonosState.playerState + ' - ' + (sonosState.currentTrack && sonosState.currentTrack.title ? sonosState.currentTrack.title : ''));
+    if (!ps.transitioning) {
+        adapter.setState({device: 'root', channel: ip, state: 'state_simple'}, {val:  ps.playing, ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'state'},        {val: ps.paused ? 'pause' : (ps.playing ? 'play' : 'stop'), ack: true});
 
-        // If some TTS played and finished now
-        if (discovery.players[channels[ip].uuid] && discovery.players[channels[ip].uuid].tts &&
-            (sonosState.playerState === 'PAUSED_PLAYBACK' || sonosState.playerState === 'STOPPED') &&
-            ((new Date()).getTime() - discovery.players[channels[ip].uuid].tts.time > 1000)) {
+        if (ps.playing && player.tts_fadeIn) {
+            fadeIn(player, player.tts_fadeIn, 1);
+            player.tts_fadeIn = 0
+        }
 
-            var player = discovery.players[channels[ip].uuid];
+        if (player.tts && (ps.paused || ps.stopped) //{
+            /*&& (sonosState.currentTrack.uri === player.tts.ourUri)*/) {
+
+            // If other files queued
+            //if (player.queuedTts && player.queuedTts.length) {
+            //    var q = player.queuedTts.shift();
+            //    var uuid = channels[ip].uuid;
+            //    if (player.tts) player.tts.time -= 30001; // fake a timeout to force playing and using previous player state
+            //    setTimeout(function () {
+            //        playOnSonos(q.uri, uuid, q.volume);
+            //    }, 0);
+            if ((new Date()).getTime() - player.tts.time > 1000) { // else: do not restore old state, if queue is not empty
             var tts = player.tts;
 
             // Restore state before tts
-            adapter.log.info('Restore state: volume - ' +  tts.volume + ', mute: ' + tts.mute + ', uri: ' + tts.currentTrack.uri);
-            player.setVolume(tts.volume);
-            player.mute(tts.mute);
+                adapter.log.info('>> Restore state: volume - ' + tts.volume + ', mute: ' + tts.mute + ', uri: ' + tts.currentTrack.uri);
+
+                fadeOut(player);
+                if (player._isMuted !== tts.mute) player.mute(tts.mute);
 
             if (tts.radio) {
-                if (tts.playerState != "PLAYING") {
-                    player.tts = null;
+                if (tts.playerState !== 'PLAYING') {
+                        resetTts(player);
                 }
 
                 function setUri() {
                     player.setAVTransportURI(tts.currentTrack.uri, lastMetaData, function (code, res) {
-                        player.tts = null;
-                        // Restore play state if was play
-                        if (tts.playerState == "PLAYING") {
-                            player.play();
-                        }
+                            resetTts(player);
+                            startPlayer(player, tts.volume, tts.playerState === 'PLAYING');
                     });
                 }
 
-                if (lastFavoriteUri == tts.currentTrack.uri) {
+                if (lastFavoriteUri === tts.currentTrack.uri) {
                      setUri();
                 } else player.getFavorites(function (success, favorites) {
                     lastMetaData = '';
                     lastFavoriteUri = '';
                     if (success) {
                         for (var i in favorites) {
-                            if (favorites[i].uri == tts.currentTrack.uri) {
+                            if (favorites[i].uri === tts.currentTrack.uri) {
                                 lastMetaData = favorites[i].metaData;
                                 lastFavoriteUri = tts.currentTrack.uri;
                                 break;
@@ -626,25 +825,25 @@ function takeSonosState(ip, sonosState) {
                     }
                     setUri();
                 });
-            } else {
+                } else { // if (ts.radio
                 // Remove added track
+                    adapter.log.info('player.removeTrackFromQueue, Track=' + tts.addedTrack);
                 player.removeTrackFromQueue(tts.addedTrack);
 
+                    fadeOut(player);
                 // Set old track nomber
                 player.seek(tts.trackNo, function (code, res) {
-                    player.tts = null;
+                        resetTts(player);
                     // Set elapsed time
                     player.trackSeek(tts.elapsedTime, function (code, res) {
-                        // Restore play state if was play
-                        if (tts.playerState === 'PLAYING') {
-                            player.play();
-                        }
+                            startPlayer(player, tts.volume, /*true ||*/ tts.playerState === 'PLAYING');
                     });
                 });
             }
         }
+        }
 
-        if (sonosState.playerState == "PLAYING") {
+        if (ps.playing) {
             if (!channels[ip].elapsedTimer) {
                 channels[ip].elapsedTimer = setInterval(function (ip_) {
                     channels[ip_].elapsed += ((adapter.config.elapsedInterval || 5000) / 1000);
@@ -676,7 +875,7 @@ function takeSonosState(ip, sonosState) {
     // Still work to do:
     // - Tracks w/o Album name keeps album name from previous track or some random album. Don't know if this is already wrong from SONOS API.
 
-    if (sonosState.currentTrack.type == 'radio') {
+    if (sonosState.currentTrack.type === 'radio') {
         var idx = sonosState.currentTrack.radioShowMetaData.lastIndexOf(',');
         var show = (idx > -1 ? sonosState.currentTrack.radioShowMetaData.substr(0, idx) : sonosState.currentTrack.radioShowMetaData);
         adapter.setState({device: 'root', channel: ip, state: 'current_album'},      {val: show, ack: true});
@@ -695,7 +894,7 @@ function takeSonosState(ip, sonosState) {
     adapter.setState({device: 'root', channel: ip, state: 'current_duration'},   {val: sonosState.currentTrack.duration, ack: true});
     adapter.setState({device: 'root', channel: ip, state: 'current_duration_s'}, {val: toFormattedTime(sonosState.currentTrack.duration), ack: true});
 
-    if (lastCover != sonosState.currentTrack.albumArtURI) {
+    if (lastCover !== sonosState.currentTrack.albumArtURI) {
         var md5url     = crypto.createHash('md5').update(sonosState.currentTrack.albumArtURI).digest('hex');
         var fileName   = cacheDir + md5url;
         var stateName  = adapter.namespace + '.root.' + ip + '.cover.png';
@@ -708,18 +907,18 @@ function takeSonosState(ip, sonosState) {
                 port: 1400,
                 path: sonosState.currentTrack.albumArtURI
             }, function (res2) {
-                adapter.log.debug("HTTP status code " + res2.statusCode);
-                if (res2.statusCode == 200) {
+                adapter.log.debug('HTTP status code ' + res2.statusCode);
+                if (res2.statusCode === 200) {
                     if (!fs.existsSync(fileName)) {
                         var cacheStream = fs.createWriteStream(fileName);
                         res2.pipe(cacheStream).on('finish', function() {
                             readCoverFileToState(fileName, stateName, ip);
                         });
                     } else {
-                        adapter.log.debug("Not writing to cache");
+                        adapter.log.debug('Not writing to cache');
                         res2.resume();
                     }
-                } else if (res2.statusCode == 404) {
+                } else if (res2.statusCode === 404) {
                     // no image exists! link it to the default image.
                     fileName = defaultImg;
                     res2.resume();
@@ -770,7 +969,7 @@ function readCoverFileToState(fileName, stateName, ip) {
     try {
         fileData = fs.readFileSync(fileName);
     } catch (e) {
-        adapter.log.warn("Cannot read file: " + e);
+        adapter.log.warn('Cannot read file: ' + e);
     }
     // If error or null length file, read standard cover file
     if (!fileData) {
@@ -786,13 +985,13 @@ function readCoverFileToState(fileName, stateName, ip) {
 }
 
 function takeSonosFavorites(ip, favorites) {
-	var sFavorites = '';
-	for (var favorite in favorites) {
+    var sFavorites = '';
+    for (var favorite in favorites) {
         if (favorites[favorite].title) {
-            sFavorites += ((sFavorites) ? ", ": "") + favorites[favorite].title;
+            sFavorites += ((sFavorites) ? ', ' : '') + favorites[favorite].title;
         }
-	}
-	
+    }
+
     adapter.setState({device: 'root', channel: ip, state: 'favorites_list'}, {val: sFavorites, ack: true});
 }
 
@@ -841,6 +1040,7 @@ function processSonosEvents(event, data) {
                 adapter.setState({device: 'root', channel: ip, state: 'muted'},  {val: data.groupState.mute,  ack: true});
                 discovery.players[s]._isMuted = data.groupState.mute;
                 discovery.players[s]._volume  = data.playerVolumes[s];
+                adapter.log.debug('group-volume: Volume for ' + discovery.players[s].address + ': ' + data.playerVolumes[s]);
             }
         }
     } else if (event === 'favorites') {
@@ -859,6 +1059,17 @@ function processSonosEvents(event, data) {
     }
 }
 
+function checkNewGroupStates(channel) {
+    for (var g in newGroupStates) {
+        adapter.getState(channel._id + '.' + g, function (_g, err, obj) {
+            if (err || !obj) {
+                var dcs = adapter.idToDCS(channel._id + '.' + _g);
+                adapter.createState(dcs.device, dcs.channel, dcs.state, newGroupStates[_g]);
+            }
+        }.bind(null, g));
+    }
+}
+
 function syncConfig() {
     channels = {};
 
@@ -866,6 +1077,7 @@ function syncConfig() {
         if (devices && devices.length) {
             // Go through all devices
             for (var i = 0; i < devices.length; i++) {
+
                 adapter.getChannelsOf(devices[i].common.name, function (err, _channels) {
                     var configToDelete = [];
                     var configToAdd    = [];
@@ -881,12 +1093,13 @@ function syncConfig() {
                             var ip = _channels[j].native.ip;
                             var id = ip.replace(/[.\s]+/g, '_');
                             var pos = configToAdd.indexOf(ip);
-                            if (pos != -1) {
+                            if (pos !== -1) {
+                                checkNewGroupStates(_channels[j]);
                                 configToAdd.splice(pos, 1);
                                 // Check name and room
                                 for (var u = 0; u < adapter.config.devices.length; u++) {
-                                    if (adapter.config.devices[u].ip == ip) {
-                                        if (_channels[j].common.name != (adapter.config.devices[u].name || adapter.config.devices[u].ip)) {
+                                    if (adapter.config.devices[u].ip === ip) {
+                                        if (_channels[j].common.name !== (adapter.config.devices[u].name || adapter.config.devices[u].ip)) {
                                             adapter.extendObject(_channels[j]._id, {
                                                 common: {
                                                     name: (adapter.config.devices[u].name || adapter.config.devices[u].ip)
@@ -918,7 +1131,7 @@ function syncConfig() {
 
                     if (configToAdd.length) {
                         for (var r = 0; r < adapter.config.devices.length; r++) {
-                            if (adapter.config.devices[r].ip && configToAdd.indexOf(adapter.config.devices[r].ip) != -1) {
+                            if (adapter.config.devices[r].ip && configToAdd.indexOf(adapter.config.devices[r].ip) !== -1) {
                                 addChannel(adapter.config.devices[r].name, adapter.config.devices[r].ip, adapter.config.devices[r].room, function (err, obj) {
                                     adapter.getObject(obj.id, function (err, obj) {
                                         channels[obj.native.ip.replace(/[.\s]+/g, '_')] = {
@@ -977,7 +1190,7 @@ function main() {
     _path.pop();
     cacheDir = _path.join('/') + '/sonosCache/';
 
-    discovery = new sonosDiscovery({
+    discovery = new SonosDiscovery({
         household:  null,
         log:        logger,
         cacheDir:   cacheDir,
@@ -990,7 +1203,7 @@ function main() {
 
         cacheDir = adapter.config.cacheDir ? (__dirname + adapter.config.cacheDir) : cacheDir;
         // Remove last "/"
-        if (cacheDir[cacheDir.length - 1] != '/') cacheDir += '/';
+        if (cacheDir[cacheDir.length - 1] !== '/') cacheDir += '/';
 
         fs.mkdir(cacheDir, function (e) {
             if (e && e.code !== 'EEXIST') {
@@ -1018,8 +1231,8 @@ function main() {
                         });
                         fs.createReadStream(fileName).pipe(res);
                     } else {
-                        res.writeHead(404, {"Content-Type": "text/plain"});
-                        res.write("404 Not found. File " + fileName + " not found in " + cacheDir);
+                        res.writeHead(404, {'Content-Type': 'text/plain'});
+                        res.write('404 Not found. File ' + fileName + ' not found in ' + cacheDir);
                         res.end();
                     }
                 });
@@ -1050,14 +1263,14 @@ function main() {
                         port: 1400,
                         path: req.url
                     }, function (res2) {
-                        if (res2.statusCode == 200) {
+                        if (res2.statusCode === 200) {
                             if (!fs.exists(fileName)) {
                                 var cacheStream = fs.createWriteStream(fileName);
                                 res2.pipe(cacheStream);
                             } else {
                                 res2.resume();
                             }
-                        } else if (res2.statusCode == 404) {
+                        } else if (res2.statusCode === 404) {
                             // no image exists! link it to the default image.
                             //console.log(res2.statusCode, 'linking', fileName)
                             fs.link( __dirname + '/img/browse_missing_album_art.png', fileName, function (e) {
@@ -1086,7 +1299,7 @@ function main() {
         });
 
         socketServer = io.listen(server);
-        socketServer.set('log level', 1);
+        //socketServer.set('log level', 1);
 
         socketServer.sockets.on('connection', function (socket) {
             // Send it in a better format
