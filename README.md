@@ -21,6 +21,9 @@ To allow using sayIt adapter with sonos, be sure that web adapter is instatiated
 You can use mobile interface too. It can be found under ```http://ipaddress:8083/m/```
 
 ## Changelog
+### 0.2.2 (2016-09-30)
+- (bluefox) fix types of states
+
 ### 0.2.1 (2016-09-25)
 - (soef) fixed restore of radio after sayIt
 

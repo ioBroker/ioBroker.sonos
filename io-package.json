@@ -1,8 +1,13 @@
 {
     "common": {
         "name":                     "sonos",
-        "version":                  "0.2.1",
+        "version":                  "0.2.2",
         "news": {
+            "0.2.2": {
+                "en": "fix type of states",
+                "de": "Korrigiere Typen von Zuständen",
+                "ru": "Исправлены типы переменных"
+            },
             "0.2.1": {
                 "en": "some fixes for sayIt",
                 "de": "Verbesserungen für sayIt",

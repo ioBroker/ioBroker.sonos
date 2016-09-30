@@ -207,108 +207,107 @@ function toFormattedTime(time) {
 }
 var newGroupStates = {
     'add_to_group': {
-        def: '',
-        type: 'string',
-        read: 'false',
-        write: 'true',
-        role: 'media',
-        desc: 'Add a Player to a Group (Player to remove, Coordinator)'
+        def:   '',
+        type:  'string',
+        read:  false,
+        write: true,
+        role:  'media',
+        desc:  'Add a Player to a Group (Player to remove, Coordinator)'
     },
     'remove_from_group': {
-        def: '',
-        type: 'string',
-        read: 'false',
-        write: 'true',
-        role: 'media',
-        desc: 'Remove a Player to a Group (Player to remove, Coordinator)'
+        def:   '',
+        type:  'string',
+        read:  false,
+        write: true,
+        role:  'media',
+        desc:  'Remove a Player to a Group (Player to remove, Coordinator)'
     }
 };
 
 function createChannel(name, ip, room, callback) {
     var states = {
         'state_simple': {      // media.state -            Text state of player: stop, play, pause (read, write)
-            def:    'false',
+            def:    false,
             type:   'boolean',
-            read:   'true',
-            write:  'true',
+            read:   true,
+            write:  true,
             role:   'media.state',
             desc:   'Play or pause'
         },
         'state': {             // media.state -            Text state of player: stop, play, pause (read, write)
             def:    'stop',
             type:   'string',
-            read:   'true',
-            write:  'true',
+            read:   true,
+            write:  true,
             values: 'stop,play,pause,next,previous,mute,unmute',
             role:   'media.state',
             desc:   'Play, stop, or pause, next, previous, mute, unmute'
         },
         'volume': {            // media.volume -           volume level (read, write)
-            def:    'number',
-            type:   'boolean',
-            read:   'true',
-            write:  'true',
+            type:   'number',
+            read:   true,
+            write:  true,
             role:   'media.volume',
-            min:    '0',
-            max:    '100',
+            min:    0,
+            max:    100,
             desc:   'State and control of volume'
         },
         'muted': {             // media.muted -            is muted (read only)
-            def:    'false',
+            def:    false,
             type:   'boolean',
-            read:   'true',
-            write:  'true',
+            read:   true,
+            write:  true,
             role:   'media.muted',
-            min:    'false',
-            max:    'true',
+            min:    false,
+            max:    true,
             desc:   'Is muted'
         },
         'current_title': {     // media.current.title -    current title (read only)
             def:    '',
             type:   'string',
-            read:   'true',
-            write:  'false',
+            read:   true,
+            write:  false,
             role:   'media.current.title',
             desc:   'Title of current played song'
         },
         'current_artist': {    // media.current.artist -   current artist (read only)
             def:    '',
             type:   'string',
-            read:   'true',
-            write:  'false',
+            read:   true,
+            write:  false,
             role:   'media.current.artist',
             desc:   'Artist of current played song'
         },
         'current_album': {     // media.current.album -    current album (read only)
             def:    '',
             type:   'string',
-            read:   'true',
-            write:  'false',
+            read:   true,
+            write:  false,
             role:   'media.current.album',
             desc:   'Album of current played song'
         },
         'current_cover': {     // media.current.cover -    current url to album cover (read only)
             def:    '',
             type:   'string',
-            read:   'true',
-            write:  'false',
+            read:   true,
+            write:  false,
             role:   'media.current.cover',
             desc:   'Cover image of current played song'
         },
         'current_duration': {  // media.current.duration - duration as HH:MM:SS (read only)
             def:    '00:00',
             type:   'string',
-            read:   'true',
-            write:  'false',
+            read:   true,
+            write:  false,
             unit:   'interval',
             role:   'media.current.duration',
             desc:   'Duration of current played song as HH:MM:SS'
         },
         'current_duration_s': {// media.current.duration - duration in seconds (read only)
-            def:    '0',
+            def:    0,
             type:   'number',
-            read:   'true',
-            write:  'false',
+            read:   true,
+            write:  false,
             unit:   'seconds',
             role:   'media.current.duration',
             desc:   'Duration of current played song in seconds'
@@ -316,33 +315,33 @@ function createChannel(name, ip, room, callback) {
         'current_type': {             // media.type -            type of stream (read only)
             def:    '',
             type:   'string',
-            read:   'true',
-            write:  'false',
+            read:   true,
+            write:  false,
             role:   'media.current.type',
             values: '0,1',
             desc:   'Type of Stream (0 = track, 1 = radio)'
         },
         'alive': {             // indicator.reachable -    if player alive (read only)
             type:   'boolean',
-            read:   'true',
-            write:  'false',
+            read:   true,
+            write:  false,
             role:   'indicator.reachable',
             desc:   'If sonos alive or not'
         },
         'current_elapsed': {   // media.current.elapsed -  elapsed time in HH:MM:SS (read only)
             def:    '00:00',
             type:   'string',
-            read:   'true',
-            write:  'false',
+            read:   true,
+            write:  false,
             unit:   'interval',
             role:   'media.current.elapsed',
             desc:   'Elapsed time of current played song as HH:MM:SS'
         },
         'current_elapsed_s': { // media.current.elapsed -  elapsed time in seconds (read only)
-            def:    '0',
+            def:    0,
             type:   'number',
-            read:   'true',
-            write:  'false',
+            read:   true,
+            write:  false,
             unit:   'seconds',
             role:   'media.current.elapsed',
             desc:   'Elapsed time of current played song in seconds'
@@ -350,24 +349,24 @@ function createChannel(name, ip, room, callback) {
         'favorites_list': {    // media.favorites.list -   list of favorites channel (read only)
             def:    '',
             type:   'string',
-            read:   'true',
-            write:  'false',
+            read:   true,
+            write:  false,
             role:   'media.favorites.list',
             desc:   'List of favorites song or stations, divided by comma'
         },
         'favorites_set': {     // media.favorites.set -    select favorites from list (write only)
             def:    '',
             type:   'string',
-            read:   'false',
-            write:  'true',
+            read:   false,
+            write:  true,
             role:   'media.favorites.set',
             desc:   'Set favorite from the list to play'
         },
         'tts': {     // play text to speech mp3 file
             def:    '',
             type:   'string',
-            read:   'false',
-            write:  'true',
+            read:   false,
+            write:  true,
             role:   'media',
             desc:   'Set text2speech mp3 file to play'
         }
@@ -502,26 +501,26 @@ function text2speech(fileName, sonosIp, callback) {
 
 
 function fadeIn(player, to, step) {
-    //adapter.log.info('>> fadeIn to ' + to + ' caller: ' + (arguments.callee.caller ? arguments.callee.caller.name : 'null'));
+    //adapter.log.debug('>> fadeIn to ' + to + ' caller: ' + (arguments.callee.caller ? arguments.callee.caller.name : 'null'));
     player.setVolume(to);
 
     /*var vol = 1;
     var interval = setInterval(function (_to) {
         if (vol >= _to) {
             this.setVolume(_to);
-            adapter.log.info('fadeIn - final - setVolume: ' + to);
+            adapter.log.debug('fadeIn - final - setVolume: ' + to);
             clearInterval(interval);
-            adapter.log.info('<< fadeIn to ' + _to);
+            adapter.log.debug('<< fadeIn to ' + _to);
             return;
         }
         this.setVolume(vol);
-        adapter.log.info('fadeIn - setVolume: ' + vol);
+        adapter.log.debug('fadeIn - setVolume: ' + vol);
         vol += (1 + (vol >> 1));
     }.bind(player, to), 50);*/
 }
 
 function fadeOut(player) {
-    //adapter.log.info('>> fadeOut caller: ' + arguments.callee.caller.name);
+    //adapter.log.debug('>> fadeOut caller: ' + arguments.callee.caller.name);
     if (!player._isMute && player._volume) {
         player.setVolume(0);
 
@@ -529,19 +528,19 @@ function fadeOut(player) {
         for (var i = ii-1; ; i -= (1 + ((ii-i) >> 1) )) {
             if (i <= 0) {
                 player.setVolume(0);
-                adapter.log.info('>> fadeOut - final: setVolume: ' + 0);
+                adapter.log.debug('>> fadeOut - final: setVolume: ' + 0);
                 break;
             }
             player.setVolume(i);
-            adapter.log.info('>> fadeOut: setVolume: ' + i);
+            adapter.log.debug('>> fadeOut: setVolume: ' + i);
         }*/
     }
-    adapter.log.info('<< fadeOut ');
+    adapter.log.debug('<< fadeOut ');
 }
 
 
 function startPlayer(player, volume, start) {
-    //adapter.log.info('startPlayer volume: ' + volume + ' start=' + start + ' player.queuedTts.length=' + (player.queuedTts && player.queuedTts.length ? player.queuedTts.length : 0));
+    //adapter.log.debug('startPlayer volume: ' + volume + ' start=' + start + ' player.queuedTts.length=' + (player.queuedTts && player.queuedTts.length ? player.queuedTts.length : 0));
     //fadeOut(player);
     if (start) {
         player.play();
@@ -633,18 +632,18 @@ function playOnSonos(uri, sonosUuid, volume) {
     }
 
     if (!player.tts || now - player.tts.time > 30000) {
-        adapter.log.info('Play on sonos[' + sonosUuid + ']: ' + uri + ', Volume: ' + volume);
+        adapter.log.debug('Play on sonos[' + sonosUuid + ']: ' + uri + ', Volume: ' + volume);
         if (player.prevTts && now - player.prevTts.ts <= 2000) { // use prev player state also for next tts
             player.tts = player.prevTts;
             player.prevTts = null;
         } else if (!player.tts) {
             player.tts = JSON.parse(JSON.stringify(player.getState())); // only get akt payer state, if no previous
         }
-        //adapter.log.info('player.tts= volume=' + player.tts.volume + ' currentTrack.uri=' + player.tts.currentTrack.uri + ' tts.playerState=' + player.tts.playerState);
+        //adapter.log.debug('player.tts= volume=' + player.tts.volume + ' currentTrack.uri=' + player.tts.currentTrack.uri + ' tts.playerState=' + player.tts.playerState);
         //player.tts.ourUri = uri;
         player.tts.time = now;
     } else {
-        adapter.log.info('Queue on sonos[' + sonosUuid + ']: ' + uri + ', Volume: ' + volume);
+        adapter.log.debug('Queue on sonos[' + sonosUuid + ']: ' + uri + ', Volume: ' + volume);
         player.queuedTts = player.queuedTts || [];
         player.queuedTts.push({uri: uri, volume: volume});
         return;
@@ -694,7 +693,7 @@ function playOnSonos(uri, sonosUuid, volume) {
                             player.tts.addedTrack = parseInt(data, 10);
 
                             fadeOut(player);
-                            adapter.log.info('player.seek: ' + player.tts.addedTrack);
+                            adapter.log.debug('player.seek: ' + player.tts.addedTrack);
 
                             player.seek(player.tts.addedTrack, function (/* code*/) {
                                 // Send command PLAY
@@ -709,7 +708,7 @@ function playOnSonos(uri, sonosUuid, volume) {
         // Radio
         player.tts.radio = true;
         fadeOut(player);
-        adapter.log.info('setAVTransportURI: ' + uri);
+        adapter.log.debug('setAVTransportURI: ' + uri);
 
         player.setAVTransportURI(uri, '', function (code, res) {
             // Send command PLAY
@@ -735,7 +734,7 @@ var lastMetaData = '';
 var lastFavoriteUri = '';
 
 function resetTts(player) {
-    //adapter.log.info('setting tts = null' + (arguments.callee.caller.name !== undefined ? arguments.callee.caller.name : 'no caller'));
+    //adapter.log.debug('setting tts = null' + (arguments.callee.caller.name !== undefined ? arguments.callee.caller.name : 'no caller'));
     if(!player.tts) return;
     player.prevTts = player.tts;
     player.prevTts.ts = (new Date()).getTime();
@@ -761,13 +760,13 @@ function takeSonosState(ip, sonosState) {
     if (!player.tts && player.queuedTts && player.queuedTts.length) {
         var q = player.queuedTts.shift();
         var uuid = channels[ip].uuid;
-        adapter.log.info('Taking next queue entry, tts=' + (player.tts ? true : false) + 'playState=' + sonosState.playerState);
+        adapter.log.debug('Taking next queue entry, tts=' + (player.tts ? true : false) + 'playState=' + sonosState.playerState);
         setTimeout(function () {
             playOnSonos(q.uri, uuid, q.volume);
         }, 0);
     }
 
-    adapter.log.info('>  playerState: ' + sonosState.playerState + ' - ' + (sonosState.currentTrack && sonosState.currentTrack.title ? sonosState.currentTrack.title : ''));
+    adapter.log.debug('>  playerState: ' + sonosState.playerState + ' - ' + (sonosState.currentTrack && sonosState.currentTrack.title ? sonosState.currentTrack.title : ''));
     if (!ps.transitioning) {
         adapter.setState({device: 'root', channel: ip, state: 'state_simple'}, {val:  ps.playing, ack: true});
         adapter.setState({device: 'root', channel: ip, state: 'state'},        {val: ps.paused ? 'pause' : (ps.playing ? 'play' : 'stop'), ack: true});
@@ -792,7 +791,7 @@ function takeSonosState(ip, sonosState) {
             var tts = player.tts;
 
             // Restore state before tts
-                adapter.log.info('>> Restore state: volume - ' + tts.volume + ', mute: ' + tts.mute + ', uri: ' + tts.currentTrack.uri);
+                adapter.log.debug('>> Restore state: volume - ' + tts.volume + ', mute: ' + tts.mute + ', uri: ' + tts.currentTrack.uri);
 
                 fadeOut(player);
                 if (player._isMuted !== tts.mute) player.mute(tts.mute);
@@ -826,17 +825,17 @@ function takeSonosState(ip, sonosState) {
                     setUri();
                 });
                 } else { // if (ts.radio
-                // Remove added track
-                    adapter.log.info('player.removeTrackFromQueue, Track=' + tts.addedTrack);
-                player.removeTrackFromQueue(tts.addedTrack);
+                    // Remove added track
+                    adapter.log.debug('player.removeTrackFromQueue, Track=' + tts.addedTrack);
+                    player.removeTrackFromQueue(tts.addedTrack);
 
                     fadeOut(player);
-                // Set old track nomber
-                player.seek(tts.trackNo, function (code, res) {
-                        resetTts(player);
+                    // Set old track nomber
+                    player.seek(tts.trackNo, function (code, res) {
+                    resetTts(player);
                     // Set elapsed time
                     player.trackSeek(tts.elapsedTime, function (code, res) {
-                            startPlayer(player, tts.volume, /*true ||*/ tts.playerState === 'PLAYING');
+                        startPlayer(player, tts.volume, /*true ||*/ tts.playerState === 'PLAYING');
                     });
                 });
             }
