@@ -1,7 +1,7 @@
 {
   "name": "iobroker.sonos",
   "description": "The adapter opens a webserver for the ioBroker admin UI",
-  "version": "0.2.2",
+  "version": "1.0.0",
   "engines": {
     "node": ">=4.0.0"
   },
@@ -27,9 +27,9 @@
   "dependencies": {
     "sonos-web-controller": "https://github.com/jishi/node-sonos-web-controller/tarball/860a5e1",
     "sonos-discovery": "https://github.com/jishi/node-sonos-discovery/tarball/f3b09a3",
-    "node-static": "^0.7.8",
-    "socket.io": "^1.4.8",
-    "async": "^2.0.1"
+    "node-static": "^0.7.9",
+    "socket.io": "^1.5.0",
+    "async": "^2.1.1"
   },
   "devDependencies": {
     "grunt": "^0.4.5",

@@ -1,8 +1,13 @@
 {
     "common": {
         "name":                     "sonos",
-        "version":                  "0.2.2",
+        "version":                  "1.0.0",
         "news": {
+            "1.0.0": {
+                "en": "fix fade out",
+                "de": "Korrigiert fade out",
+                "ru": "Исправлено затухание"
+            },
             "0.2.2": {
                 "en": "fix type of states",
                 "de": "Korrigiere Typen von Zuständen",

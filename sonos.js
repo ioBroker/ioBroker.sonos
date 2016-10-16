@@ -499,57 +499,63 @@ function text2speech(fileName, sonosIp, callback) {
     if (callback) callback();
 }
 
+function fadeIn(player, to, step, callback) {
 
-function fadeIn(player, to, step) {
-    //adapter.log.debug('>> fadeIn to ' + to + ' caller: ' + (arguments.callee.caller ? arguments.callee.caller.name : 'null'));
-    player.setVolume(to);
+    to = parseInt(to, 10);
 
-    /*var vol = 1;
-    var interval = setInterval(function (_to) {
-        if (vol >= _to) {
-            this.setVolume(_to);
-            adapter.log.debug('fadeIn - final - setVolume: ' + to);
-            clearInterval(interval);
-            adapter.log.debug('<< fadeIn to ' + _to);
-            return;
-        }
-        this.setVolume(vol);
-        adapter.log.debug('fadeIn - setVolume: ' + vol);
-        vol += (1 + (vol >> 1));
-    }.bind(player, to), 50);*/
+    if (step === undefined || typeof step === 'function') {
+        callback = step;
+        step = 5;
+    }
+
+    adapter.log.debug('>> fadeIn to ' + step + ' of ' + to + ' caller: ' + (arguments.callee.caller ? arguments.callee.caller.name : 'null'));
+
+    step = step * 1.5;
+    if (step > to) {
+        adapter.log.debug('<< fadeIn to ' + to + ' caller: ' + (arguments.callee.caller ? arguments.callee.caller.name : 'null'));
+        player.setVolume(to);
+        if (callback) callback();
+    } else {
+        player.setVolume(step);
+        setTimeout(fadeIn, 200, player, to, step, callback);
+    }
 }
 
-function fadeOut(player) {
-    //adapter.log.debug('>> fadeOut caller: ' + arguments.callee.caller.name);
-    if (!player._isMute && player._volume) {
-        player.setVolume(0);
-
-        /*var ii = player._volume;
-        for (var i = ii-1; ; i -= (1 + ((ii-i) >> 1) )) {
-            if (i <= 0) {
-                player.setVolume(0);
-                adapter.log.debug('>> fadeOut - final: setVolume: ' + 0);
-                break;
-            }
-            player.setVolume(i);
-            adapter.log.debug('>> fadeOut: setVolume: ' + i);
-        }*/
+function fadeOut(player, volume, callback) {
+    if (volume === undefined || typeof volume === 'function') {
+        callback = volume;
+        volume   = player._volume;
     }
-    adapter.log.debug('<< fadeOut ');
+
+    volume = parseInt(volume, 10);
+
+    if (!player._isMute && volume > 10 && player.state.currentState === 'PLAYING') {
+        // we make a steps â 100ms
+        var newVolume = Math.round(volume / 2);
+        if (newVolume < 10) newVolume = 0;
+
+        player.setVolume(newVolume);
+        adapter.log.debug('>> fadeOut: setVolume: ' + newVolume);
+        setTimeout(fadeOut, 100, player, newVolume, callback);
+    } else {
+        player.setVolume(0);
+        adapter.log.debug('<< fadeOut ');
+        if (callback) callback ();
+    }
 }
 
 
 function startPlayer(player, volume, start) {
-    //adapter.log.debug('startPlayer volume: ' + volume + ' start=' + start + ' player.queuedTts.length=' + (player.queuedTts && player.queuedTts.length ? player.queuedTts.length : 0));
+    adapter.log.debug('startPlayer volume: ' + volume + ' start=' + start + ' player.queuedTts.length=' + (player.queuedTts && player.queuedTts.length ? player.queuedTts.length : 0));
     //fadeOut(player);
-    if (start) {
-        player.play();
-    }
+
+    if (start) player.play();
+
     fadeIn(player, volume);
 }
 
 //////////////////
-// Groupmanagement
+// Group management
 
 function getPlayerByName(name) {
     for (var uuid in discovery.players) {
@@ -596,37 +602,39 @@ var audioExtensions = ['mp3', 'aiff', 'flac', 'less', 'wav'];
 //
 //XmlEntities = require(__dirname + '/node_modules/sonos-discovery/node_modules/html-entities/lib/xml-entities').XmlEntities;
 //
-//function getPositionInfo(player, callback) {
-//    player.soapAction('/MediaRenderer/AVTransport/Control', '"urn:schemas-upnp-org:service:AVTransport:1#GetPositionInfo"', GetPositionInfo, function(succ, res) {
-//        if (succ) {
-//            var data = "";
-//            res.setEncoding('utf8');
-//            res.on('data', function (chunk) {
-//                data += chunk.toString();
-//            });
-//            res.on('end', function () {
-//                // Find queued element
-//
-//                var pos = data.indexOf('<TrackMetaData>');
-//                if (pos !== -1) {
-//                    data = data.substring(pos + '<TrackMetaData>'.length);
-//                    pos = data.indexOf('<');
-//                    if (pos !== -1) {
-//                        data = data.substring(0, pos);
-//                        callback(true, data);
-//                    }
-//                }
-//            });
-//        }
-//    });
-//}
+/*
+function getPositionInfo(player, callback) {
+    player.soapAction('/MediaRenderer/AVTransport/Control', '"urn:schemas-upnp-org:service:AVTransport:1#GetPositionInfo"', GetPositionInfo, function(succ, res) {
+        if (succ) {
+            var data = '';
+            res.setEncoding('utf8');
+            res.on('data', function (chunk) {
+                data += chunk.toString();
+            });
+            res.on('end', function () {
+                // Find queued element
+
+                var pos = data.indexOf('<TrackMetaData>');
+                if (pos !== -1) {
+                    data = data.substring(pos + '<TrackMetaData>'.length);
+                    pos = data.indexOf('<');
+                    if (pos !== -1) {
+                        data = data.substring(0, pos);
+                        callback(true, data);
+                    }
+                }
+            });
+        }
+    });
+}
+*/
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 function playOnSonos(uri, sonosUuid, volume) {
     var now = (new Date()).getTime();
     var player = discovery.players[sonosUuid];
 
-    if (!uri) { // stop aktual tts
+    if (!uri) { // stop actual tts
         if (player.tts) player.pause();
         return;
     }
@@ -664,7 +672,7 @@ function playOnSonos(uri, sonosUuid, volume) {
     if (player.tts.currentTrack.uri &&
         ((player.tts.currentTrack.uri.indexOf('x-file-cifs:') !== -1) ||
          (player.tts.currentTrack.uri.indexOf('x-sonos-spotify:') !== -1) ||
-          (audioExtensions.indexOf(parts[parts.length - 1]) !== -1))
+         (audioExtensions.indexOf(parts[parts.length - 1]) !== -1))
        ) {
         player.tts.radio = false;
 
@@ -692,12 +700,13 @@ function playOnSonos(uri, sonosUuid, volume) {
                             }
                             player.tts.addedTrack = parseInt(data, 10);
 
-                            fadeOut(player);
-                            adapter.log.debug('player.seek: ' + player.tts.addedTrack);
+                            fadeOut(player, function () {
+                                adapter.log.debug('player.seek: ' + player.tts.addedTrack);
 
-                            player.seek(player.tts.addedTrack, function (/* code*/) {
-                                // Send command PLAY
-                                startPlayer(player, volume, player.tts.playerState !== 'PLAYING');
+                                player.seek(player.tts.addedTrack, function (/* code*/) {
+                                    // Send command PLAY
+                                    startPlayer(player, volume, player.tts.playerState !== 'PLAYING');
+                                });
                             });
                         }
                     }
@@ -707,12 +716,13 @@ function playOnSonos(uri, sonosUuid, volume) {
     } else {
         // Radio
         player.tts.radio = true;
-        fadeOut(player);
-        adapter.log.debug('setAVTransportURI: ' + uri);
+        fadeOut(player, function () {
+            adapter.log.debug('setAVTransportURI: ' + uri);
 
-        player.setAVTransportURI(uri, '', function (code, res) {
-            // Send command PLAY
-            startPlayer(player, volume, true);
+            player.setAVTransportURI(uri, '', function (code, res) {
+                // Send command PLAY
+                startPlayer(player, volume, true);
+            });
         });
     }
 }
@@ -767,14 +777,10 @@ function takeSonosState(ip, sonosState) {
     }
 
     adapter.log.debug('>  playerState: ' + sonosState.playerState + ' - ' + (sonosState.currentTrack && sonosState.currentTrack.title ? sonosState.currentTrack.title : ''));
+
     if (!ps.transitioning) {
         adapter.setState({device: 'root', channel: ip, state: 'state_simple'}, {val:  ps.playing, ack: true});
         adapter.setState({device: 'root', channel: ip, state: 'state'},        {val: ps.paused ? 'pause' : (ps.playing ? 'play' : 'stop'), ack: true});
-
-        if (ps.playing && player.tts_fadeIn) {
-            fadeIn(player, player.tts_fadeIn, 1);
-            player.tts_fadeIn = 0
-        }
 
         if (player.tts && (ps.paused || ps.stopped) //{
             /*&& (sonosState.currentTrack.uri === player.tts.ourUri)*/) {
@@ -788,58 +794,60 @@ function takeSonosState(ip, sonosState) {
             //        playOnSonos(q.uri, uuid, q.volume);
             //    }, 0);
             if ((new Date()).getTime() - player.tts.time > 1000) { // else: do not restore old state, if queue is not empty
-            var tts = player.tts;
+                var tts = player.tts;
 
-            // Restore state before tts
+                // Restore state before tts
                 adapter.log.debug('>> Restore state: volume - ' + tts.volume + ', mute: ' + tts.mute + ', uri: ' + tts.currentTrack.uri);
 
-                fadeOut(player);
                 if (player._isMuted !== tts.mute) player.mute(tts.mute);
 
-            if (tts.radio) {
-                if (tts.playerState !== 'PLAYING') {
-                        resetTts(player);
-                }
+                // required for fadeIn
+                player.setVolume(0);
 
-                function setUri() {
-                    player.setAVTransportURI(tts.currentTrack.uri, lastMetaData, function (code, res) {
+                if (tts.radio) {
+                    if (tts.playerState !== 'PLAYING') resetTts(player);
+
+                    function setUri() {
+                        player.setAVTransportURI(tts.currentTrack.uri, tts.currentTrack.uriMetaData || lastMetaData || null, function (code, res) {
                             resetTts(player);
                             startPlayer(player, tts.volume, tts.playerState === 'PLAYING');
-                    });
-                }
-
-                if (lastFavoriteUri === tts.currentTrack.uri) {
-                     setUri();
-                } else player.getFavorites(function (success, favorites) {
-                    lastMetaData = '';
-                    lastFavoriteUri = '';
-                    if (success) {
-                        for (var i in favorites) {
-                            if (favorites[i].uri === tts.currentTrack.uri) {
-                                lastMetaData = favorites[i].metaData;
-                                lastFavoriteUri = tts.currentTrack.uri;
-                                break;
-                            }
-                        }
+                        });
                     }
-                    setUri();
-                });
+
+                    if (lastFavoriteUri === tts.currentTrack.uri) {
+                        setUri();
+                    } else {
+                        player.getFavorites(function (success, favorites) {
+                            lastMetaData = '';
+                            lastFavoriteUri = '';
+                            if (success) {
+                                for (var i in favorites) {
+                                    if (!favorites.hasOwnProperty(i)) continue;
+                                    if (favorites[i].uri === tts.currentTrack.uri) {
+                                        lastMetaData = favorites[i].metaData;
+                                        lastFavoriteUri = tts.currentTrack.uri;
+                                        break;
+                                    }
+                                }
+                            }
+                            setUri();
+                        });
+                    }
                 } else { // if (ts.radio
                     // Remove added track
                     adapter.log.debug('player.removeTrackFromQueue, Track=' + tts.addedTrack);
                     player.removeTrackFromQueue(tts.addedTrack);
 
-                    fadeOut(player);
-                    // Set old track nomber
+                    // Set old track number
                     player.seek(tts.trackNo, function (code, res) {
-                    resetTts(player);
-                    // Set elapsed time
-                    player.trackSeek(tts.elapsedTime, function (code, res) {
-                        startPlayer(player, tts.volume, /*true ||*/ tts.playerState === 'PLAYING');
+                        resetTts(player);
+                        // Set elapsed time
+                        player.trackSeek(tts.elapsedTime, function (code, res) {
+                            startPlayer(player, tts.volume, /*true ||*/ tts.playerState === 'PLAYING');
+                        });
                     });
-                });
+                }
             }
-        }
         }
 
         if (ps.playing) {
@@ -847,9 +855,7 @@ function takeSonosState(ip, sonosState) {
                 channels[ip].elapsedTimer = setInterval(function (ip_) {
                     channels[ip_].elapsed += ((adapter.config.elapsedInterval || 5000) / 1000);
 
-                    if (channels[ip_].elapsed > channels[ip_].duration) {
-                        channels[ip_].elapsed = channels[ip_].duration;
-                    }
+                    if (channels[ip_].elapsed > channels[ip_].duration) channels[ip_].elapsed = channels[ip_].duration;
 
                     adapter.setState({device: 'root', channel: ip, state: 'current_elapsed'},   {val: channels[ip_].elapsed, ack: true});
                     adapter.setState({device: 'root', channel: ip, state: 'current_elapsed_s'}, {val: toFormattedTime(channels[ip_].elapsed), ack: true});
