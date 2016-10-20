@@ -23,6 +23,10 @@ You can use mobile interface too. It can be found under ```http://ipaddress:8083
 **Known problem:** radio is not restored after "text to speech"
 
 ## Changelog
+### 1.1.0 (2016-10-20)
+- (bluefox) update sonos npm packets
+- (bluefox) configurable fadeIn and fadeOut
+
 ### 1.0.0 (2016-10-16)
 - (bluefox) fix fade out
 

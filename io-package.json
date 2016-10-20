@@ -1,8 +1,13 @@
 {
     "common": {
         "name":                     "sonos",
-        "version":                  "1.0.0",
+        "version":                  "1.1.0",
         "news": {
+            "1.1.0": {
+                "en": "update sonos npm packets\nconfigurable fadeIn and fadeOut",
+                "de": "Update Sonos NPM Pakete\nEinstellbare FadeIn- und FadeOut-Dauer",
+                "ru": "Обновлены sonos пакеты\nНастраиваемые FadeIn и FadeOut"
+            },
             "1.0.0": {
                 "en": "fix fade out",
                 "de": "Korrigiert fade out",
@@ -50,6 +55,8 @@
         "webserverEnabled": true,
         "webserverPort":    8080,
         "elapsedInterval":  2000,
+        "fadeIn":           500,
+        "fadeOut":          500,
         "devices": [
             {"name": "Sonos1", "ip" : "0.0.0.0", "room": ""}
         ]
