@@ -43,17 +43,15 @@
         "room":                   {"en": "Room",                   "de": "Raum",                       "ru": "Комната"}
     };
 
-    function setValue(id, value) {
+    function setValue(id, value, onChange) {
         // example: select elements with id=key and class=value and insert value
         if ($('#' + id + '.value').attr('type') == 'checkbox') {
             $('#' + id + '.value').prop('checked', value).change(function() {
-                changed = true;
-                $('#save').button("enable");
+                onChange();
             });
         } else {
             $('#' + id + '.value').val(value).change(function() {
-                changed = true;
-                $('#save').button("enable");
+                onChange();
             }).keyup(function() {
                 // Chack that only numbers entered
                 if ($(this).hasClass('number')) {
@@ -70,31 +68,27 @@
                     }
                 }
 
-                changed = true;
-                $('#save').button("enable");
+                onChange();
             });
         }
     }
 
     // the function loadSettings has to exist ...
-    function load(settings) {
+    function load(settings, onChange) {
         if (!settings) return;
-
-        changed = false;
-        $('#save').button("disable");
 
         devices = settings.devices || [];
 
         for (var key in settings) {
-            setValue(key, settings[key]);
+            setValue(key, settings[key], onChange);
         }
         getIsAdapterAlive(function (isAlive) {
-            getEnums("rooms", function (err, list) {
+            getEnums('rooms', function (err, list) {
                 rooms = list;
-                var $grid = _editTable('devices', ['name', 'ip', 'room'], devices, rooms, 400, function (action, obj) {
+                var $grid = _editTable('devices', ['name', 'ip', 'room'], devices, rooms, 460, function (action, obj) {
                     devices = getTableResult('devices', ['name', 'ip', 'room']);
                 });
-                if (isAlive) {
+                if (isAlive || common.enabled) {
                     $grid.jqGrid('navButtonAdd', '#pager-devices', {
                         caption: '',
                         buttonicon: 'ui-icon-refresh',
@@ -109,21 +103,21 @@
                                         }
                                     }
                                     if (!isFound) {
-                                        changed = true;
-                                        $('#save').button("enable");
+                                        onChange();
                                         addToTable('devices', {ip: list[j].ip, room: enumName2Id(rooms, list[j].roomName)});
                                     }
                                 }
                             });
                         },
                         position: 'first',
-                        id: 'add-object',
-                        title: _('update adapter information'),
-                        cursor: 'pointer'
+                        id:       'add-object',
+                        title:    _('update adapter information'),
+                        cursor:   'pointer'
                     });
                 }
             });
         });
+        onChange(false);
     }
 
     // ... and the function save has to exist.
@@ -142,9 +136,6 @@
 
         // Get edited table
         obj.devices = getTableResult('devices', ['name', 'ip', 'room']);
-
-        changed = false;
-        $('#save').button("disable");
 
         callback(obj, {localLink: obj.webserverEnabled ? 'http://%ip%:' + obj.webserverPort : ''});
     }

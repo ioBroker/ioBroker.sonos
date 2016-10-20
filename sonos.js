@@ -402,7 +402,7 @@ function createChannel(name, ip, room, callback) {
 function browse(callback) {
     var result = [];
     for (var i = 0; i < discovery.players.length; i++) {
-        result.push({roomName: discovery.players[i].roomName, ip: getIp(discovery.players[i])});
+        result.push({roomName: discovery.players[i].roomName, ip: getIp(discovery.players[i], true)});
     }
 
     if (callback) callback(result);
