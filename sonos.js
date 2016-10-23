@@ -665,7 +665,7 @@ function playOnSonos(uri, sonosUuid, volume) {
             player.tts = player.prevTts;
             player.prevTts = null;
         } else if (!player.tts) {
-            player.tts = JSON.parse(JSON.stringify(player.getState())); // only get akt payer state, if no previous
+            player.tts = JSON.parse(JSON.stringify(player.state)); // only get akt payer state, if no previous
         }
         //adapter.log.debug('player.tts= volume=' + player.tts.volume + ' currentTrack.uri=' + player.tts.currentTrack.uri + ' tts.playerState=' + player.tts.playerState);
         //player.tts.ourUri = uri;
