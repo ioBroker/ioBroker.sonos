@@ -491,7 +491,7 @@ function text2speech(fileName, sonosIp, callback) {
         var ip = discovery.players[i]._address;
 
         if (sonosIp && ip !== sonosIp) continue;
-        setTimeout(playOnSonos, 10, fileName, uuid, volume);
+        setTimeout(playOnSonos, 10, fileName, discovery.players[i].uuid, volume);
     }
 
     if (callback) callback();
@@ -578,6 +578,7 @@ function startPlayer(player, volume, start) {
 
 function getPlayerByName(name) {
     for (var i in discovery.players) {
+        if (!discovery.players.hasOwnProperty(i)) continue;
         var player = discovery.players[i];
         if (player.roomName === name || getIp(player) === name || player._address === name || player.uuid === name) {
             return player;
