@@ -1,8 +1,13 @@
 {
     "common": {
         "name":                     "sonos",
-        "version":                  "1.1.1",
+        "version":                  "1.2.0",
         "news": {
+            "1.2.0": {
+                "en": "tts was rewritten because of new sonos-discovery interface",
+                "de": "tts war überarbeitet, weil sonos-discovery Modul wurde geändert",
+                "ru": "tts был переписан, т.к. модуль sonos-discovery поменялся"
+            },
             "1.1.1": {
                 "en": "fix error for text2speech",
                 "de": "Korrigieren ein Fehler bei text2speech",

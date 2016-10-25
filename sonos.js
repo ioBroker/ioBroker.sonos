@@ -76,12 +76,12 @@ adapter.on('stateChange', function (_id, state) {
                     adapter.log.warn('Invalid state: ' + state.val);
                 }
             } else if (id.state === 'favorites_set') {
-                player.replaceWithFavorite(state.val, function (success) {
-                    if (success) {
-                        player.play();
-                        adapter.setState({device: 'root', channel: id.channel, state: 'current_album'},  {val: state.val, ack: true});
-                        adapter.setState({device: 'root', channel: id.channel, state: 'current_artist'}, {val: state.val, ack: true});
-                    }
+                player.replaceWithFavorite(state.val).then(function () {
+                    player.play();
+                    adapter.setState({device: 'root', channel: id.channel, state: 'current_album'},  {val: state.val, ack: true});
+                    adapter.setState({device: 'root', channel: id.channel, state: 'current_artist'}, {val: state.val, ack: true});
+                }).fail(function (error) {
+                    adapter.log.error('Cannot replaceWithFavorite: ' + error);
                 });
             } else
             if (id.state === 'tts') {
@@ -587,7 +587,7 @@ function getPlayerByName(name) {
 }
 
 function attachTo(player, coordinator) {
-    player.setAVTransportURI('x-rincon:' + coordinator.uuid);
+    player.setAVTransport('x-rincon:' + coordinator.uuid);
 }
 
 function addToGroup(playerNameToAdd, coordinator) {
@@ -666,8 +666,9 @@ function playOnSonos(uri, sonosUuid, volume) {
             player.prevTts = null;
         } else if (!player.tts) {
             player.tts = JSON.parse(JSON.stringify(player.state)); // only get akt payer state, if no previous
+            player.tts.avTransportUriMetadata = player.avTransportUriMetadata;
         }
-        //adapter.log.debug('player.tts= volume=' + player.tts.volume + ' currentTrack.uri=' + player.tts.currentTrack.uri + ' tts.playerState=' + player.tts.playerState);
+        //adapter.log.debug('player.tts= volume=' + player.tts.volume + ' currentTrack.uri=' + player.tts.currentTrack.uri + ' tts.playbackState=' + player.tts.playbackState);
         //player.tts.ourUri = uri;
         player.tts.time = now;
     } else {
@@ -696,50 +697,31 @@ function playOnSonos(uri, sonosUuid, volume) {
        ) {
         player.tts.radio = false;
 
-        player.addURIToQueue(uri, '', function (code, res) {
-            if (code) {
-                // Find out added track
-                var data = '';
-                res.setEncoding('utf8');
-                res.on('data', function (chunk) {
-                    data += chunk.toString();
-                });
-                res.on('end', function () {
-                    // Find queued element
-                    var pos = data.indexOf('<FirstTrackNumberEnqueued>');
-                    if (pos !== -1) {
-                        data = data.substring(pos + '<FirstTrackNumberEnqueued>'.length);
-                        pos = data.indexOf('<');
-                        if (pos !== -1) {
-                            data = data.substring(0, pos);
-
-                            if (!player.tts) {
-                                //adapter.log.warn('Cannot restore sonos state');
-                                adapter.log.warn('Cannot add track (URI) to Sonos Queue');
-                                return;
-                            }
-                            player.tts.addedTrack = parseInt(data, 10);
-
-                            fadeOut(player, function () {
-                                adapter.log.debug('player.seek: ' + player.tts.addedTrack);
-
-                                player.seek(player.tts.addedTrack, function (/* code*/) {
-                                    // Send command PLAY
-                                    startPlayer(player, volume, player.tts.playerState !== 'PLAYING');
-                                });
-                            });
-                        }
-                    }
-                });
+        player.addURIToQueue(uri).then(function (res) {
+            // Find out added track
+            if (!player.tts) {
+                //adapter.log.warn('Cannot restore sonos state');
+                adapter.log.warn('Cannot add track (URI) to Sonos Queue');
+                return;
             }
+            player.tts.addedTrack = parseInt(res.firsttracknumberenqueued, 10);
+
+            fadeOut(player, function () {
+                adapter.log.debug('player.seek: ' + player.tts.addedTrack);
+
+                player.trackSeek(player.tts.addedTrack).then(function () {
+                    // Send command PLAY
+                    startPlayer(player, volume, player.tts.playbackState !== 'PLAYING');
+                });
+            });
         });
     } else {
         // Radio
         player.tts.radio = true;
         fadeOut(player, function () {
-            adapter.log.debug('setAVTransportURI: ' + uri);
+            adapter.log.debug('setAVTransport: ' + uri);
 
-            player.setAVTransportURI(uri, '', function (code, res) {
+            player.setAVTransport(uri).then(function (res) {
                 // Send command PLAY
                 startPlayer(player, volume, true);
             });
@@ -760,9 +742,6 @@ function addChannel(name, ip, room, callback) {
     });
 }
 
-var lastMetaData = '';
-var lastFavoriteUri = '';
-
 function resetTts(player) {
     //adapter.log.debug('setting tts = null' + (arguments.callee.caller.name !== undefined ? arguments.callee.caller.name : 'no caller'));
     if(!player.tts) return;
@@ -771,9 +750,9 @@ function resetTts(player) {
     player.tts = null;
 }
 
-function _getPs(playerState) {
+function _getPs(playbackState) {
     var ps = {playing: false, paused: false, transitioning: false, stopped: false};
-    switch (playerState) {
+    switch (playbackState) {
         case 'PLAYING':         ps.playing       = true; break;
         case 'PAUSED_PLAYBACK': ps.paused        = true; break;
         case 'STOPPED':         ps.stopped       = true; break;
@@ -790,13 +769,13 @@ function takeSonosState(ip, sonosState) {
     if (!player.tts && player.queuedTts && player.queuedTts.length) {
         var q = player.queuedTts.shift();
         var uuid = channels[ip].uuid;
-        adapter.log.debug('Taking next queue entry, tts=' + (player.tts ? true : false) + 'playState=' + sonosState.playerState);
+        adapter.log.debug('Taking next queue entry, tts=' + (player.tts ? true : false) + 'playState=' + sonosState.playbackState);
         setTimeout(function () {
             playOnSonos(q.uri, uuid, q.volume);
         }, 0);
     }
 
-    adapter.log.debug('>  playerState: ' + sonosState.playbackState + ' - ' + (sonosState.currentTrack && sonosState.currentTrack.title ? sonosState.currentTrack.title : ''));
+    adapter.log.debug('>  playbackState: ' + sonosState.playbackState + ' - ' + (sonosState.currentTrack && sonosState.currentTrack.title ? sonosState.currentTrack.title : ''));
 
     if (!ps.transitioning) {
         adapter.setState({device: 'root', channel: ip, state: 'state_simple'}, {val: ps.playing, ack: true});
@@ -819,52 +798,46 @@ function takeSonosState(ip, sonosState) {
                 // Restore state before tts
                 adapter.log.debug('>> Restore state: volume - ' + tts.volume + ', mute: ' + tts.mute + ', uri: ' + tts.currentTrack.uri);
 
+                if (player._isMuted === undefined) {
+                    player._isMuted = player.groupState.mute;
+                }
                 if (player._isMuted !== tts.mute) player.mute(tts.mute);
 
                 // required for fadeIn
                 player.setVolume(0);
 
-                if (tts.radio) {
-                    if (tts.playerState !== 'PLAYING') resetTts(player);
-
-                    function setUri() {
-                        player.setAVTransportURI(tts.currentTrack.uri, tts.currentTrack.uriMetaData || lastMetaData || null, function (code, res) {
-                            resetTts(player);
-                            startPlayer(player, tts.volume, tts.playerState === 'PLAYING');
-                        });
-                    }
-
-                    if (lastFavoriteUri === tts.currentTrack.uri) {
-                        setUri();
-                    } else {
-                        player.getFavorites(function (success, favorites) {
-                            lastMetaData = '';
-                            lastFavoriteUri = '';
-                            if (success) {
-                                for (var i in favorites) {
-                                    if (!favorites.hasOwnProperty(i)) continue;
-                                    if (favorites[i].uri === tts.currentTrack.uri) {
-                                        lastMetaData = favorites[i].metaData;
-                                        lastFavoriteUri = tts.currentTrack.uri;
-                                        break;
-                                    }
-                                }
-                            }
-                            setUri();
-                        });
-                    }
-                } else { // if (ts.radio
-                    // Remove added track
+                // remove track
+                if (tts.addedTrack !== undefined) {
                     adapter.log.debug('player.removeTrackFromQueue, Track=' + tts.addedTrack);
                     player.removeTrackFromQueue(tts.addedTrack);
+                }
 
+                if (tts.radio) {
+                    if (tts.playbackState !== 'PLAYING') resetTts(player);
+
+                    player.setAVTransport(tts.currentTrack.uri, tts.avTransportUriMetadata).then(function (res) {
+                        resetTts(player);
+                        startPlayer(player, tts.volume, tts.playbackState === 'PLAYING');
+                    }).fail(function (error) {
+                        adapter.log.error('Cannot setAVTransport: ' + error);
+                        resetTts(player);
+                        startPlayer(player, tts.volume, tts.playbackState === 'PLAYING');
+                    });
+                } else {
+                    // if radio
+                    // Remove added track
                     // Set old track number
-                    player.seek(tts.trackNo, function (code, res) {
+                    player.trackSeek(tts.trackNo).then(function (res) {
                         resetTts(player);
                         // Set elapsed time
-                        player.trackSeek(tts.elapsedTime, function (code, res) {
-                            startPlayer(player, tts.volume, /*true ||*/ tts.playerState === 'PLAYING');
+                        player.timeSeek(tts.elapsedTime).then(function (res) {
+                            startPlayer(player, tts.volume, /*true ||*/ tts.playbackState === 'PLAYING');
+                        }).fail(function (error) {
+                            adapter.log.error('Cannot trackSeek: ' + error);
                         });
+                    }).fail(function (error) {
+                        adapter.log.error('Cannot seek: ' + error);
+                        resetTts(player);
                     });
                 }
             }

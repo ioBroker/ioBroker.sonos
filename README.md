@@ -20,11 +20,10 @@ To allow using sayIt adapter with sonos, be sure that web adapter is instatiated
 
 You can use mobile interface too. It can be found under ```http://ipaddress:8083/m/```
 
-**Known problem:** radio is not restored after "text to speech"
 
 ## Changelog
-### 1.1.1 (2016-10-23)
-- (bluefox) Исправлена проблема при text2speech
+### 1.2.0 (2016-10-25)
+- (bluefox) tts was rewritten because of new sonos-discovery interface
 
 ### 1.1.0 (2016-10-20)
 - (bluefox) update sonos npm packets
