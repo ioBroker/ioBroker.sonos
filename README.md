@@ -11,7 +11,7 @@ ioBroker.sonos
 Control and monitor SONOS player from ioBroker.
 
 Used packets from Jimmy Shimizu
-https://github.com/jishi/node-sonos-discovery and 
+https://github.com/jishi/node-sonos-discovery and
 https://github.com/jishi/node-sonos-web-controller
 
 **This adapter requires node 4.0.0 or higher!**
@@ -97,7 +97,7 @@ You can use mobile interface too. It can be found under ```http://ipaddress:8083
 ## Configuration
 - Web server - [optional] If web server enabled or not
 - Port       - If Webserver is enabled, so the port for this. Default 8083
-- Update of elapsed time(ms) - Interval in ms how often to update elapsed timer when the title is playing. (Default 2000) 
+- Update of elapsed time(ms) - Interval in ms how often to update elapsed timer when the title is playing. (Default 2000)
 
 ## License
 
