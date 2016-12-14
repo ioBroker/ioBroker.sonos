@@ -1,8 +1,13 @@
 {
     "common": {
         "name":                     "sonos",
-        "version":                  "1.2.0",
+        "version":                  "1.2.1",
         "news": {
+			"1.2.1": {
+                "en": "add web adapter as dependency",
+                "de": "WEB Adapter als Abhängigkeit hinzugefügt",
+                "ru": "Веб драйвер добавлен в зависимости"
+            },
             "1.2.0": {
                 "en": "tts was rewritten because of new sonos-discovery interface",
                 "de": "tts war überarbeitet, weil sonos-discovery Modul wurde geändert",
@@ -55,6 +60,7 @@
         "readme":                   "https://github.com/ioBroker/ioBroker.sonos/blob/master/README.md",
         "enabled":                  true,
         "icon":                     "sonos.png",
+		"dependencies":             [{"web": ">=1.5.4"}],
         "keywords":                 ["sonos", "player", "music"],
         "extIcon":                  "https://raw.githubusercontent.com/ioBroker/ioBroker.sonos/master/admin/sonos.png",
         "localLink":                "http://%ip%:%webserverPort%",

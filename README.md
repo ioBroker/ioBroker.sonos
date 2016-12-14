@@ -22,6 +22,9 @@ You can use mobile interface too. It can be found under ```http://ipaddress:8083
 
 
 ## Changelog
+### 1.2.1 (2016-12-10)
+- (bluefox) add web adapter as dependency
+
 ### 1.2.0 (2016-10-25)
 - (bluefox) tts was rewritten because of new sonos-discovery interface
 
