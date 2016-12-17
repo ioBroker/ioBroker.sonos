@@ -16,12 +16,15 @@ https://github.com/jishi/node-sonos-web-controller
 
 **This adapter requires node 4.0.0 or higher!**
 
-To allow using sayIt adapter with sonos, be sure that web adapter is instatiated and running too. Web adapter is required to enable SONOS to read the generated MP3 file from sayIt.
+To allow using sayIt adapter with SONOS, be sure that web adapter is instantiated and running too. Web adapter is required to enable SONOS to read the generated MP3 file from sayIt.
 
 You can use mobile interface too. It can be found under ```http://ipaddress:8083/m/```
 
 
 ## Changelog
+### 1.3.0 (2016-12-13)
+- (bluefox) Fix api changes of SONOS module
+
 ### 1.2.1 (2016-12-10)
 - (bluefox) add web adapter as dependency
 

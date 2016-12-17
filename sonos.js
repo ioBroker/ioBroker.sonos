@@ -80,7 +80,7 @@ adapter.on('stateChange', function (_id, state) {
                     player.play();
                     adapter.setState({device: 'root', channel: id.channel, state: 'current_album'},  {val: state.val, ack: true});
                     adapter.setState({device: 'root', channel: id.channel, state: 'current_artist'}, {val: state.val, ack: true});
-                }).fail(function (error) {
+                }, function (error) {
                     adapter.log.error('Cannot replaceWithFavorite: ' + error);
                 });
             } else
@@ -293,6 +293,14 @@ function createChannel(name, ip, room, callback) {
             write:  false,
             role:   'media.current.cover',
             desc:   'Cover image of current played song'
+        },
+        'cover.png': {     // media.current.cover -    current url to album cover (read only)
+            def:    '',
+            type:   'file',
+            read:   true,
+            write:  true,
+            role:   'media.current.cover',
+            desc:   'Cover image of current played song as binary'
         },
         'current_duration': {  // media.current.duration - duration as HH:MM:SS (read only)
             def:    '00:00',
@@ -818,7 +826,7 @@ function takeSonosState(ip, sonosState) {
                     player.setAVTransport(tts.currentTrack.uri, tts.avTransportUriMetadata).then(function (res) {
                         resetTts(player);
                         startPlayer(player, tts.volume, tts.playbackState === 'PLAYING');
-                    }).fail(function (error) {
+                    }, function (error) {
                         adapter.log.error('Cannot setAVTransport: ' + error);
                         resetTts(player);
                         startPlayer(player, tts.volume, tts.playbackState === 'PLAYING');
@@ -832,10 +840,10 @@ function takeSonosState(ip, sonosState) {
                         // Set elapsed time
                         player.timeSeek(tts.elapsedTime).then(function (res) {
                             startPlayer(player, tts.volume, /*true ||*/ tts.playbackState === 'PLAYING');
-                        }).fail(function (error) {
+                        }, function (error) {
                             adapter.log.error('Cannot trackSeek: ' + error);
                         });
-                    }).fail(function (error) {
+                    }, function (error) {
                         adapter.log.error('Cannot seek: ' + error);
                         resetTts(player);
                     });
@@ -892,7 +900,7 @@ function takeSonosState(ip, sonosState) {
     adapter.setState({device: 'root', channel: ip, state: 'current_duration'},   {val: sonosState.currentTrack.duration, ack: true});
     adapter.setState({device: 'root', channel: ip, state: 'current_duration_s'}, {val: toFormattedTime(sonosState.currentTrack.duration), ack: true});
 
-    if (lastCover !== sonosState.currentTrack.albumArtUri) {
+    if (sonosState.currentTrack.albumArtUri && lastCover !== sonosState.currentTrack.albumArtUri) {
         var md5url     = crypto.createHash('md5').update(sonosState.currentTrack.albumArtUri).digest('hex');
         var fileName   = cacheDir + md5url;
         var stateName  = adapter.namespace + '.root.' + ip + '.cover.png';
@@ -1006,9 +1014,11 @@ function getIp(player, noReplace) {
 function processSonosEvents(event, data) {
     var ip;
     var i;
+    var player;
     if (event === 'topology-change') {
+        // TODO: Check
         if (typeof data.length === 'undefined') {
-            var player = discovery.getPlayerByUUID(data.uuid);
+            player = discovery.getPlayerByUUID(data.uuid);
             if (!player._address) player._address = getIp(player);
 
             ip = player._address;
@@ -1018,7 +1028,7 @@ function processSonosEvents(event, data) {
             }
         } else if (data.length) {
             for (i = 0; i < data.length; i++) {
-                var player = discovery.getPlayerByUUID(data[i].uuid);
+                player = discovery.getPlayerByUUID(data[i].uuid);
                 if (!player._address) player._address = getIp(player);
 
                 ip = player._address;
@@ -1029,7 +1039,7 @@ function processSonosEvents(event, data) {
             }
         }
     } else if (event === 'transport-state') {
-        var player = discovery.getPlayerByUUID(data.uuid);
+        player = discovery.getPlayerByUUID(data.uuid);
         if (!player._address) player._address = getIp(player);
 
         ip = player._address;
@@ -1038,32 +1048,128 @@ function processSonosEvents(event, data) {
             takeSonosState(ip, data.state);
         }
     } else if (event === 'group-volume') {
-        for (var s in data.playerVolumes) {
-            var player = discovery.getPlayerByUUID(data[s].uuid);
-            if (!player._address) player._address = getIp(player);
+        // {
+        //     uuid:        this.uuid,
+        //     oldVolume:   this._previousGroupVolume,
+        //     newVolume:   this.groupState.volume,
+        //     roomName:    this.roomName
+        // }
 
-            ip = player._address;
-            if (channels[ip]) {
-                channels[ip].uuid = s;
-                adapter.setState({device: 'root', channel: ip, state: 'volume'}, {val: data.playerVolumes[s], ack: true});
-                adapter.setState({device: 'root', channel: ip, state: 'muted'},  {val: data.groupState.mute,  ack: true});
-                player._isMuted = data.groupState.mute;
-                player._volume  = data.playerVolumes[s];
-                adapter.log.debug('group-volume: Volume for ' + player.address + ': ' + data.playerVolumes[s]);
+        for (i = 0; i < discovery.players.length; i++) {
+            if (discovery.players[i].roomName === data.roomName) {
+                player = discovery.getPlayerByUUID(discovery.players[i].uuid);
+                if (!player._address) player._address = getIp(player);
+
+                ip = player._address;
+                if (channels[ip]) {
+                    channels[ip].uuid = discovery.players[i].uuid;
+                    adapter.setState({device: 'root', channel: ip, state: 'volume'}, {val: data.newVolume, ack: true});
+                    //adapter.setState({device: 'root', channel: ip, state: 'muted'},  {val: data.groupState.mute,  ack: true});
+                    //player._isMuted = data.groupState.mute;
+                    player._volume  = data.newVolume;
+                    adapter.log.debug('group-volume: Volume for ' + player.baseUrl + ': ' + data.newVolume);
+                }
             }
+        }
+    }  else if (event === 'group-mute') {
+        //{
+        //    uuid:         _this.uuid,
+        //    previousMute: previousMute,
+        //    newMute:      _this.groupState.mute,
+        //    roomName:     _this.roomName
+        //}
+        for (i = 0; i < discovery.players.length; i++) {
+            if (discovery.players[i].roomName === data.roomName) {
+                player = discovery.getPlayerByUUID(discovery.players[i].uuid);
+                if (!player._address) player._address = getIp(player);
+
+                ip = player._address;
+                if (channels[ip]) {
+                    channels[ip].uuid = discovery.players[i].uuid;
+                    adapter.setState({device: 'root', channel: ip, state: 'muted'}, {val: data.newMute, ack: true});
+                    //adapter.setState({device: 'root', channel: ip, state: 'muted'},  {val: data.groupState.mute,  ack: true});
+                    //player._isMuted = data.groupState.mute;
+                    player._isMuted  = data.newMute;
+                    adapter.log.debug('group-mute: Mute for ' + player.baseUrl + ': ' + data.newMute);
+                }
+            }
+        }
+    }  else if (event === 'volume') {
+        // {
+        //     uuid:             _this.uuid,
+        //     previousVolume:   previousVolume,
+        //     newVolume:        state.volume,
+        //     roomName:         _this.roomName
+        // }
+        player = discovery.getPlayerByUUID(data.uuid);
+        if (!player._address) player._address = getIp(player);
+
+        ip = player._address;
+        if (channels[ip]) {
+            channels[ip].uuid = data.uuid;
+            adapter.setState({device: 'root', channel: ip, state: 'volume'}, {val: data.newVolume, ack: true});
+            player._volume  = data.newVolume;
+            adapter.log.debug('volume: Volume for ' + player.baseUrl + ': ' + data.newVolume);
+        }
+    } else if (event === 'mute') {
+        // {
+        //     uuid:        _this.uuid,
+        //     previousMute: previousMute,
+        //     newMute:     state.mute,
+        //     roomName:    _this.roomName
+        // }
+        player = discovery.getPlayerByUUID(data.uuid);
+        if (!player._address) player._address = getIp(player);
+
+        ip = player._address;
+        if (channels[ip]) {
+            channels[ip].uuid = data.uuid;
+            adapter.setState({device: 'root', channel: ip, state: 'muted'},  {val: data.newMute,  ack: true});
+            player._isMuted  = data.newMute;
+            adapter.log.debug('mute: Mute for ' + player.baseUrl + ': ' + data.newMute);
         }
     } else if (event === 'favorites') {
-        // Go through all players
-        for (var i = 0; i < discovery.players.length; i++) {
-            var player = discovery.players[i];
-            if (!player._address) player._address = getIp(player);
+        discovery.getFavorites()
+            .then(function (favorites) {
+                // Go through all players
+                for (i = 0; i < discovery.players.length; i++) {
+                    player = discovery.players[i];
+                    if (!player._address) player._address = getIp(player);
 
-            ip = player._address;
-            if (channels[ip]) {
-                channels[ip].uuid = uuid;
-                takeSonosFavorites(ip, data);
+                    ip = player._address;
+                    if (channels[ip]) {
+                        takeSonosFavorites(ip, favorites);
+                    }
+                }
+            });
+    } else if (event === 'queue') {
+        player = discovery.getPlayerByUUID(data.uuid);
+        if (!player._address) player._address = getIp(player);
+
+        ip = player._address;
+        if (channels[ip]) {
+            channels[ip].uuid = data.uuid;
+            var _text = [];
+            for (var q = 0; q < data.queue.length; q++) {
+                _text.push(data.queue[q].artist + ' - ' + data.queue[q].title);
             }
+            var qtext = _text.join(', ');
+            adapter.setState({device: 'root', channel: ip, state: 'queue'},  {val: qtext, ack: true});
+            adapter.log.debug('queue for ' + player.baseUrl + ': ' + qtext);
         }
+        discovery.getFavorites()
+            .then(function (favorites) {
+                // Go through all players
+                for (i = 0; i < discovery.players.length; i++) {
+                    player = discovery.players[i];
+                    if (!player._address) player._address = getIp(player);
+
+                    ip = player._address;
+                    if (channels[ip]) {
+                        takeSonosFavorites(ip, favorites);
+                    }
+                }
+            });
     } else {
         adapter.log.debug(event + ' ' + (typeof data === 'object' ? JSON.stringify(data) : data));
     }
@@ -1265,7 +1371,7 @@ function main() {
                     if (!player) return;
 
                     adapter.log.debug('fetching album art from', player.localEndpoint);
-                    http.get(`${player.baseUrl}${req.url}`, function (res2) {
+                    http.get(player.baseUrl + req.url, function (res2) {
                         if (res2.statusCode === 200) {
                             if (!fs.exists(fileName)) {
                                 var cacheStream = fs.createWriteStream(fileName);
@@ -1305,13 +1411,13 @@ function main() {
 
         socketServer.sockets.on('connection', function (socket) {
             // Send it in a better format
-            const players = discovery.players;
+            var players = discovery.players;
 
-            if (players.length == 0) return;
+            if (players.length === 0) return;
 
             socket.emit('topology-change', players);
             discovery.getFavorites()
-                .then((favorites) => {
+                .then(function (favorites) {
                     socket.emit('favorites', favorites);
             });
 
@@ -1337,7 +1443,7 @@ function main() {
 
             socket.on('group-management', function (data) {
                 // find player based on uuid
-                console.log(data)
+                //console.log(data);
                 const player = discovery.getPlayerByUUID(data.player);
                 if (!player) return;
 
@@ -1346,7 +1452,7 @@ function main() {
                     return;
                 }
 
-                player.setAVTransport(`x-rincon:${data.group}`);
+                player.setAVTransport('x-rincon:' + data.group);
             });
 
             socket.on('play-favorite', function (data) {
@@ -1354,13 +1460,13 @@ function main() {
                 if (!player) return;
 
                 player.replaceWithFavorite(data.favorite)
-                    .then(() => player.play());
+                    .then(function () {player.play();});
             });
 
             socket.on('queue', function (data) {
                 loadQueue(data.uuid)
-                    .then(queue => {
-                        socket.emit('queue', { uuid: data.uuid, queue });
+                    .then(function (queue) {
+                        socket.emit('queue', { uuid: data.uuid, queue: queue });
                     });
             });
 
@@ -1373,8 +1479,8 @@ function main() {
 
                 // Player is not using queue, so start queue first
                 player.setAVTransport('x-rincon-queue:' + player.uuid + '#0')
-                    .then(() => player.trackSeek(data.trackNo))
-                    .then(() => player.play());
+                    .then(function () {player.trackSeek(data.trackNo);})
+                    .then(function () {player.play();});
             });
 
             socket.on('playmode', function (data) {
@@ -1390,7 +1496,7 @@ function main() {
             });
 
             socket.on('group-mute', function (data) {
-                console.log(data)
+                //console.log(data);
                 var player = discovery.getPlayerByUUID(data.uuid);
                 if (data.mute)
                     player.muteGroup();
@@ -1423,7 +1529,7 @@ function main() {
 
     discovery.on('topology-change', function (data) {
         if (socketServer) socketServer.sockets.emit('topology-change', discovery.players);
-        processSonosEvents ('topology-change', data);
+        processSonosEvents('topology-change', data);
     });
 
     discovery.on('transport-state', function (data) {
@@ -1436,14 +1542,19 @@ function main() {
         processSonosEvents('group-volume', data);
     });
 
-    discovery.on('group-mute', function (data) {
-        if (socketServer)socketServer.sockets.emit('group-mute', data);
-        processSonosEvents ('group-mute', data);
+    discovery.on('volume-change', function (data) {
+        if (socketServer) socketServer.sockets.emit('volume', data);
+        processSonosEvents('volume', data);
     });
 
-    discovery.on('mute', function (data) {
+    discovery.on('group-mute', function (data) {
+        if (socketServer)socketServer.sockets.emit('group-mute', data);
+        processSonosEvents('group-mute', data);
+    });
+
+    discovery.on('mute-change', function (data) {
         if (socketServer) socketServer.sockets.emit('mute', data);
-        processSonosEvents ('mute', data);
+        processSonosEvents('mute', data);
     });
 
     discovery.on('favorites', function (data) {
@@ -1451,18 +1562,24 @@ function main() {
         processSonosEvents('favorites', data);
     });
 
-    discovery.on('queue-changed', function (data) {
-        //console.log('queue-changed', data);
-        delete queues[data.uuid];
+    discovery.on('queue-change', function (player) {
+        //console.log('queue-change', data);
+        delete queues[player.uuid];
         if (socketServer) {
             loadQueue(player.uuid)
-                .then(queue => {
-                    socketServer.sockets.emit('queue', { uuid: player.uuid, queue });
+                .then(function (queue) {
+                    socketServer.sockets.emit('queue', { uuid: player.uuid, queue: queue });
+                    processSonosEvents('queue', { uuid: player.uuid, queue: queue });
                 });
         }
-        processSonosEvents ('queue-changed', data);
     });
-
+    
+    discovery.on('list-change', function (data) {
+        //console.log('queue-change', data);
+        if (socketServer) socketServer.sockets.emit('favorites', data);
+        processSonosEvents('favorites', data);
+    });
+    
     function loadQueue(uuid) {
         if (queues[uuid]) {
             return Promise.resolve(queues[uuid]);
@@ -1470,7 +1587,7 @@ function main() {
 
         const player = discovery.getPlayerByUUID(uuid);
         return player.getQueue()
-            .then(queue => {
+            .then(function (queue) {
                 queues[uuid] = queue;
                 return queue;
             });
@@ -1495,7 +1612,7 @@ function main() {
         async.parallelLimit([
             function (callback) {
                 var player = getPlayer();
-                console.log('fetching from', player.address)
+                console.log('fetching from', player.baseUrl)
                 player.browse('A:ARTIST:' + term, 0, 600, function (success, result) {
                     console.log(success, result)
                     response.byArtist = result;
@@ -1504,7 +1621,7 @@ function main() {
             },
             function (callback) {
                 var player = getPlayer();
-                console.log('fetching from', player.address)
+                console.log('fetching from', player.baseUrl)
                 player.browse('A:TRACKS:' + term, 0, 600, function (success, result) {
                     response.byTrack = result;
                     callback(null, 'track');
@@ -1512,7 +1629,7 @@ function main() {
             },
             function (callback) {
                 var player = getPlayer();
-                console.log('fetching from', player.address)
+                console.log('fetching from', player.baseUrl)
                 player.browse('A:ALBUM:' + term, 0, 600, function (success, result) {
                     response.byAlbum = result;
                     callback(null, 'album');
