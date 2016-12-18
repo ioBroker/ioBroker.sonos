@@ -7,6 +7,9 @@ ioBroker.sonos
 
 [![NPM](https://nodei.co/npm/iobroker.sonos.png?downloads=true)](https://nodei.co/npm/iobroker.sonos/)
 
+![Screenshot](img/preview1.png)
+
+![Screenshot](img/preview2.png)
 
 Control and monitor SONOS player from ioBroker.
 
@@ -20,6 +23,7 @@ To allow using sayIt adapter with SONOS, be sure that web adapter is instantiate
 
 You can use mobile interface too. It can be found under ```http://ipaddress:8083/m/```
 
+TODO: Show queue with covers
 
 ## Changelog
 ### 1.3.0 (2016-12-13)

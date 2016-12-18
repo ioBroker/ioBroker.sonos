@@ -294,14 +294,6 @@ function createChannel(name, ip, room, callback) {
             role:   'media.current.cover',
             desc:   'Cover image of current played song'
         },
-        'cover.png': {     // media.current.cover -    current url to album cover (read only)
-            def:    '',
-            type:   'file',
-            read:   true,
-            write:  true,
-            role:   'media.current.cover',
-            desc:   'Cover image of current played song as binary'
-        },
         'current_duration': {  // media.current.duration - duration as HH:MM:SS (read only)
             def:    '00:00',
             type:   'string',
@@ -322,11 +314,11 @@ function createChannel(name, ip, room, callback) {
         },
         'current_type': {             // media.type -            type of stream (read only)
             def:    '',
-            type:   'string',
+            type:   'number',
             read:   true,
             write:  false,
             role:   'media.current.type',
-            values: '0,1',
+            states: {0: 'track', 1: 'radio'},
             desc:   'Type of Stream (0 = track, 1 = radio)'
         },
         'alive': {             // indicator.reachable -    if player alive (read only)
@@ -405,6 +397,21 @@ function createChannel(name, ip, room, callback) {
     for (var j = 0; j < states_list.length; j++) {
         adapter.createState('root', id, states_list[j], states[states_list[j]]);
     }
+    // Create cover object
+    adapter.setForeignObject(adapter.namespace + '.root.' + id + '.cover.png', {
+        _id: adapter.namespace + '.root.' + id + '.cover.png',
+        common: {
+            type:   'file',
+            read:   true,
+            write:  true,
+            role:   'media.current.cover',
+            desc:   'Cover image of current played song as binary'
+        },
+        native: {},
+        state: 'state'
+    }, function (err) {
+        if (err) adapter.log.error(err);
+    });
 }
 
 function browse(callback) {
@@ -882,19 +889,14 @@ function takeSonosState(ip, sonosState) {
     // - Tracks w/o Album name keeps album name from previous track or some random album. Don't know if this is already wrong from SONOS API.
 
     if (sonosState.currentTrack.type === 'radio') {
-        var idx = sonosState.currentTrack.radioShowMetaData.lastIndexOf(',');
-        var show = (idx > -1 ? sonosState.currentTrack.radioShowMetaData.substr(0, idx) : sonosState.currentTrack.radioShowMetaData);
-        adapter.setState({device: 'root', channel: ip, state: 'current_album'},  {val: show, ack: true});
-        adapter.setState({device: 'root', channel: ip, state: 'current_artist'}, {val: sonosState.currentTrack.streamInfo, ack: true});
-        adapter.setState({device: 'root', channel: ip, state: 'current_title'},  {val: sonosState.currentTrack.title, ack: true});
-        adapter.setState({device: 'root', channel: ip, state: 'current_type'},   {val: '1', ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'current_type'}, {val: 1, ack: true});
     }
     else {
-        adapter.setState({device: 'root', channel: ip, state: 'current_album'},  {val: sonosState.currentTrack.album, ack: true});
-        adapter.setState({device: 'root', channel: ip, state: 'current_artist'}, {val: sonosState.currentTrack.artist, ack: true});
-        adapter.setState({device: 'root', channel: ip, state: 'current_title'},  {val: sonosState.currentTrack.title, ack: true});
-        adapter.setState({device: 'root', channel: ip, state: 'current_type'},   {val: '0', ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'current_type'}, {val: 0, ack: true});
     }
+    adapter.setState({device: 'root', channel: ip, state: 'current_title'},  {val: sonosState.currentTrack.title  || '', ack: true});
+    adapter.setState({device: 'root', channel: ip, state: 'current_album'},  {val: sonosState.currentTrack.album  || '', ack: true});
+    adapter.setState({device: 'root', channel: ip, state: 'current_artist'}, {val: sonosState.currentTrack.artist || '', ack: true});
 
     // elapsed time
     adapter.setState({device: 'root', channel: ip, state: 'current_duration'},   {val: sonosState.currentTrack.duration, ack: true});
@@ -985,9 +987,11 @@ function readCoverFileToState(fileName, stateName, ip) {
             adapter.log.warn('Cannot read file: ' + e);
         }
     }
-    if (fileData) adapter.setBinaryState(stateName, fileData, function () {
-        adapter.setState({device: 'root', channel: ip, state: 'current_cover'}, {val: '/state/' + stateName, ack: true});
-    });
+    if (fileData) {
+        adapter.setBinaryState(stateName, fileData, function () {
+            adapter.setState({device: 'root', channel: ip, state: 'current_cover'}, {val: '/state/' + stateName, ack: true});
+        });
+    }
 }
 
 function takeSonosFavorites(ip, favorites) {
