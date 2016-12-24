@@ -26,7 +26,7 @@ You can use mobile interface too. It can be found under ```http://ipaddress:8083
 TODO: Show queue with covers
 
 ## Changelog
-### 1.3.0 (2016-12-13)
+### 1.3.1 (2016-12-24)
 - (bluefox) Fix api changes of SONOS module
 
 ### 1.2.1 (2016-12-10)
