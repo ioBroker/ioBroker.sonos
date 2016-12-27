@@ -38,7 +38,11 @@ adapter.on('stateChange', function (_id, state) {
                 }
             } else
             if (id.state === 'muted') {
-                player.mute(!!state.val); // !! is toBoolean()
+                if (!!state.val) {
+                    player.mute(); // !! is toBoolean()
+                } else {
+                    player.unMute(); // !! is toBoolean()
+                }
             } else
             if (id.state === 'volume') {
                 player.setVolume(state.val);
