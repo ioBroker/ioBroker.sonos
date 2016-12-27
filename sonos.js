@@ -550,11 +550,12 @@ function fadeIn(player, to, options, callback) {
 }
 
 function fadeOut(player, options, callback) {
-    if (!adapter.config.fadeIn && !adapter.config.fadeOut) {
+    if ((!adapter.config.fadeIn && !adapter.config.fadeOut) || (typeof options === 'boolean' && options)) {
         if (typeof options === 'function') callback = options;
-        if (callback) callback();
+        if (callback) callback(typeof options === 'boolean' && options);
         return;
     }
+
     if (options === undefined || typeof options === 'function') {
         callback = options;
         options = {
@@ -581,13 +582,17 @@ function fadeOut(player, options, callback) {
     }
 }
 
-function startPlayer(player, volume, start) {
+function startPlayer(player, volume, noFadeIn, start) {
     adapter.log.debug('startPlayer volume: ' + volume + ' start=' + start + ' player.queuedTts.length=' + (player.queuedTts && player.queuedTts.length ? player.queuedTts.length : 0));
     //fadeOut(player);
 
-    if (start) player.play();
+    if (start || noFadeIn) player.play();
 
-    fadeIn(player, volume);
+    if (!noFadeIn) {
+        fadeIn(player, volume);
+    } else {
+        player.setVolume(volume);
+    }
 }
 
 //////////////////
@@ -670,7 +675,7 @@ function getPositionInfo(player, callback) {
 function playOnSonos(uri, sonosUuid, volume) {
     var now = (new Date()).getTime();
     var player = discovery.getPlayerByUUID(sonosUuid);
-
+    var noFadeOut = false;
     if (!uri) { // stop actual tts
         if (player.tts) player.pause();
         return;
@@ -681,11 +686,12 @@ function playOnSonos(uri, sonosUuid, volume) {
         if (player.prevTts && now - player.prevTts.ts <= 2000) { // use prev player state also for next tts
             player.tts = player.prevTts;
             player.prevTts = null;
+            noFadeOut = true;
         } else if (!player.tts) {
             player.tts = JSON.parse(JSON.stringify(player.state)); // only get akt payer state, if no previous
             player.tts.avTransportUriMetadata = player.avTransportUriMetadata;
         }
-        //adapter.log.debug('player.tts= volume=' + player.tts.volume + ' currentTrack.uri=' + player.tts.currentTrack.uri + ' tts.playbackState=' + player.tts.playbackState);
+        adapter.log.debug('player.tts= volume=' + player.tts.volume + ' currentTrack.uri=' + player.tts.currentTrack.uri + ' tts.playbackState=' + player.tts.playbackState);
         //player.tts.ourUri = uri;
         player.tts.time = now;
     } else {
@@ -724,12 +730,12 @@ function playOnSonos(uri, sonosUuid, volume) {
             }
             player.tts.addedTrack = parseInt(res.firsttracknumberenqueued, 10);
 
-            fadeOut(player, function () {
+            fadeOut(player, noFadeOut, function (noFadeIn) {
                 adapter.log.debug('player.seek: ' + player.tts.addedTrack);
 
                 player.trackSeek(player.tts.addedTrack).then(function () {
                     // Send command PLAY
-                    startPlayer(player, volume, player.tts.playbackState !== 'PLAYING');
+                    startPlayer(player, volume, noFadeIn, player.tts.playbackState !== 'PLAYING');
                 });
             });
         });
@@ -741,12 +747,12 @@ function playOnSonos(uri, sonosUuid, volume) {
 
         // Radio
         player.tts.radio = true;
-        fadeOut(player, function () {
+        fadeOut(player, noFadeOut, function (noFadeIn) {
             adapter.log.debug('setAVTransport: ' + uri);
 
             player.setAVTransport(uri).then(function (res) {
                 // Send command PLAY
-                startPlayer(player, volume, true);
+                startPlayer(player, volume, noFadeIn, true);
             });
         });
     }
@@ -767,9 +773,9 @@ function addChannel(name, ip, room, callback) {
 
 function resetTts(player) {
     //adapter.log.debug('setting tts = null' + (arguments.callee.caller.name !== undefined ? arguments.callee.caller.name : 'no caller'));
-    if(!player.tts) return;
+    if (!player.tts) return;
     player.prevTts = player.tts;
-    player.prevTts.ts = (new Date()).getTime();
+    player.prevTts.ts = new Date().getTime();
     player.tts = null;
 }
 
@@ -808,15 +814,36 @@ function takeSonosState(ip, sonosState) {
             /*&& (sonosState.currentTrack.uri === player.tts.ourUri)*/) {
 
             // If other files queued
-            //if (player.queuedTts && player.queuedTts.length) {
-            //    var q = player.queuedTts.shift();
-            //    var uuid = channels[ip].uuid;
-            //    if (player.tts) player.tts.time -= 30001; // fake a timeout to force playing and using previous player state
-            //    setTimeout(function () {
-            //        playOnSonos(q.uri, uuid, q.volume);
-            //    }, 0);
+            if (player.queuedTts && player.queuedTts.length) {
+                var q = player.queuedTts.shift();
+                var uuid = channels[ip].uuid;
+                var tts = player.tts;
+                resetTts(player);
+
+                // remove track
+                if (tts.addedTrack !== undefined) {
+                    adapter.log.debug('player.removeTrackFromQueue, Track=' + tts.addedTrack);
+                    player.removeTrackFromQueue(tts.addedTrack).then(function () {
+                        setTimeout(function () {
+                            playOnSonos(q.uri, uuid, q.volume);
+                        }, 0);
+                    }, function (error) {
+                        adapter.log.error('Cannot removeTrackFromQueue: ' + error);
+                        setTimeout(function () {
+                            playOnSonos(q.uri, uuid, q.volume);
+                        }, 0);
+                    });
+                } else {
+                    setTimeout(function () {
+                        playOnSonos(q.uri, uuid, q.volume);
+                    }, 0);
+                }
+                return;
+            }
             if ((new Date()).getTime() - player.tts.time > 1000) { // else: do not restore old state, if queue is not empty
                 var tts = player.tts;
+
+                resetTts(player);
 
                 // Restore state before tts
                 adapter.log.debug('>> Restore state: volume - ' + tts.volume + ', mute: ' + tts.mute + ', uri: ' + tts.currentTrack.uri);
@@ -840,21 +867,21 @@ function takeSonosState(ip, sonosState) {
 
                     player.setAVTransport(tts.currentTrack.uri, tts.avTransportUriMetadata).then(function (res) {
                         resetTts(player);
-                        startPlayer(player, tts.volume, tts.playbackState === 'PLAYING');
+                        startPlayer(player, tts.volume, false, tts.playbackState === 'PLAYING');
                     }, function (error) {
                         adapter.log.error('Cannot setAVTransport: ' + error);
                         resetTts(player);
-                        startPlayer(player, tts.volume, tts.playbackState === 'PLAYING');
+                        startPlayer(player, tts.volume, false, tts.playbackState === 'PLAYING');
                     });
                 } else {
-                    // if radio
+                    // if not radio
                     // Remove added track
                     // Set old track number
                     player.trackSeek(tts.trackNo).then(function (res) {
                         resetTts(player);
                         // Set elapsed time
                         player.timeSeek(tts.elapsedTime).then(function (res) {
-                            startPlayer(player, tts.volume, /*true ||*/ tts.playbackState === 'PLAYING');
+                            startPlayer(player, tts.volume, false, /*true ||*/ tts.playbackState === 'PLAYING');
                         }, function (error) {
                             adapter.log.error('Cannot trackSeek: ' + error);
                         });
