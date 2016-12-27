@@ -514,6 +514,7 @@ function text2speech(fileName, sonosIp, callback) {
 
 function fadeIn(player, to, options, callback) {
     if (!adapter.config.fadeIn && !adapter.config.fadeOut) {
+        if (typeof options === 'function') callback = options;
         player.setVolume(to);
         if (callback) callback();
         return;
@@ -550,6 +551,7 @@ function fadeIn(player, to, options, callback) {
 
 function fadeOut(player, options, callback) {
     if (!adapter.config.fadeIn && !adapter.config.fadeOut) {
+        if (typeof options === 'function') callback = options;
         if (callback) callback();
         return;
     }
@@ -708,6 +710,7 @@ function playOnSonos(uri, sonosUuid, volume) {
     if (player.tts.currentTrack.uri &&
         ((player.tts.currentTrack.uri.indexOf('x-file-cifs:') !== -1) ||
          (player.tts.currentTrack.uri.indexOf('x-sonos-spotify:') !== -1) ||
+         (player.tts.currentTrack.uri.indexOf('x-sonosapi-hls-static:') !== -1) ||
          (audioExtensions.indexOf(parts[parts.length - 1]) !== -1))
        ) {
         player.tts.radio = false;
@@ -731,6 +734,11 @@ function playOnSonos(uri, sonosUuid, volume) {
             });
         });
     } else {
+        if (player.tts.currentTrack && player.tts.currentTrack.uri) {
+            var parts = player.tts.currentTrack.uri.split(':');
+            adapter.log.debug('Detected RADIO, because of: ' + parts[0]);
+        }
+
         // Radio
         player.tts.radio = true;
         fadeOut(player, function () {
