@@ -37,6 +37,59 @@ adapter.on('stateChange', function (_id, state) {
                     player.play();
                 }
             } else
+            if (id.state === 'play') {
+                if (!!state.val) {
+                    player.play(); // !! is toBoolean()
+                }
+            } else
+            if (id.state === 'stop') {
+                if (!!state.val) {
+                    player.pause(); // !! is toBoolean()
+                }
+            } else
+            if (id.state === 'pause') {
+                if (!!state.val) {
+                    player.pause(); // !! is toBoolean()
+                }
+            } else
+            if (id.state === 'next') {
+                if (!!state.val) {
+                    player.nextTrack(); // !! is toBoolean()
+                }
+            } else
+            if (id.state === 'prev') {
+                if (!!state.val) {
+                    player.previousTrack(); // !! is toBoolean()
+                }
+            } else
+            if (id.state === 'seek') {
+                state.val  = parseFloat(state.val);
+                if (state.val < 0)   state.val = 0;
+                if (state.val > 100) state.val = 100;
+                player.timeSeek(Math.round((channels[id.channel].duration * state.val) / 100));
+            } else
+            if (id.state === 'current_elapsed') {
+                state.val  = parseInt(state.val, 10);
+                player.timeSeek(state.val);
+            } else
+            if (id.state === 'current_elapsed_s') {
+                var parts = state.val.toString().split(':');
+                var seconds;
+                if (parts === 3) {
+                    seconds = parseInt(parts[0]) * 3600;
+                    seconds += parseInt(parts[1]) * 60;
+                    seconds = parseInt(parts[2]);
+                } else if (parts === 2) {
+                    seconds = parseInt(parts[0]) * 60;
+                    seconds += parseInt(parts[1]);
+                } else if (parts === 1) {
+                    seconds = parseInt(parts[0]);
+                } else {
+                    adapter.log.error('Invalid elapsed time: ' + state.val);
+                    return;
+                }
+                player.timeSeek(seconds);
+            } else
             if (id.state === 'muted') {
                 if (!!state.val) {
                     player.mute(); // !! is toBoolean()
@@ -67,10 +120,10 @@ adapter.on('stateChange', function (_id, state) {
                             player.previousTrack();
                             break;
                         case 'mute':
-                            player.mute(true);
+                            player.mute();
                             break;
                         case 'unmute':
-                            player.mute(false);
+                            player.unMute();
                             break;
                         default:
                             adapter.log.warn('Unknown state: ' + state.val);
@@ -238,6 +291,51 @@ function createChannel(name, ip, room, callback) {
             role:   'media.state',
             desc:   'Play or pause'
         },
+        'play': {      // play command
+            type:   'boolean',
+            read:   false,
+            write:  true,
+            role:   'button.play',
+            desc:   'play'
+        },
+        'stop': {      // stop command
+            type:   'boolean',
+            read:   false,
+            write:  true,
+            role:   'button.stop',
+            desc:   'stop'
+        },
+        'pause': {      // pause command
+            type:   'boolean',
+            read:   false,
+            write:  true,
+            role:   'button.pause',
+            desc:   'pause'
+        },
+        'prev': {      // prev command
+            type:   'boolean',
+            read:   false,
+            write:  true,
+            role:   'button.prev',
+            desc:   'prev'
+        },
+        'next': {      // next command
+            type:   'boolean',
+            read:   false,
+            write:  true,
+            role:   'button.next',
+            desc:   'next'
+        },
+        'seek': {      // seek command and indication
+            type:   'number',
+            read:   true,
+            write:  true,
+            unit:   '%',
+            min:    0,
+            max:    100,
+            role:   'media.seek',
+            desc:   'Seek position in percent'
+        },
         'state': {             // media.state -            Text state of player: stop, play, pause (read, write)
             def:    'stop',
             type:   'string',
@@ -261,7 +359,7 @@ function createChannel(name, ip, room, callback) {
             type:   'boolean',
             read:   true,
             write:  true,
-            role:   'media.muted',
+            role:   'media.mute',
             min:    false,
             max:    true,
             desc:   'Is muted'
@@ -271,7 +369,7 @@ function createChannel(name, ip, room, callback) {
             type:   'string',
             read:   true,
             write:  false,
-            role:   'media.current.title',
+            role:   'media.title',
             desc:   'Title of current played song'
         },
         'current_artist': {    // media.current.artist -   current artist (read only)
@@ -279,7 +377,7 @@ function createChannel(name, ip, room, callback) {
             type:   'string',
             read:   true,
             write:  false,
-            role:   'media.current.artist',
+            role:   'media.artist',
             desc:   'Artist of current played song'
         },
         'current_album': {     // media.current.album -    current album (read only)
@@ -287,7 +385,7 @@ function createChannel(name, ip, room, callback) {
             type:   'string',
             read:   true,
             write:  false,
-            role:   'media.current.album',
+            role:   'media.album',
             desc:   'Album of current played song'
         },
         'current_cover': {     // media.current.cover -    current url to album cover (read only)
@@ -295,33 +393,33 @@ function createChannel(name, ip, room, callback) {
             type:   'string',
             read:   true,
             write:  false,
-            role:   'media.current.cover',
+            role:   'media.cover',
             desc:   'Cover image of current played song'
         },
         'current_duration': {  // media.current.duration - duration as HH:MM:SS (read only)
-            def:    '00:00',
-            type:   'string',
-            read:   true,
-            write:  false,
-            unit:   'interval',
-            role:   'media.current.duration',
-            desc:   'Duration of current played song as HH:MM:SS'
-        },
-        'current_duration_s': {// media.current.duration - duration in seconds (read only)
             def:    0,
             type:   'number',
             read:   true,
             write:  false,
             unit:   'seconds',
-            role:   'media.current.duration',
+            role:   'media.duration',
             desc:   'Duration of current played song in seconds'
+        },
+        'current_duration_s': {// media.current.duration - duration in seconds (read only)
+            def:    '00:00',
+            type:   'string',
+            read:   true,
+            write:  false,
+            unit:   'interval',
+            role:   'media.duration.text',
+            desc:   'Duration of current played song as HH:MM:SS'
         },
         'current_type': {             // media.type -            type of stream (read only)
             def:    '',
             type:   'number',
             read:   true,
             write:  false,
-            role:   'media.current.type',
+            role:   'media.type',
             states: {0: 'track', 1: 'radio'},
             desc:   'Type of Stream (0 = track, 1 = radio)'
         },
@@ -332,23 +430,23 @@ function createChannel(name, ip, room, callback) {
             role:   'indicator.reachable',
             desc:   'If sonos alive or not'
         },
-        'current_elapsed': {   // media.current.elapsed -  elapsed time in HH:MM:SS (read only)
-            def:    '00:00',
-            type:   'string',
-            read:   true,
-            write:  false,
-            unit:   'interval',
-            role:   'media.current.elapsed',
-            desc:   'Elapsed time of current played song as HH:MM:SS'
-        },
-        'current_elapsed_s': { // media.current.elapsed -  elapsed time in seconds (read only)
+        'current_elapsed': {   // media.current.elapsed -  elapsed time in seconds
             def:    0,
             type:   'number',
             read:   true,
-            write:  false,
+            write:  true,
             unit:   'seconds',
-            role:   'media.current.elapsed',
+            role:   'media.elapsed',
             desc:   'Elapsed time of current played song in seconds'
+        },
+        'current_elapsed_s': { // media.current.elapsed -  elapsed time in HH:MM:SS
+            def:    '00:00',
+            type:   'string',
+            read:   true,
+            write:  true,
+            unit:   'interval',
+            role:   'media.elapsed.text',
+            desc:   'Elapsed time of current played song as HH:MM:SS'
         },
         'favorites_list': {    // media.favorites.list -   list of favorites channel (read only)
             def:    '',
@@ -371,7 +469,7 @@ function createChannel(name, ip, room, callback) {
             type:   'string',
             read:   false,
             write:  true,
-            role:   'media',
+            role:   'media.tts',
             desc:   'Set text2speech mp3 file to play'
         }
     };
@@ -855,7 +953,13 @@ function takeSonosState(ip, sonosState) {
                 if (player._isMuted === undefined) {
                     player._isMuted = player.groupState.mute;
                 }
-                if (player._isMuted !== tts.mute) player.mute(tts.mute);
+                if (player._isMuted !== tts.mute) {
+                    if (tts.mute) {
+                        player.mute();
+                    } else {
+                        player.unMute();
+                    }
+                }
 
                 // required for fadeIn
                 player.setVolume(0);
@@ -904,6 +1008,7 @@ function takeSonosState(ip, sonosState) {
 
                     if (channels[ip_].elapsed > channels[ip_].duration) channels[ip_].elapsed = channels[ip_].duration;
 
+                    adapter.setState({device: 'root', channel: ip, state: 'seek'},              {val: Math.round((channels[ip_].elapsed / channels[ip_].duration) * 1000) / 10, ack: true});
                     adapter.setState({device: 'root', channel: ip, state: 'current_elapsed'},   {val: channels[ip_].elapsed, ack: true});
                     adapter.setState({device: 'root', channel: ip, state: 'current_elapsed_s'}, {val: toFormattedTime(channels[ip_].elapsed), ack: true});
 
@@ -1004,6 +1109,7 @@ function takeSonosState(ip, sonosState) {
     adapter.setState({device: 'root', channel: ip, state: 'current_elapsed'},    {val: sonosState.elapsedTime, ack: true});
     channels[ip].elapsed  = sonosState.elapsedTime;
     channels[ip].duration = sonosState.currentTrack.duration;
+    adapter.setState({device: 'root', channel: ip, state: 'seek'},               {val: Math.round((channels[ip].elapsed / channels[ip].duration) * 1000) / 10, ack: true});
     adapter.setState({device: 'root', channel: ip, state: 'current_elapsed_s'},  {val: sonosState.elapsedTimeFormatted, ack: true});
     adapter.setState({device: 'root', channel: ip, state: 'volume'},             {val: sonosState.volume, ack: true});
     if (sonosState.groupState) {
