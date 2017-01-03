@@ -1,9 +1,9 @@
 {
     "common": {
         "name":                     "sonos",
-        "version":                  "1.4.1",
+        "version":                  "1.4.2",
         "news": {
-            "1.4.0": {
+            "1.4.2": {
                 "en": "add states for vis control and change some roles",
                 "de": "Einige Zustände hinzugefügt und mache Rollen sind geändert",
                 "ru": "Добавлены новые состояния и изменениы некоторые роли"
