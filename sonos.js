@@ -345,11 +345,11 @@ function createChannel(name, ip, room, callback) {
             role:   'media.state',
             desc:   'Play, stop, or pause, next, previous, mute, unmute'
         },
-        'volume': {            // media.volume -           volume level (read, write)
+        'volume': {            // level.volume -           volume level (read, write)
             type:   'number',
             read:   true,
             write:  true,
-            role:   'media.volume',
+            role:   'level.volume',
             min:    0,
             max:    100,
             desc:   'State and control of volume'
