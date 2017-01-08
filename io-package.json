@@ -1,8 +1,13 @@
 {
     "common": {
         "name":                     "sonos",
-        "version":                  "1.4.2",
+        "version":                  "1.4.3",
         "news": {
+            "1.4.3": {
+                "en": "Allow to use the sonos web via with proxy",
+                "de": "Es ist möglich sonos mit proxy zu benutzen",
+                "ru": "Можно вызвать sonos web через прокси"
+            },
             "1.4.2": {
                 "en": "add states for vis control and change some roles",
                 "de": "Einige Zustände hinzugefügt und mache Rollen sind geändert",

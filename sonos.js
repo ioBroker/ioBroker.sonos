@@ -1046,11 +1046,17 @@ function takeSonosState(ip, sonosState) {
     adapter.setState({device: 'root', channel: ip, state: 'current_duration'},   {val: sonosState.currentTrack.duration, ack: true});
     adapter.setState({device: 'root', channel: ip, state: 'current_duration_s'}, {val: toFormattedTime(sonosState.currentTrack.duration), ack: true});
 
-    if (sonosState.currentTrack.albumArtUri && lastCover !== sonosState.currentTrack.albumArtUri) {
-        var md5url     = crypto.createHash('md5').update(sonosState.currentTrack.albumArtUri).digest('hex');
-        var fileName   = cacheDir + md5url;
-        var stateName  = adapter.namespace + '.root.' + ip + '.cover.png';
+    if (lastCover !== sonosState.currentTrack.albumArtUri) {
         var defaultImg = __dirname + '/img/browse_missing_album_art.png';
+        var stateName  = adapter.namespace + '.root.' + ip + '.cover.png';
+        var fileName;
+        var md5url;
+        if (sonosState.currentTrack.albumArtUri) {
+            md5url     = crypto.createHash('md5').update(sonosState.currentTrack.albumArtUri).digest('hex');
+            fileName   = cacheDir + md5url;
+        } else {
+            fileName   = defaultImg;
+        }
 
         if (!fs.existsSync(fileName)) {
             adapter.log.debug('Cover file does not exist. Fetching via HTTP');
@@ -1466,7 +1472,30 @@ function main() {
     // from here the code is mostly from https://github.com/jishi/node-sonos-web-controller/blob/master/server.js
 
     if (adapter.config.webserverEnabled) {
-        var fileServer  = new Static.Server(__dirname + '/node_modules/sonos-web-controller/static');
+        var staticPath;
+        if (fs.existsSync(__dirname + '/../sonos-web-controller/static')) {
+            staticPath = __dirname + '/../sonos-web-controller/static';
+        } else {
+            staticPath = __dirname + '/node_modules/sonos-web-controller/static';
+        }
+        // patch socket
+        if (fs.existsSync(staticPath + '/js/socket.js')) {
+            var data = fs.readFileSync(staticPath + '/js/socket.js').toString();
+            if (data.indexOf('io.connect(target);') !== -1) {
+                data = data.replace('io.connect(target);', "io.connect('/', {path: location.pathname.replace('/m/', '/') + 'socket.io'}); // io.connect(target);");
+                fs.writeFileSync(staticPath + '/js/socket.js', data);
+            }
+        }
+        if (fs.existsSync(staticPath + '/js/all.js')) {
+            var data = fs.readFileSync(staticPath + '/js/all.js').toString();
+            if (data.indexOf('"/svg/mute_on.svg" : "/svg/mute_off.svg"') !== -1) {
+                data = data.replace('"/svg/mute_on.svg" : "/svg/mute_off.svg"', '"svg/mute_on.svg" : "svg/mute_off.svg"');
+                data = data.replace('"/images/browse_missing_album_art.png";', '"images/browse_missing_album_art.png";');
+                fs.writeFileSync(staticPath + '/js/all.js', data);
+            }
+        }
+
+        var fileServer  = new Static.Server(staticPath);
 
         cacheDir = adapter.config.cacheDir ? (__dirname + adapter.config.cacheDir) : cacheDir;
         // Remove last "/"
