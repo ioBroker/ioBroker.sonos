@@ -1,8 +1,13 @@
 {
     "common": {
         "name":                     "sonos",
-        "version":                  "1.4.3",
+        "version":                  "1.4.4",
         "news": {
+			"1.4.4": {
+                "en": "removeFromGroup extended",
+                "de": "removeFromGroup erweitert",
+                "ru": "расширена removeFromGroup"
+            },
             "1.4.3": {
                 "en": "Allow to use the sonos web via with proxy",
                 "de": "Es ist möglich sonos mit proxy zu benutzen",

@@ -26,6 +26,9 @@ You can use mobile interface too. It can be found under ```http://ipaddress:8083
 TODO: Show queue with covers
 
 ## Changelog
+### 1.4.4 (2017-01-29)
+- (soef) removeFromGroup extended
+
 ### 1.4.3 (2017-01-08)
 - (bluefox) Allow to use the sonos web via with proxy
 
