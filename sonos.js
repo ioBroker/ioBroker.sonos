@@ -731,10 +731,14 @@ function removeFromGroup(leavingName, coordinator) {
     }
     if (leavingPlayer.coordinator === coordinator) {
         leavingPlayer.becomeCoordinatorOfStandaloneGroup();
-    } else {
-        attachTo(leavingPlayer, coordinator)
+    } else if (coordinator.coordinator === leavingPlayer) {
+        coordinator.becomeCoordinatorOfStandaloneGroup();
     }
+	//else {
+    //    attachTo(leavingPlayer, coordinator)
+    //}
 }
+
 
 /////////////
 
