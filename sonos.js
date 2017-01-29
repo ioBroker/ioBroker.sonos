@@ -582,17 +582,21 @@ function addToGroup(playerNameToAdd, coordinator) {
 }
 
 function removeFromGroup(leavingName, coordinator) {
-    if (typeof coordinator == 'string') coordinator = getPlayerByName(coordinator);
+    if (typeof coordinator === 'string') coordinator = getPlayerByName(coordinator);
     var leavingPlayer = getPlayerByName(leavingName);
-    if(!coordinator || !leavingPlayer) {
+    if (!coordinator || !leavingPlayer) {
         return;
     }
-    if (leavingPlayer.coordinator == coordinator) {
+    if (leavingPlayer.coordinator === coordinator) {
         leavingPlayer.becomeCoordinatorOfStandaloneGroup();
-    } else {
-        attachTo(leavingPlayer, coordinator)
+    } else if (coordinator.coordinator === leavingPlayer) {
+        coordinator.becomeCoordinatorOfStandaloneGroup();
     }
+	//else {
+    //    attachTo(leavingPlayer, coordinator)
+    //}
 }
+
 
 /////////////
 
