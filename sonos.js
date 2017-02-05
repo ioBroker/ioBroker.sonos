@@ -415,7 +415,7 @@ function createChannel(name, ip, room, callback) {
             desc:   'Duration of current played song as HH:MM:SS'
         },
         'current_type': {             // media.type -            type of stream (read only)
-            def:    '',
+            def:    '0',
             type:   'number',
             read:   true,
             write:  false,
