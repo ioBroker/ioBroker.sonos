@@ -26,6 +26,9 @@ You can use mobile interface too. It can be found under ```http://ipaddress:8083
 TODO: Show queue with covers
 
 ## Changelog
+### 1.5.0 (2017-02-23)
+- (bluefox) use new configuration dialog
+
 ### 1.4.4 (2017-01-29)
 - (soef) removeFromGroup extended
 

@@ -1,8 +1,13 @@
 {
     "common": {
         "name":                     "sonos",
-        "version":                  "1.4.4",
+        "version":                  "1.5.0",
         "news": {
+            "1.5.0": {
+                "en": "use new configuration dialog",
+                "de": "Benutze neue Konfigurationsdialog",
+                "ru": "Новая таблица редактирования настроек"
+            },
 			"1.4.4": {
                 "en": "removeFromGroup extended",
                 "de": "removeFromGroup erweitert",
