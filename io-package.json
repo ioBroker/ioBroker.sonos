@@ -1,8 +1,13 @@
 {
     "common": {
         "name":                     "sonos",
-        "version":                  "1.5.0",
+        "version":                  "1.6.0",
         "news": {
+            "1.6.0": {
+                "en": "Enhance handling of groups",
+                "de": "Behandlung von Gruppen verbessert",
+                "ru": "Enhance handling of groups"
+            },
             "1.5.0": {
                 "en": "use new configuration dialog",
                 "de": "Benutze neue Konfigurationsdialog",

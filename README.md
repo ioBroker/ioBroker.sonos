@@ -25,7 +25,16 @@ You can use mobile interface too. It can be found under ```http://ipaddress:8083
 
 TODO: Show queue with covers
 
+## Infos on Grouo handling
+* States: coordinator, group_volume, group_muted
+* all read/write, to get also changes from Sonos-App
+* "coordinator" contains the channel name of the Group-Master (e.g. 192_168_1_99). If Device do not belong to any group the value is eaqual to the own channel name
+
+
 ## Changelog
+### 1.6.0 (2017-04-09)
+- (justr1) Enhance group Handling
+
 ### 1.5.0 (2017-02-23)
 - (bluefox) use new configuration dialog
 
