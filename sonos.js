@@ -148,6 +148,20 @@ adapter.on('stateChange', function (_id, state) {
                 addToGroup(state.val, player); //xxxx
             } else if (id.state === 'remove_from_group') {
                 removeFromGroup(state.val, player);
+            } else if (id.state === 'coordinator') {
+                if (state.val === id.channel) {
+                    player.becomeCoordinatorOfStandaloneGroup();
+                } else {
+                    attachTo(player, getPlayerByName(state.val));
+                }
+            } else if (id.state === 'group_volume') {
+                player.setGroupVolume(state.val);
+            } else if (id.state === 'group_muted') {
+                if (!!state.val) {
+                    player.muteGroup(); // !! is toBoolean()
+                } else {
+                    player.unMuteGroup(); // !! is toBoolean()
+                }
             } else {
                 adapter.log.warn('try to control unknown id ' + JSON.stringify(id));
             }
@@ -278,6 +292,33 @@ var newGroupStates = {
         write: true,
         role:  'media',
         desc:  'Remove a Player to a Group (Player to remove, Coordinator)'
+    },
+    'coordinator': {     // master of group
+        def:    '',
+        type:   'string',
+        read:   true,
+        write:  true,
+        role:   'media.coordinator',
+        desc:   'Indicates coordinator of group'
+    },
+    'group_volume': {
+        type:   'number',
+        read:   true,
+        write:  true,
+        role:   'level.volume',
+        min:    0,
+        max:    100,
+        desc:   'State and control of group volume'
+        },
+    'group_muted': {
+        def:    false,
+        type:   'boolean',
+        read:   true,
+        write:  true,
+        role:   'media.mute',
+        min:    false,
+        max:    true,
+        desc:   'Group is muted'
     }
 };
 
@@ -734,7 +775,7 @@ function removeFromGroup(leavingName, coordinator) {
     } else if (coordinator.coordinator === leavingPlayer) {
         coordinator.becomeCoordinatorOfStandaloneGroup();
     }
-	//else {
+    //else {
     //    attachTo(leavingPlayer, coordinator)
     //}
 }
@@ -1176,6 +1217,9 @@ function processSonosEvents(event, data) {
     var player;
     if (event === 'topology-change') {
         // TODO: Check
+        var member_ip;
+        var j;
+        var member;
         if (typeof data.length === 'undefined') {
             player = discovery.getPlayerByUUID(data.uuid);
             if (!player._address) player._address = getIp(player);
@@ -1194,6 +1238,16 @@ function processSonosEvents(event, data) {
                 if (channels[ip]) {
                     channels[ip].uuid = data[i].uuid;
                     adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
+                }
+                for (j = 0; j < data[i].members.length; j++) {
+                    member = discovery.getPlayerByUUID(data[i].members[j].uuid);
+                    if (!member._address) member._address = getIp(member);
+                    
+                    member_ip = member._address;
+                    if (channels[member_ip]) {
+                        channels[member_ip].uuid = data[i].members[j].uuid;
+                        adapter.setState({device: 'root', channel: member_ip, state: 'coordinator'}, {val: ip, ack: true});
+                    }
                 }
             }
         }
@@ -1237,22 +1291,26 @@ function processSonosEvents(event, data) {
         //    newMute:      _this.groupState.mute,
         //    roomName:     _this.roomName
         //}
-        for (i = 0; i < discovery.players.length; i++) {
-            if (discovery.players[i].roomName === data.roomName) {
-                player = discovery.getPlayerByUUID(discovery.players[i].uuid);
+//        for (i = 0; i < discovery.players.length; i++) {
+//            if (discovery.players[i].roomName === data.roomName) {
+//                player = discovery.getPlayerByUUID(discovery.players[i].uuid);
+                player = discovery.getPlayerByUUID(data.uuid);
                 if (!player._address) player._address = getIp(player);
 
                 ip = player._address;
                 if (channels[ip]) {
-                    channels[ip].uuid = discovery.players[i].uuid;
+//                    channels[ip].uuid = discovery.players[i].uuid;
+                    channels[ip].uuid = data.uuid;
                     adapter.setState({device: 'root', channel: ip, state: 'muted'}, {val: data.newMute, ack: true});
                     //adapter.setState({device: 'root', channel: ip, state: 'muted'},  {val: data.groupState.mute,  ack: true});
                     //player._isMuted = data.groupState.mute;
                     player._isMuted  = data.newMute;
-                    adapter.log.debug('group-mute: Mute for ' + player.baseUrl + ': ' + data.newMute);
+                    adapter.log.debug('mute: Mute for ' + player.baseUrl + ': ' + data.newMute);
+                    adapter.setState({device: 'root', channel: ip, state: 'group_muted'}, {val: player.groupState.mute, ack: true});
+                    adapter.log.debug('group_muted: groupMuted for ' + player.baseUrl + ': ' + player.groupState.mute);
                 }
-            }
-        }
+//            }
+//        }
     }  else if (event === 'volume') {
         // {
         //     uuid:             _this.uuid,
@@ -1269,6 +1327,10 @@ function processSonosEvents(event, data) {
             adapter.setState({device: 'root', channel: ip, state: 'volume'}, {val: data.newVolume, ack: true});
             player._volume  = data.newVolume;
             adapter.log.debug('volume: Volume for ' + player.baseUrl + ': ' + data.newVolume);
+            setTimeout (function () {
+                adapter.setState({device: 'root', channel: ip, state: 'group_volume'}, {val: player.groupState.volume, ack: true});
+                adapter.log.debug('group_volume: groupVolume for ' + player.baseUrl + ': ' + player.groupState.volume);
+            }, 2000);
         }
     } else if (event === 'mute') {
         // {
