@@ -1,8 +1,12 @@
 {
     "common": {
         "name":                     "sonos",
-        "version":                  "1.6.0",
+        "version":                  "1.6.1",
         "news": {
+            "1.6.1": {
+                "en": "States for group members added",
+                "de": "Status für Gruppemmitglieder hinzugefügt"
+            },
             "1.6.0": {
                 "en": "Enhance handling of groups",
                 "de": "Behandlung von Gruppen verbessert",

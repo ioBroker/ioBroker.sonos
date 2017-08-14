@@ -319,6 +319,20 @@ var newGroupStates = {
         min:    false,
         max:    true,
         desc:   'Group is muted'
+    },
+    'members': {             // indicator.reachable -    if player alive (read only)
+        type:   'string',
+        read:   true,
+        write:  false,
+        role:   'indicator.members',
+        desc:   'Groupmembers'
+    },
+    'membersChannels': {             // indicator.reachable -    if player alive (read only)
+        type:   'string',
+        read:   true,
+        write:  false,
+        role:   'indicator.members',
+        desc:   'Groupmembers Channels'
     }
 };
 
@@ -1239,6 +1253,8 @@ function processSonosEvents(event, data) {
                     channels[ip].uuid = data[i].uuid;
                     adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
                 }
+                var members = [];
+                var membersChannels = [];
                 for (j = 0; j < data[i].members.length; j++) {
                     member = discovery.getPlayerByUUID(data[i].members[j].uuid);
                     if (!member._address) member._address = getIp(member);
@@ -1246,8 +1262,18 @@ function processSonosEvents(event, data) {
                     member_ip = member._address;
                     if (channels[member_ip]) {
                         channels[member_ip].uuid = data[i].members[j].uuid;
+                        membersChannels.push(member_ip);
                         adapter.setState({device: 'root', channel: member_ip, state: 'coordinator'}, {val: ip, ack: true});
                     }
+                    if (data[i].members[j].roomName) {
+                        members.push(data[i].members[j].roomName);
+                    }
+                }
+                if (members.length) {
+                    adapter.setState ({device: 'root', channel: ip, state: 'members'}, { val: members.join(','), ack: true })
+                }
+                if (membersChannels.length) {
+                    adapter.setState ({device: 'root', channel: ip, state: 'membersChannels'}, { val: membersChannels.join(','), ack: true })
                 }
             }
         }
