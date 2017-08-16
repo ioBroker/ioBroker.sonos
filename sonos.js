@@ -319,6 +319,20 @@ var newGroupStates = {
         min:    false,
         max:    true,
         desc:   'Group is muted'
+    },
+    'members': {             // indicator.reachable -    if player alive (read only)
+        type:   'string',
+        read:   true,
+        write:  false,
+        role:   'indicator.members',
+        desc:   'Groupmembers'
+    },
+    'membersChannels': {             // indicator.reachable -    if player alive (read only)
+        type:   'string',
+        read:   true,
+        write:  false,
+        role:   'indicator.members',
+        desc:   'Groupmembers Channels'
     }
 };
 
@@ -1046,7 +1060,10 @@ function takeSonosState(ip, sonosState) {
             }
         }
 
-        if (ps.playing) {
+        // if duration is 0 (type is radio):
+        // - no changes expected and a state update is not necessary!
+        // - division by 0
+        if (ps.playing && channels[ip].duration > 0) { // sonosState.currentTrack.type !== 'radio') {
             if (!channels[ip].elapsedTimer) {
                 channels[ip].elapsedTimer = setInterval(function (ip_) {
                     channels[ip_].elapsed += ((adapter.config.elapsedInterval || 5000) / 1000);
@@ -1157,11 +1174,16 @@ function takeSonosState(ip, sonosState) {
 
         lastCover = sonosState.currentTrack.albumArtUri;
     }
-    adapter.setState({device: 'root', channel: ip, state: 'current_elapsed'},    {val: sonosState.elapsedTime, ack: true});
     channels[ip].elapsed  = sonosState.elapsedTime;
     channels[ip].duration = sonosState.currentTrack.duration;
-    adapter.setState({device: 'root', channel: ip, state: 'seek'},               {val: Math.round((channels[ip].elapsed / channels[ip].duration) * 1000) / 10, ack: true});
-    adapter.setState({device: 'root', channel: ip, state: 'current_elapsed_s'},  {val: sonosState.elapsedTimeFormatted, ack: true});
+
+    // only if duration !== 0, see above
+    if (channels[ip].duration > 0) { // sonosState.currentTrack.type !== 'radio') {
+        adapter.setState({device: 'root', channel: ip, state: 'current_elapsed'},    {val: sonosState.elapsedTime, ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'seek'},               {val: Math.round((channels[ip].elapsed / channels[ip].duration) * 1000) / 10, ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'current_elapsed_s'},  {val: sonosState.elapsedTimeFormatted, ack: true});
+    }
+
     adapter.setState({device: 'root', channel: ip, state: 'volume'},             {val: sonosState.volume, ack: true});
     if (sonosState.groupState) {
         adapter.setState({device: 'root', channel: ip, state: 'muted'},          {val: sonosState.groupState.mute, ack: true});
@@ -1239,6 +1261,8 @@ function processSonosEvents(event, data) {
                     channels[ip].uuid = data[i].uuid;
                     adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
                 }
+                var members = [];
+                var membersChannels = [];
                 for (j = 0; j < data[i].members.length; j++) {
                     member = discovery.getPlayerByUUID(data[i].members[j].uuid);
                     if (!member._address) member._address = getIp(member);
@@ -1246,8 +1270,18 @@ function processSonosEvents(event, data) {
                     member_ip = member._address;
                     if (channels[member_ip]) {
                         channels[member_ip].uuid = data[i].members[j].uuid;
+                        membersChannels.push(member_ip);
                         adapter.setState({device: 'root', channel: member_ip, state: 'coordinator'}, {val: ip, ack: true});
                     }
+                    if (data[i].members[j].roomName) {
+                        members.push(data[i].members[j].roomName);
+                    }
+                }
+                if (members.length) {
+                    adapter.setState ({device: 'root', channel: ip, state: 'members'}, { val: members.join(','), ack: true })
+                }
+                if (membersChannels.length) {
+                    adapter.setState ({device: 'root', channel: ip, state: 'membersChannels'}, { val: membersChannels.join(','), ack: true })
                 }
             }
         }
