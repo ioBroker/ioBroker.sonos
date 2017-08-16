@@ -3,6 +3,10 @@
         "name":                     "sonos",
         "version":                  "1.6.1",
         "news": {
+            "1.6.2": {
+                "en": "no duration/elapsed update on radio",
+                "de": "Kein Erneuern der states duration/elapsed bei Radiobetrieb"
+            },
             "1.6.1": {
                 "en": "States for group members added",
                 "de": "Status für Gruppemmitglieder hinzugefügt"
