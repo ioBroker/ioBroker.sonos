@@ -325,14 +325,14 @@ var newGroupStates = {
         read:   true,
         write:  false,
         role:   'indicator.members',
-        desc:   'Groupmembers'
+        desc:   'Group members'
     },
     'membersChannels': {             // indicator.reachable -    if player alive (read only)
         type:   'string',
         read:   true,
         write:  false,
         role:   'indicator.members',
-        desc:   'Groupmembers Channels'
+        desc:   'Group members Channels'
     }
 };
 

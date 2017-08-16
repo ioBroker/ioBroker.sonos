@@ -32,6 +32,9 @@ TODO: Show queue with covers
 
 
 ## Changelog
+### 1.6.2 (2017-08-16)
+- (soef) no duration/elapsed update on radio
+
 ### 1.6.0 (2017-04-09)
 - (justr1) Enhance group Handling
 

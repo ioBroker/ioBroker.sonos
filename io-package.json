@@ -1,11 +1,12 @@
 {
     "common": {
         "name":                     "sonos",
-        "version":                  "1.6.1",
+        "version":                  "1.6.2",
         "news": {
             "1.6.2": {
                 "en": "no duration/elapsed update on radio",
-                "de": "Kein Erneuern der states duration/elapsed bei Radiobetrieb"
+                "de": "Kein Erneuern der states duration/elapsed bei Radiobetrieb",
+                "ru": "Не обновлять статус если играет радио"
             },
             "1.6.1": {
                 "en": "States for group members added",
