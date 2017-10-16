@@ -1,7 +1,7 @@
 {
     "common": {
-        "name":                     "sonos",
-        "version":                  "1.6.2",
+        "name": "sonos",
+        "version": "1.6.2",
         "news": {
             "1.6.2": {
                 "en": "no duration/elapsed update on radio",
@@ -22,7 +22,7 @@
                 "de": "Benutze neue Konfigurationsdialog",
                 "ru": "Новая таблица редактирования настроек"
             },
-			"1.4.4": {
+            "1.4.4": {
                 "en": "removeFromGroup extended",
                 "de": "removeFromGroup erweitert",
                 "ru": "расширена removeFromGroup"
@@ -93,35 +93,50 @@
                 "ru": "check type of \"state\""
             }
         },
-        "title":                    "SONOS Adapter",
-        "desc":                     "This adapter allows to monitor and control SONOS players from ioBroker",
-        "authors":                  ["bluefox <dogafox@gmail.com>"],
-        "license":                  "MIT",
-        "platform":                 "Javascript/Node.js",
-        "mode":                     "daemon",
-        "loglevel":                 "info",
-        "messagebox":               true,
-        "readme":                   "https://github.com/ioBroker/ioBroker.sonos/blob/master/README.md",
-        "enabled":                  true,
-        "icon":                     "sonos.png",
-		"dependencies":             [{"web": ">=1.5.4"}],
-        "keywords":                 ["sonos", "player", "music"],
-        "extIcon":                  "https://raw.githubusercontent.com/ioBroker/ioBroker.sonos/master/admin/sonos.png",
-        "localLink":                "http://%ip%:%webserverPort%",
-        "localLinks":               {"desktop": "http://%ip%:%webserverPort%", "mobile": "http://%ip%:%webserverPort%/m"},
-		"type":                     "media"
+        "title": "SONOS Adapter",
+        "desc": "This adapter allows to monitor and control SONOS players from ioBroker",
+        "authors": [
+            "bluefox <dogafox@gmail.com>"
+        ],
+        "license": "MIT",
+        "platform": "Javascript/Node.js",
+        "mode": "daemon",
+        "loglevel": "info",
+        "messagebox": true,
+        "readme": "https://github.com/ioBroker/ioBroker.sonos/blob/master/README.md",
+        "enabled": true,
+        "icon": "sonos.png",
+        "dependencies": [
+            {
+                "web": ">=1.5.4"
+            }
+        ],
+        "keywords": [
+            "sonos",
+            "player",
+            "music"
+        ],
+        "extIcon": "https://raw.githubusercontent.com/ioBroker/ioBroker.sonos/master/admin/sonos.png",
+        "localLink": "http://%ip%:%webserverPort%",
+        "localLinks": {
+            "desktop": "http://%ip%:%webserverPort%",
+            "mobile": "http://%ip%:%webserverPort%/m"
+        },
+        "type": "multimedia"
     },
     "native": {
         "webserverEnabled": true,
-        "webserverPort":    8080,
-        "elapsedInterval":  2000,
-        "fadeIn":           500,
-        "fadeOut":          500,
+        "webserverPort": 8080,
+        "elapsedInterval": 2000,
+        "fadeIn": 500,
+        "fadeOut": 500,
         "devices": [
-            {"name": "Sonos1", "ip" : "0.0.0.0", "room": ""}
+            {
+                "name": "Sonos1",
+                "ip": "0.0.0.0",
+                "room": ""
+            }
         ]
     },
-    "objects": [
-
-    ]
+    "objects": []
 }
