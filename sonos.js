@@ -8,7 +8,7 @@ var loglevel = process.argv[3] || 'info';
 var utils    = require(__dirname + '/lib/utils'); // Get common adapter utils
 var tools    = require(utils.controllerDir + '/lib/tools.js');
 var logger   = require(utils.controllerDir + '/lib/logger.js')(loglevel, [utils.appName], undefined, 'sonos');
-var adapter  = utils.adapter('sonos');
+var adapter  = utils.Adapter('sonos');
 var async    = require('async');
 
 // {"val": state, "ack":false, "ts":1408294295, "from":"admin.0", "lc":1408294295}
