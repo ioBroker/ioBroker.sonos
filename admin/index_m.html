@@ -1,0 +1,176 @@
+<html>
+<head>
+    <!-- Materialze style -->
+    <link rel="stylesheet" type="text/css" href="../../css/adapter.css"/>
+    <link rel="stylesheet" type="text/css" href="../../lib/css/materialize.css">
+
+    <script type="text/javascript" src="../../lib/js/jquery-3.2.1.min.js"></script>
+    <script type="text/javascript" src="../../socket.io/socket.io.js"></script>
+
+    <script type="text/javascript" src="../../js/translate.js"></script>
+    <script type="text/javascript" src="../../lib/js/materialize.js"></script>
+    <script type="text/javascript" src="../../js/adapter-settings.js"></script>
+    <script type="text/javascript" src="words.js"></script>
+
+<script type="text/javascript">
+    var rooms =   [];
+    var devices = [];
+
+    function setValue(id, value, onChange) {
+        var $value = $('#' + id + '.value');
+
+        if ($value.attr('type') === 'checkbox') {
+            $value.prop('checked', value).on('change', function() {
+                if ($(this).attr('id') === 'webserverEnabled') {
+                    $('#webserverPort').prop('disabled', !$(this).prop('checked'));
+                }
+                onChange();
+            });
+        } else {
+            $value.val(value).on('change', function() {
+                onChange();
+            }).on('keyup', function() {
+                onChange();
+            });
+        }
+    }
+
+    // the function loadSettings has to exist ...
+    function load(settings, onChange) {
+        if (!settings) return;
+
+        devices = settings.devices || [];
+
+        for (var key in settings) {
+            if (!settings.hasOwnProperty(key)) continue;
+            setValue(key, settings[key], onChange);
+        }
+
+        $('#webserverPort').prop('disabled', !$('#webserverEnabled').prop('checked'));
+
+        $('#table-button-search').on('click', function () {
+            sendTo(null, 'browse', null, function(list) {
+                getEnums('rooms', function (err, rooms) {
+                    var changed = false;
+                    for (var j = 0; j < list.length; j++) {
+                        var isFound = false;
+                        for (var i = 0; i < devices.length; i++) {
+                            if (devices[i].ip === list[j].ip) {
+                                isFound = true;
+                                break;
+                            }
+                        }
+                        if (!isFound) {
+                            changed = true;
+                            devices.push({
+                                name: list[j].roomName,
+                                room: enumName2Id(rooms, list[j].roomName),
+                                ip: list[j].ip
+                            });
+                        }
+                    }
+
+                    if (changed) {
+                        onChange();
+                        values2table('values', devices, onChange);
+                    }
+                });
+            });
+        }).attr('title', _('update adapter information'));
+
+        values2table('values', devices, onChange);
+
+        getIsAdapterAlive(function (isAlive) {
+            if (isAlive || common.enabled) {
+                $('#table-button-search').removeClass('disabled');
+            } else {
+                $('#table-button-search').addClass('disabled');
+            }
+        });
+
+        onChange(false);
+    }
+
+    function save(callback) {
+        var obj = {};
+        $('.value').each(function () {
+            var $this = $(this);
+            if ($this.attr('type') === 'checkbox') {
+                obj[$this.attr('id')] = $this.prop('checked');
+            } else {
+                obj[$this.attr('id')] = $this.val();
+            }
+        });
+
+        // Get edited table
+        obj.devices = table2values('values');
+
+        callback(obj, {localLink: obj.webserverEnabled ? 'http://%ip%:' + obj.webserverPort : ''});
+    }
+</script>
+</head>
+<body>
+<div class="m adapter-container">
+    <div class="row">
+        <div class="col s12">
+            <ul class="tabs">
+                <li class="tab col s5"><a href="#tab-main"    class="translate active">Main settings</a></li>
+                <li class="tab col s5"><a href="#tab-devices" class="translate">Devices</a></li>
+            </ul>
+        </div>
+        <div id="tab-main"      class="col s12 page">
+            <div class="row">
+                <div class="col s12 m4 l2">
+                    <img src="sonos.png" class="logo">
+                </div>
+            </div>
+            <div class="row">
+                <div class="input-field col s12 m4">
+                    <input  class="value" id="webserverEnabled" type="checkbox"/>
+                    <span class="translate" for="webserverEnabled">Web server:</span>
+                </div>
+                <div class="input-field col s12 m4">
+                    <input  class="value" type="number" id="webserverPort" min="1" max="65535"/>
+                    <label class="translate" for="webserverPort">Port:</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="input-field col s12 m4">
+                    <input  class="value" type="number" id="elapsedInterval" min="500" max="60000"/>
+                    <label class="translate" for="elapsedInterval">Update of elapsed time(ms):</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="input-field col s12 m4">
+                    <input  class="value" type="number" id="fadeIn" min="0" max="10000"/>
+                    <label class="translate" for="fadeIn">Fade in (text2speech)(ms):</label>
+                </div>
+                <div class="input-field col s12 m4">
+                    <input  class="value" type="number" id="fadeOut" min="0" max="10000"/>
+                    <label class="translate" for="fadeOut">Fade out (text2speech)(ms):</label>
+                </div>
+            </div>
+        </div>
+        <div id="tab-devices"      class="col s12 page">
+            <div class="col s12" id="values">
+                <a class="btn-floating waves-effect waves-light blue table-button-add"><i class="material-icons">add</i></a>
+                <a id="table-button-search" class="btn-floating waves-effect waves-light blue disabled"><i class="material-icons">search</i><span class="translate">Search</span></a>
+                <div class="table-values-div">
+                    <table class="table-values" style="width: 100%;">
+                    <thead>
+                    <tr>
+                        <th data-name="_index"   style="width: 40px" class="translate"></th>
+                        <th data-name="name"     style="width: 30%" class="translate">Name</th>
+                        <th data-name="ip"       class="translate">IP Address</th>
+                        <th data-name="room" data-type="select"    class="translate">Room</th>
+                        <th data-buttons="delete" style="width: 40px"></th>
+                    </tr>
+                    </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -18,31 +18,16 @@
         var $value = $('#' + id + '.value');
 
         if ($value.attr('type') === 'checkbox') {
-            $value.prop('checked', value).change(function() {
+            $value.prop('checked', value).on('change', function() {
                 if ($(this).attr('id') === 'webserverEnabled') {
                     $('#webserverPort').prop('disabled', !$(this).prop('checked'));
                 }
                 onChange();
             });
         } else {
-            $value.val(value).change(function() {
+            $value.val(value).on('change', function() {
                 onChange();
-            }).keyup(function() {
-                // Chack that only numbers entered
-                if ($(this).hasClass('number')) {
-                    var val = $(this).val();
-                    if (val) {
-                        var newVal = '';
-                        for (var i = 0; i < val.length; i++) {
-                            if (val[i] >= '0' && val[i] <= '9') {
-                                newVal += val[i];
-                            }
-                        }
-
-                        if (val != newVal) $(this).val(newVal);
-                    }
-                }
-
+            }).on('keyup', function() {
                 onChange();
             });
         }
@@ -66,7 +51,7 @@
             icons: {
                 primary: ' ui-icon-refresh'
             }
-        }).click(function () {
+        }).on('click', function () {
             sendTo(null, 'browse', null, function(list) {
                 getEnums('rooms', function (err, rooms) {
                     var changed = false;

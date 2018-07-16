@@ -1,5 +1,5 @@
 ![Logo](admin/sonos.png)
-ioBroker.sonos
+# ioBroker.sonos
 ==============
 
 [![NPM version](http://img.shields.io/npm/v/iobroker.sonos.svg)](https://www.npmjs.com/package/iobroker.sonos)
@@ -25,13 +25,16 @@ You can use mobile interface too. It can be found under ```http://ipaddress:8083
 
 TODO: Show queue with covers
 
-## Infos on Grouo handling
+## Infos on Groups handling
 * States: coordinator, group_volume, group_muted
 * all read/write, to get also changes from Sonos-App
 * "coordinator" contains the channel name of the Group-Master (e.g. 192_168_1_99). If Device do not belong to any group the value is eaqual to the own channel name
 
 
 ## Changelog
+### 1.7.0 (2018-07-16)
+- (bluefox) Added the support of Admin3
+
 ### 1.6.2 (2017-08-16)
 - (soef) no duration/elapsed update on radio
 
@@ -137,7 +140,7 @@ TODO: Show queue with covers
 
 The MIT License (MIT)
 
-Copyright (c) 2014-2016, bluefox <dogafox@gmail.com>
+Copyright (c) 2014-2018, bluefox <dogafox@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

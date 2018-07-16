@@ -1,8 +1,19 @@
 {
     "common": {
         "name": "sonos",
-        "version": "1.6.2",
+        "version": "1.7.0",
         "news": {
+            "1.7.0": {
+                "en": "Added the support of Admin3",
+                "de": "Die Unterstützung von Admin3 hinzugefügt",
+                "ru": "Добавлена ​​поддержка Admin3",
+                "pt": "Adicionado o suporte do Admin3",
+                "nl": "De ondersteuning van Admin3 toegevoegd",
+                "fr": "Ajout du support d'Admin3",
+                "it": "Aggiunto il supporto di Admin3",
+                "es": "Se agregó el soporte de Admin3",
+                "pl": "Dodano obsługę Admin3"
+            },
             "1.6.2": {
                 "en": "no duration/elapsed update on radio",
                 "de": "Kein Erneuern der states duration/elapsed bei Radiobetrieb",
@@ -103,6 +114,7 @@
         "mode": "daemon",
         "loglevel": "info",
         "messagebox": true,
+        "materialize": true,
         "readme": "https://github.com/ioBroker/ioBroker.sonos/blob/master/README.md",
         "enabled": true,
         "icon": "sonos.png",
