@@ -1,8 +1,19 @@
 {
     "common": {
         "name": "sonos",
-        "version": "1.7.0",
+        "version": "1.7.1",
         "news": {
+            "1.7.1": {
+                "en": "Ready for npm6",
+                "de": "Bereit für npm6",
+                "ru": "Готов к npm6",
+                "pt": "Pronto para npm6",
+                "nl": "Klaar voor npm6",
+                "fr": "Prêt pour npm6",
+                "it": "Pronto per npm6",
+                "es": "Listo para npm6",
+                "pl": "Gotowy na npm6"
+            },
             "1.7.0": {
                 "en": "Added the support of Admin3",
                 "de": "Die Unterstützung von Admin3 hinzugefügt",
@@ -32,76 +43,6 @@
                 "en": "use new configuration dialog",
                 "de": "Benutze neue Konfigurationsdialog",
                 "ru": "Новая таблица редактирования настроек"
-            },
-            "1.4.4": {
-                "en": "removeFromGroup extended",
-                "de": "removeFromGroup erweitert",
-                "ru": "расширена removeFromGroup"
-            },
-            "1.4.3": {
-                "en": "Allow to use the sonos web via with proxy",
-                "de": "Es ist möglich sonos mit proxy zu benutzen",
-                "ru": "Можно вызвать sonos web через прокси"
-            },
-            "1.4.2": {
-                "en": "add states for vis control and change some roles",
-                "de": "Einige Zustände hinzugefügt und mache Rollen sind geändert",
-                "ru": "Добавлены новые состояния и изменениы некоторые роли"
-            },
-            "1.3.1": {
-                "en": "Fix TTS if fade was 0",
-                "de": "Korrigiere TTS, falls fade war 0",
-                "ru": "Исправлен TTS если затухание 0"
-            },
-            "1.3.0": {
-                "en": "Fix api changes of SONOS module",
-                "de": "Korrigiere API Änderungen von SONOS module",
-                "ru": "Обновлён API для SONOS модуля"
-            },
-            "1.2.1": {
-                "en": "add web adapter as dependency",
-                "de": "WEB Adapter als Abhängigkeit hinzugefügt",
-                "ru": "Веб драйвер добавлен в зависимости"
-            },
-            "1.2.0": {
-                "en": "tts was rewritten because of new sonos-discovery interface",
-                "de": "tts war überarbeitet, weil sonos-discovery Modul wurde geändert",
-                "ru": "tts был переписан, т.к. модуль sonos-discovery поменялся"
-            },
-            "1.1.1": {
-                "en": "fix error for text2speech",
-                "de": "Korrigieren ein Fehler bei text2speech",
-                "ru": "Исправлена проблема при text2speech"
-            },
-            "1.1.0": {
-                "en": "update sonos npm packets\nconfigurable fadeIn and fadeOut",
-                "de": "Update Sonos NPM Pakete\nEinstellbare FadeIn- und FadeOut-Dauer",
-                "ru": "Обновлены sonos пакеты\nНастраиваемые FadeIn и FadeOut"
-            },
-            "1.0.0": {
-                "en": "fix fade out",
-                "de": "Korrigiert fade out",
-                "ru": "Исправлено затухание"
-            },
-            "0.2.2": {
-                "en": "fix type of states",
-                "de": "Korrigiere Typen von Zuständen",
-                "ru": "Исправлены типы переменных"
-            },
-            "0.2.1": {
-                "en": "some fixes for sayIt",
-                "de": "Verbesserungen für sayIt",
-                "ru": "Улучшения для sayIt"
-            },
-            "0.2.0": {
-                "en": "fixed restore of radio after sayIt",
-                "de": "fixed restore of radio after sayIt",
-                "ru": "fixed restore of radio after sayIt"
-            },
-            "0.1.10": {
-                "en": "check type of \"state\"",
-                "de": "check type of \"state\"",
-                "ru": "check type of \"state\""
             }
         },
         "title": "SONOS Adapter",

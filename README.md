@@ -32,6 +32,9 @@ TODO: Show queue with covers
 
 
 ## Changelog
+### 1.7.1 (2018-07-17)
+- (bluefox) Ready for npm6
+
 ### 1.7.0 (2018-07-16)
 - (bluefox) Added the support of Admin3
 

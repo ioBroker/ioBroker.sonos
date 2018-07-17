@@ -1147,9 +1147,11 @@ function takeSonosState(ip, sonosState) {
                     adapter.log.warn('Cannot read file: ' + e);
                 }
             }
-            if (fileData) adapter.setBinaryState(stateName, fileData, () => {
-                adapter.setState({device: 'root', channel: ip, state: 'current_cover'}, {val: '/state/' + stateName, ack: true});
-            });
+            if (fileData) {
+                adapter.setBinaryState(stateName, fileData, () => {
+                    adapter.setState({device: 'root', channel: ip, state: 'current_cover'}, {val: '/state/' + stateName, ack: true});
+                });
+            }
         }
 
         lastCover = sonosState.currentTrack.albumArtUri;
@@ -1550,12 +1552,23 @@ function main() {
     // from here the code is mostly from https://github.com/jishi/node-sonos-web-controller/blob/master/server.js
 
     if (adapter.config.webserverEnabled) {
+        // we cannot look for sonos-web-controller because on main in package.json
         let staticPath;
-        if (fs.existsSync(__dirname + '/../sonos-web-controller/static')) {
-            staticPath = __dirname + '/../sonos-web-controller/static';
-        } else {
-            staticPath = __dirname + '/node_modules/sonos-web-controller/static';
+        try {
+            let sonosPath = require.resolve('sonos-discovery');
+            sonosPath = sonosPath.replace(/\\/g, '/');
+            const parts = sonosPath.split('/');
+            parts.splice(parts.length - 3);
+            staticPath = parts.join('/') + '/sonos-web-controller/static';
+        } catch (e) {
+            if (fs.existsSync(__dirname + '/../sonos-web-controller/static')) {
+                staticPath = __dirname + '/../sonos-web-controller/static';
+            } else {
+                staticPath = __dirname + '/node_modules/sonos-web-controller/static';
+            }
         }
+
+
         // patch socket
         if (fs.existsSync(staticPath + '/js/socket.js')) {
             let data = fs.readFileSync(staticPath + '/js/socket.js').toString();
