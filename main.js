@@ -561,7 +561,7 @@ function createChannel(name, ip, room, callback) {
                 desc:   'Cover image of current played song as binary'
             },
             native: {},
-            state: 'state'
+            type: 'state'
         }, 
         err => err && adapter.log.error(err)
     );
