@@ -32,6 +32,9 @@ TODO: Show queue with covers
 
 
 ## Changelog
+### 1.7.2 (2018-07-17)
+- (bluefox) The group volume has a valid role now
+
 ### 1.7.1 (2018-07-17)
 - (bluefox) Ready for npm6
 

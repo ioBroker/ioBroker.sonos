@@ -298,7 +298,7 @@ const newGroupStates = {
         type:   'number',
         read:   true,
         write:  true,
-        role:   'level.volume',
+        role:   'level.volume.group',
         min:    0,
         max:    100,
         desc:   'State and control of group volume'
@@ -308,7 +308,7 @@ const newGroupStates = {
         type:   'boolean',
         read:   true,
         write:  true,
-        role:   'media.mute',
+        role:   'media.mute.group',
         min:    false,
         max:    true,
         desc:   'Group is muted'

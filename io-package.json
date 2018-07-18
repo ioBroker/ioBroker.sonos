@@ -1,8 +1,19 @@
 {
     "common": {
         "name": "sonos",
-        "version": "1.7.1",
+        "version": "1.7.2",
         "news": {
+            "1.7.2": {
+                "en": "The group volume has a valid role now",
+                "de": "Das Gruppen-Volume hat jetzt eine gültige Rolle",
+                "ru": "Том группы теперь имеет действительную роль",
+                "pt": "O volume do grupo tem uma função válida agora",
+                "nl": "Het groepsvolume heeft nu een geldige rol",
+                "fr": "Le volume de groupe a un rôle valide maintenant",
+                "it": "Il volume del gruppo ha ora un ruolo valido",
+                "es": "El volumen del grupo tiene un rol válido ahora",
+                "pl": "Wolumin grupowy ma teraz ważną rolę"
+            },
             "1.7.1": {
                 "en": "Ready for npm6",
                 "de": "Bereit für npm6",
