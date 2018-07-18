@@ -11,6 +11,7 @@ const tools    = require(utils.controllerDir + '/lib/tools.js');
 const logger   = require(utils.controllerDir + '/lib/logger.js')(loglevel, [utils.appName], undefined, 'sonos');
 const adapter  = new utils.Adapter('sonos');
 const async    = require('async');
+const aliveIds = [];
 
 // {"val": state, "ack":false, "ts":1408294295, "from":"admin.0", "lc":1408294295}
 // id = sonos.0.192_168_1_55.state
@@ -36,6 +37,23 @@ adapter.on('stateChange', (_id, state) => {
                     player.pause();
                 } else {
                     player.play();
+                }
+            } else
+            if (id.state === 'shuffle') {
+                player.shuffle(!!state.val);
+            } else
+            if (id.state === 'crossfade') {
+                player.crossfade(!!state.val);
+            } else
+            if (id.state === 'repeat') {
+                if (state.val === 0 || state.val === '0') {
+                    player.repeat('none');
+                } else if (state.val === 1 || state.val === '1') {
+                    player.repeat('all');
+                } else if (state.val === 2 || state.val === '2') {
+                    player.repeat('one');
+                } else {
+                    player.repeat(state.val);
                 }
             } else
             if (id.state === 'play') {
@@ -174,9 +192,18 @@ adapter.on('install', () => adapter.createDevice('root', {}));
 
 adapter.on('unload', callback => {
     try {
-        adapter.log.info('terminating');
-        if (adapter.config.webserverEnabled) {
-            socketServer.server.close();
+        if (adapter) {
+            if (adapter.setState) {
+                aliveIds.forEach(id => {
+                    adapter.setState(id, false, true);
+                });
+            }
+
+            adapter.log && adapter.log.info && adapter.log.info('terminating');
+
+            if (adapter.config && adapter.config.webserverEnabled && socketServer && socketServer.server) {
+                socketServer.server.close();
+            }
         }
         callback();
     } catch (e) {
@@ -337,42 +364,48 @@ function createChannel(name, ip, room, callback) {
             read:   true,
             write:  true,
             role:   'media.state',
-            desc:   'Play or pause'
+            desc:   'Play or pause',
+            name:   'Binary play/pause state'
         },
         'play': {      // play command
             type:   'boolean',
             read:   false,
             write:  true,
             role:   'button.play',
-            desc:   'play'
+            desc:   'play',
+            name:   'Play button'
         },
         'stop': {      // stop command
             type:   'boolean',
             read:   false,
             write:  true,
             role:   'button.stop',
-            desc:   'stop'
+            desc:   'stop',
+            name:   'Stop button'
         },
         'pause': {      // pause command
             type:   'boolean',
             read:   false,
             write:  true,
             role:   'button.pause',
-            desc:   'pause'
+            desc:   'pause',
+            name:   'Pause button'
         },
         'prev': {      // prev command
             type:   'boolean',
             read:   false,
             write:  true,
             role:   'button.prev',
-            desc:   'prev'
+            desc:   'prev',
+            name:   'Previous button'
         },
         'next': {      // next command
             type:   'boolean',
             read:   false,
             write:  true,
             role:   'button.next',
-            desc:   'next'
+            desc:   'next',
+            name:   'Next button'
         },
         'seek': {      // seek command and indication
             type:   'number',
@@ -382,7 +415,8 @@ function createChannel(name, ip, room, callback) {
             min:    0,
             max:    100,
             role:   'media.seek',
-            desc:   'Seek position in percent'
+            desc:   'Seek position in percent',
+            name:   'Seek position'
         },
         'state': {             // media.state -            Text state of player: stop, play, pause (read, write)
             def:    'stop',
@@ -391,7 +425,8 @@ function createChannel(name, ip, room, callback) {
             write:  true,
             values: 'stop,play,pause,next,previous,mute,unmute',
             role:   'media.state',
-            desc:   'Play, stop, or pause, next, previous, mute, unmute'
+            desc:   'Play, stop, or pause, next, previous, mute, unmute',
+            name:   'String state'
         },
         'volume': {            // level.volume -           volume level (read, write)
             type:   'number',
@@ -400,7 +435,8 @@ function createChannel(name, ip, room, callback) {
             role:   'level.volume',
             min:    0,
             max:    100,
-            desc:   'State and control of volume'
+            desc:   'State and control of volume',
+            name:   'Player volume'
         },
         'muted': {             // media.muted -            is muted (read only)
             def:    false,
@@ -410,7 +446,8 @@ function createChannel(name, ip, room, callback) {
             role:   'media.mute',
             min:    false,
             max:    true,
-            desc:   'Is muted'
+            desc:   'Is muted',
+            name:   'Player mute'
         },
         'current_title': {     // media.current.title -    current title (read only)
             def:    '',
@@ -418,7 +455,8 @@ function createChannel(name, ip, room, callback) {
             read:   true,
             write:  false,
             role:   'media.title',
-            desc:   'Title of current played song'
+            desc:   'Title of current played song',
+            name:   'Current title'
         },
         'current_artist': {    // media.current.artist -   current artist (read only)
             def:    '',
@@ -426,7 +464,8 @@ function createChannel(name, ip, room, callback) {
             read:   true,
             write:  false,
             role:   'media.artist',
-            desc:   'Artist of current played song'
+            desc:   'Artist of current played song',
+            name:   'Current artist'
         },
         'current_album': {     // media.current.album -    current album (read only)
             def:    '',
@@ -434,7 +473,8 @@ function createChannel(name, ip, room, callback) {
             read:   true,
             write:  false,
             role:   'media.album',
-            desc:   'Album of current played song'
+            desc:   'Album of current played song',
+            name:   'Current album'
         },
         'current_cover': {     // media.current.cover -    current url to album cover (read only)
             def:    '',
@@ -442,7 +482,8 @@ function createChannel(name, ip, room, callback) {
             read:   true,
             write:  false,
             role:   'media.cover',
-            desc:   'Cover image of current played song'
+            desc:   'Cover image of current played song',
+            name:   'Current cover URL'
         },
         'current_duration': {  // media.current.duration - duration as HH:MM:SS (read only)
             def:    0,
@@ -451,7 +492,8 @@ function createChannel(name, ip, room, callback) {
             write:  false,
             unit:   'seconds',
             role:   'media.duration',
-            desc:   'Duration of current played song in seconds'
+            desc:   'Duration of current played song in seconds',
+            name:   'Current song duration'
         },
         'current_duration_s': {// media.current.duration - duration in seconds (read only)
             def:    '00:00',
@@ -460,7 +502,8 @@ function createChannel(name, ip, room, callback) {
             write:  false,
             unit:   'interval',
             role:   'media.duration.text',
-            desc:   'Duration of current played song as HH:MM:SS'
+            desc:   'Duration of current played song as HH:MM:SS',
+            name:   'Current duration'
         },
         'current_type': {             // media.type -            type of stream (read only)
             def:    0,
@@ -469,14 +512,16 @@ function createChannel(name, ip, room, callback) {
             write:  false,
             role:   'media.type',
             states: {0: 'track', 1: 'radio'},
-            desc:   'Type of Stream (0 = track, 1 = radio)'
+            desc:   'Type of Stream (0 = track, 1 = radio)',
+            name:   'Current stream type'
         },
         'alive': {             // indicator.reachable -    if player alive (read only)
             type:   'boolean',
             read:   true,
             write:  false,
             role:   'indicator.reachable',
-            desc:   'If sonos alive or not'
+            desc:   'If sonos alive or not',
+            name:   'Connection status'
         },
         'current_elapsed': {   // media.current.elapsed -  elapsed time in seconds
             def:    0,
@@ -485,7 +530,8 @@ function createChannel(name, ip, room, callback) {
             write:  true,
             unit:   'seconds',
             role:   'media.elapsed',
-            desc:   'Elapsed time of current played song in seconds'
+            desc:   'Elapsed time of current played song in seconds',
+            name:   'Elapsed time in seconds'
         },
         'current_elapsed_s': { // media.current.elapsed -  elapsed time in HH:MM:SS
             def:    '00:00',
@@ -494,7 +540,8 @@ function createChannel(name, ip, room, callback) {
             write:  true,
             unit:   'interval',
             role:   'media.elapsed.text',
-            desc:   'Elapsed time of current played song as HH:MM:SS'
+            desc:   'Elapsed time of current played song as HH:MM:SS',
+            name:   'Elapsed time as text'
         },
         'favorites_list': {    // media.favorites.list -   list of favorites channel (read only)
             def:    '',
@@ -502,7 +549,8 @@ function createChannel(name, ip, room, callback) {
             read:   true,
             write:  false,
             role:   'media.favorites.list',
-            desc:   'List of favorites song or stations, divided by comma'
+            desc:   'List of favorites song or stations, divided by comma',
+            name:   'Favorites list'
         },
         'favorites_set': {     // media.favorites.set -    select favorites from list (write only)
             def:    '',
@@ -510,7 +558,8 @@ function createChannel(name, ip, room, callback) {
             read:   false,
             write:  true,
             role:   'media.favorites.set',
-            desc:   'Set favorite from the list to play'
+            desc:   'Set favorite from the list to play',
+            name:   'Favorites set'
         },
         'tts': {     // play text to speech mp3 file
             def:    '',
@@ -518,8 +567,38 @@ function createChannel(name, ip, room, callback) {
             read:   false,
             write:  true,
             role:   'media.tts',
-            desc:   'Set text2speech mp3 file to play'
-        }
+            desc:   'Set text2speech mp3 file to play',
+            name:   'Text to speech'
+        },
+        'shuffle': { // Shuffle mode: true or false
+            def:    false,
+            type:   'boolean',
+            read:   true,
+            write:  true,
+            role:   'media.mode.shuffle',
+            desc:   'Shuffle mode',
+            name:   'Shuffle'
+        },
+        'repeat': { // repeat mode: true or false
+            def:    0,
+            type:   'number',
+            read:   true,
+            write:  true,
+            role:   'media.mode.repeat',
+            states: {0: 'none', 1: 'all', 2: 'one'},
+            desc:   'Repeat mode',
+            name:   'Repeat'
+        },
+        'crossfade': { // crossfade mode: true or false
+            def:    false,
+            type:   'boolean',
+            read:   true,
+            write:  true,
+            role:   'media.mode.crossfade',
+            desc:   'Crossfade mode',
+            name:   'Crossfade'
+        },
+
     };
 
     for (const g in newGroupStates) {
@@ -950,6 +1029,7 @@ function takeSonosState(ip, sonosState) {
     adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
     const ps = _getPs(sonosState.playbackState);
     const player = discovery.getPlayerByUUID(channels[ip].uuid);
+    const playMode = sonosState.playMode;
 
     if (!player.tts && player.queuedTts && player.queuedTts.length) {
         const q = player.queuedTts.shift();
@@ -1170,6 +1250,12 @@ function takeSonosState(ip, sonosState) {
     adapter.setState({device: 'root', channel: ip, state: 'volume'},             {val: sonosState.volume, ack: true});
     if (sonosState.groupState) {
         adapter.setState({device: 'root', channel: ip, state: 'muted'},          {val: sonosState.groupState.mute, ack: true});
+    }
+
+    if (playMode) {
+        adapter.setState({device: 'root', channel: ip, state: 'shuffle'},    {val: playMode.shuffle, ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'repeat'},     {val: playMode.repeat === 'all' ? 1 : (playMode.repeat === 'one' ? 2 : 0), ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'crossfade'},  {val: playMode.crossfade, ack: true});
     }
 }
 
@@ -1469,13 +1555,16 @@ function syncConfig() {
                                     }
                                 }
 
-                                channels[ip.replace(/[.\s]+/g, '_')] = {
+                                const sId = ip.replace(/[.\s]+/g, '_');
+                                channels[sId] = {
                                     uuid:     '',
                                     player:   null,
                                     duration: 0,
                                     elapsed:  0,
                                     obj:      _channels[j]
                                 };
+                                adapter.setState('root.' + sId + '.alive', false, true);
+                                aliveIds.push('root.' + sId + '.alive');
 
                             } else {
                                 configToDelete.push(ip);
@@ -1488,7 +1577,10 @@ function syncConfig() {
                             if (adapter.config.devices[r].ip && configToAdd.indexOf(adapter.config.devices[r].ip) !== -1) {
                                 addChannel(adapter.config.devices[r].name, adapter.config.devices[r].ip, adapter.config.devices[r].room, (err, obj) => {
                                     adapter.getObject(obj.id, (err, obj) => {
-                                        channels[obj.native.ip.replace(/[.\s]+/g, '_')] = {
+                                        const sId = obj.native.ip.replace(/[.\s]+/g, '_');
+                                        aliveIds.push('root.' + sId + '.alive');
+
+                                        channels[sId] = {
                                             uuid:     '',
                                             player:   null,
                                             duration: 0,
@@ -1537,7 +1629,7 @@ let cacheDir    = '';
 function main() {
     adapter.config.fadeIn  = parseInt(adapter.config.fadeIn,  10) || 0;
     adapter.config.fadeOut = parseInt(adapter.config.fadeOut, 10) || 0;
-    syncConfig ();
+    syncConfig();
     adapter.subscribeStates('*');
 
     const _path = tools.getConfigFileName().split('/');
@@ -1869,7 +1961,7 @@ function main() {
         const response = {};
 
         async.parallelLimit([
-            function (callback) {
+            callback => {
                 const player = getPlayer();
                 console.log('fetching from', player.baseUrl);
                 player.browse('A:ARTIST:' + term, 0, 600, (success, result) => {
@@ -1878,7 +1970,7 @@ function main() {
                     callback(null, 'artist');
                 });
             },
-            function (callback) {
+            callback => {
                 const player = getPlayer();
                 console.log('fetching from', player.baseUrl);
                 player.browse('A:TRACKS:' + term, 0, 600, (success, result) => {
@@ -1886,7 +1978,7 @@ function main() {
                     callback(null, 'track');
                 });
             },
-            function (callback) {
+            callback => {
                 const player = getPlayer();
                 console.log('fetching from', player.baseUrl);
                 player.browse('A:ALBUM:' + term, 0, 600, (success, result) => {
