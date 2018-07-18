@@ -554,6 +554,7 @@ function createChannel(name, ip, room, callback) {
         {
             _id: adapter.namespace + '.root.' + id + '.cover_png',
             common: {
+                name:   'Cover URL',
                 type:   'file',
                 read:   true,
                 write:  true,
