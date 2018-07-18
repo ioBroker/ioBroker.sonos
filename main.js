@@ -550,9 +550,9 @@ function createChannel(name, ip, room, callback) {
         adapter.createState('root', id, states_list[j], states[states_list[j]]);
     }
     // Create cover object
-    adapter.setForeignObject(adapter.namespace + '.root.' + id + '.cover.png', 
+    adapter.setForeignObject(adapter.namespace + '.root.' + id + '.cover_png',
         {
-            _id: adapter.namespace + '.root.' + id + '.cover.png',
+            _id: adapter.namespace + '.root.' + id + '.cover_png',
             common: {
                 type:   'file',
                 read:   true,
@@ -1096,7 +1096,7 @@ function takeSonosState(ip, sonosState) {
 
     if (lastCover !== sonosState.currentTrack.albumArtUri) {
         const defaultImg = __dirname + '/img/browse_missing_album_art.png';
-        const stateName  = adapter.namespace + '.root.' + ip + '.cover.png';
+        const stateName  = adapter.namespace + '.root.' + ip + '.cover_png';
         let fileName;
         let md5url;
         if (sonosState.currentTrack.albumArtUri) {
