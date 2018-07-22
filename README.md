@@ -32,10 +32,11 @@ TODO: Show queue with covers
 
 
 ## Changelog
-### 1.7.2 (2018-07-17)
+### 1.7.3 (2018-07-22)
 - (bluefox) The group volume has a valid role now
 - (bluefox) Important changes: state cover.png renamed to "cover_png"
 - (bluefox) added shuffle, repeat and crossfade modes. To enable it you must delete device from list and add it again
+- (bluefox) better icon
 
 ### 1.7.1 (2018-07-17)
 - (bluefox) Ready for npm6
