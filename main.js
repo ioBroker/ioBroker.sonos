@@ -783,7 +783,7 @@ function fadeIn(player, to, options, callback) {
 }
 
 function fadeOut(player, options, callback) {
-    if ((!adapter.config.fadeIn && !adapter.config.fadeOut) || (typeof options === 'boolean' && options)) {
+    if ((!adapter.config.fadeIn && !adapter.config.fadeOut) || (typeof options === 'boolean' && options === false)) {
         if (typeof options === 'function') callback = options;
         if (callback) callback(typeof options === 'boolean' && options);
         return;
