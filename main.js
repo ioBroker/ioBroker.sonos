@@ -746,27 +746,38 @@ function text2speech(fileName, sonosIp, callback) {
 }
 
 function fadeIn(player, to, options, callback) {
-    if (!adapter.config.fadeIn && !adapter.config.fadeOut) {
-        if (typeof options === 'function') callback = options;
-        player.setVolume(to);
-        if (callback) callback();
-        return;
+    if (typeof options === 'function') {
+        callback = options;
+        options = undefined;
     }
 
-    if (options === undefined || typeof options === 'function') {
-        to = parseInt(to, 10);
-        callback = options;
-        options = {
-            duration: adapter.config.fadeIn
-        };
-        if (!options.duration) {
-            player.setVolume(to);
-            if (callback) callback();
-            return;
-        }
-        options.step   = Math.round(to / Math.max(options.duration / 100, 1));
-        options.actual = 0;
+    if (!adapter.config.fadeIn && !adapter.config.fadeOut) {
+        player.setVolume(to);
+        return callback && callback();
     }
+
+    if (options === undefined) {
+        to = parseInt(to, 10);
+        const duration = parseInt(adapter.config.fadeIn, 10) || 0;
+
+        if (!duration) {
+            player.setVolume(to);
+            return callback && callback();
+        }
+
+        options = {
+            duration: duration,
+            step: Math.round(to / Math.max(duration / 100, 1)),
+            actual: 0
+        };
+    }
+
+    if (!options.duration) {
+        player.setVolume(to);
+        return callback && callback();
+    }
+
+    options.step = options.step || 1;
 
     adapter.log.debug('>> fadeIn to ' + options.actual + ' of ' + to + ' caller: ' + (arguments.callee.caller ? arguments.callee.caller.name : 'null'));
 
@@ -783,25 +794,42 @@ function fadeIn(player, to, options, callback) {
 }
 
 function fadeOut(player, options, callback) {
-    if ((!adapter.config.fadeIn && !adapter.config.fadeOut) || (typeof options === 'boolean' && options === false)) {
-        if (typeof options === 'function') callback = options;
-        if (callback) callback(typeof options === 'boolean' && options);
+    if (typeof options === 'function') {
+        callback = options;
+        options = undefined;
+    }
+
+    if ((!adapter.config.fadeIn && !adapter.config.fadeOut) || options === true) {
+        callback && callback(typeof options === 'boolean' && options);
         return;
     }
 
-    if (options === undefined || typeof options === 'function') {
-        callback = options;
-        options = {
-            duration: parseInt(adapter.config.fadeOut, 10) || 0
-        };
-        if (!options.duration) {
+    if (options === false) {
+        options = undefined;
+    }
+
+    if (options === undefined) {
+        const duration = parseInt(adapter.config.fadeOut, 10);
+        if (!duration) {
             player.setVolume(0);
             if (callback) callback();
             return;
         }
-        options.actual = parseInt(player._volume, 10);
-        options.step   = Math.round(options.actual / Math.max(options.duration / 100, 1));
+        options = {
+            duration: duration,
+            actual: parseInt(player._volume, 10),
+            step: Math.round(options.actual / Math.max(duration / 100, 1))
+        };
     }
+
+    if (!options.duration) {
+        player.setVolume(0);
+        if (callback) callback();
+        return;
+    }
+
+    options.step = options.step || 1;
+
     options.actual -= options.step;
 
     if (!player._isMute && options.actual > 0 && player.state.currentState === 'PLAYING') {

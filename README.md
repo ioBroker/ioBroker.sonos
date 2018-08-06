@@ -32,6 +32,9 @@ TODO: Show queue with covers
 
 
 ## Changelog
+### 1.7.5 (2018-08-06)
+- (bluefox) Trying to correct fade-out
+
 ### 1.7.4 (2018-07-23)
 - (bluefox) The group volume has a valid role now
 - (bluefox) Important changes: state cover.png renamed to "cover_png"

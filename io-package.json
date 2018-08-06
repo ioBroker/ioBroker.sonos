@@ -1,8 +1,19 @@
 {
     "common": {
         "name": "sonos",
-        "version": "1.7.4",
+        "version": "1.7.5",
         "news": {
+            "1.7.5": {
+                "en": "Trying to correct fade-out",
+                "de": "Der Versuch, das Ausblenden zu korrigieren",
+                "ru": "Попытка исправить затухание",
+                "pt": "Tentando corrigir o fade-out",
+                "nl": "Proberen om fade-out te corrigeren",
+                "fr": "Essayer de corriger le fondu",
+                "it": "Cercando di correggere la dissolvenza",
+                "es": "Tratando de corregir el fundido de salida",
+                "pl": "Próba poprawienia zanikania"
+            },
             "1.7.4": {
                 "en": "The group volume has a valid role now",
                 "de": "Das Gruppen-Volume hat jetzt eine gültige Rolle",
