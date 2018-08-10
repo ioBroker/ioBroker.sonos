@@ -1,8 +1,19 @@
 {
     "common": {
         "name": "sonos",
-        "version": "1.7.5",
+        "version": "1.7.6",
         "news": {
+            "1.7.6": {
+                "en": "Fixed error with node.js 6",
+                "de": "Fehler bei node.js behoben 6",
+                "ru": "Исправлена ​​ошибка с node.js 6",
+                "pt": "Corrigido o erro com node.js 6",
+                "nl": "Vaste fout met node.js 6",
+                "fr": "Erreur corrigée avec node.js 6",
+                "it": "Risolto errore con node.js 6",
+                "es": "Se arregló el error con node.js 6",
+                "pl": "Naprawiono błąd związany z plikiem node.js 6"
+            },
             "1.7.5": {
                 "en": "Trying to correct fade-out",
                 "de": "Der Versuch, das Ausblenden zu korrigieren",

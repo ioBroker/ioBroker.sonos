@@ -32,6 +32,9 @@ TODO: Show queue with covers
 
 
 ## Changelog
+### 1.7.6 (2018-08-06)
+- (bluefox) Fixed error with node.js 6
+
 ### 1.7.5 (2018-08-06)
 - (bluefox) Trying to correct fade-out
 

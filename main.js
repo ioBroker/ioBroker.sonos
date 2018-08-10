@@ -779,12 +779,12 @@ function fadeIn(player, to, options, callback) {
 
     options.step = options.step || 1;
 
-    adapter.log.debug('>> fadeIn to ' + options.actual + ' of ' + to + ' caller: ' + (arguments.callee.caller ? arguments.callee.caller.name : 'null'));
+    adapter.log.debug('>> fadeIn to ' + options.actual + ' of ' + to);
 
     options.actual += options.step;
 
     if (options.actual >= to) {
-        adapter.log.debug('<< fadeIn to ' + to + ' caller: ' + (arguments.callee.caller ? arguments.callee.caller.name : 'null'));
+        adapter.log.debug('<< fadeIn to ' + to);
         player.setVolume(to);
         if (callback) callback();
     } else {
