@@ -815,10 +815,11 @@ function fadeOut(player, options, callback) {
             if (callback) callback();
             return;
         }
+        const actual = parseInt(player._volume, 10);
         options = {
             duration: duration,
-            actual: parseInt(player._volume, 10),
-            step: Math.round(options.actual / Math.max(duration / 100, 1))
+            actual: actual,
+            step: Math.round(actual / Math.max(duration / 100, 1))
         };
     }
 

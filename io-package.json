@@ -1,9 +1,9 @@
 {
     "common": {
         "name": "sonos",
-        "version": "1.7.6",
+        "version": "1.7.7",
         "news": {
-            "1.7.6": {
+            "1.7.7": {
                 "en": "Fixed error with node.js 6",
                 "de": "Fehler bei node.js behoben 6",
                 "ru": "Исправлена ​​ошибка с node.js 6",
