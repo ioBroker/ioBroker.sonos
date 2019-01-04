@@ -32,6 +32,9 @@ TODO: Show queue with covers
 
 
 ## Changelog
+### 1.8.0 (2019-01-04)
+- (bluefox) Support js-controller compact mode
+
 ### 1.7.7 (2018-08-06)
 - (bluefox) Fixed error with node.js 6
 
@@ -156,7 +159,7 @@ TODO: Show queue with covers
 
 The MIT License (MIT)
 
-Copyright (c) 2014-2018, bluefox <dogafox@gmail.com>
+Copyright (c) 2014-2019, bluefox <dogafox@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
