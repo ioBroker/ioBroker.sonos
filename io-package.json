@@ -1,8 +1,11 @@
 {
     "common": {
         "name": "sonos",
-        "version": "1.7.7",
+        "version": "1.8.0",
         "news": {
+            "1.8.0": {
+                "en": "Added compact mode support"
+            },
             "1.7.7": {
                 "en": "Fixed error with node.js 6",
                 "de": "Fehler bei node.js behoben 6",
