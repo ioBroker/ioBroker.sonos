@@ -7,7 +7,7 @@
  */
 'use strict';
 const loglevel    = process.argv[3] || 'info';
-const utils       = require('./lib/utils'); // Get common adapter utils
+const utils = require('@iobroker/adapter-core'); // Get common adapter utils
 const tools       = require(utils.controllerDir + '/lib/tools.js');
 const logger      = require(utils.controllerDir + '/lib/logger.js')(loglevel, [utils.appName], undefined, 'sonos');
 const async       = require('async');
