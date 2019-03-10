@@ -2,7 +2,7 @@
 # ioBroker.sonos
 ==============
 
-[![NPM version](http://img.shields.io/npm/v/iobroker.sonos.svg)](https://www.npmjs.com/package/iobroker.sonos)
+![Number of Installations](http://iobroker.live/badges/sonos-installed.svg) ![Number of Installations](http://iobroker.live/badges/sonos-stable.svg) [![NPM version](http://img.shields.io/npm/v/iobroker.sonos.svg)](https://www.npmjs.com/package/iobroker.sonos)
 [![Downloads](https://img.shields.io/npm/dm/iobroker.sonos.svg)](https://www.npmjs.com/package/iobroker.sonos)
 
 [![NPM](https://nodei.co/npm/iobroker.sonos.png?downloads=true)](https://nodei.co/npm/iobroker.sonos/)
