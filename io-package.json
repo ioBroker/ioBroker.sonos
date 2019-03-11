@@ -81,8 +81,19 @@
                 "ru": "Новая таблица редактирования настроек"
             }
         },
-        "title": "SONOS Adapter",
-        "desc": "This adapter allows to monitor and control SONOS players from ioBroker",
+        "title": "SONOS",
+        "desc": {
+    "en": "This adapter allows to monitor and control SONOS players from ioBroker",
+    "de": "Mit diesem Adapter können Sie SONOS-Player von ioBroker aus überwachen und steuern",
+    "ru": "Этот адаптер позволяет контролировать и управлять SONOS-плеерами из ioBroker",
+    "pt": "Este adaptador permite monitorar e controlar os players do SONOS a partir do ioBroker",
+    "nl": "Met deze adapter kunnen SONOS-spelers van ioBroker worden bewaakt en bestuurd",
+    "fr": "Cet adaptateur permet de surveiller et de contrôler les lecteurs SONOS de ioBroker",
+    "it": "Questo adattatore consente di monitorare e controllare i lettori SONOS da ioBroker",
+    "es": "Este adaptador permite monitorear y controlar los reproductores SONOS desde ioBroker",
+    "pl": "Ten adapter pozwala monitorować i kontrolować odtwarzacze SONOS z ioBroker",
+    "zh-cn": "此适配器允许从ioBroker监视和控制SONOS播放器"
+  },
         "authors": [
             "bluefox <dogafox@gmail.com>"
         ],
