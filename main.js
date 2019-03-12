@@ -9,11 +9,15 @@
 const loglevel    = process.argv[3] || 'info';
 const utils = require('@iobroker/adapter-core'); // Get common adapter utils
 const tools       = require(utils.controllerDir + '/lib/tools.js');
-const logger      = require(utils.controllerDir + '/lib/logger.js')(loglevel, [utils.appName], undefined, 'sonos');
+//const logger      = require(utils.controllerDir + '/lib/logger.js')(loglevel, [getAppName()], undefined, 'sonos');
 const async       = require('async');
 const aliveIds    = [];
 const adapterName = require('./package.json').name.split('.').pop();
 
+function getAppName() {
+    const parts = __dirname.replace(/\\/g, '/').split('/');
+    return parts[parts.length - 2].split('.')[0];
+}
 
 let adapter;
 function startAdapter(options) {
@@ -1679,7 +1683,7 @@ function main() {
 
     discovery = new SonosDiscovery({
         household:  null,
-        log:        logger,
+        log:        adapter.log, //logger,
         cacheDir:   cacheDir,
         port:       adapter.config.webserverPort
     });
