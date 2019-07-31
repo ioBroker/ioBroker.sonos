@@ -1780,7 +1780,7 @@ function main() {
                     adapter.log.debug('fetching album art from', player.localEndpoint);
                     http.get(player.baseUrl + req.url, res2 => {
                         if (res2.statusCode === 200) {
-                            if (!fs.exists(fileName)) {
+                            if (!fs.existsSync(fileName)) {
                                 const cacheStream = fs.createWriteStream(fileName);
                                 res2.pipe(cacheStream);
                             } else {
