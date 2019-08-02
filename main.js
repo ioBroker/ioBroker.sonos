@@ -1869,6 +1869,8 @@ function main() {
 
             socket.on('seek', data => {
                 const player = discovery.getPlayerByUUID(data.uuid);
+                if (!player) return;
+
                 if (player.avTransportUri.startsWith('x-rincon-queue')) {
                     player.trackSeek(data.trackNo);
                     return;
@@ -1882,6 +1884,8 @@ function main() {
 
             socket.on('playmode', data => {
                 const player = discovery.getPlayerByUUID(data.uuid);
+                if (!player) return;
+
                 for (const action in data.state) {
                     if (data.state.hasOwnProperty(action)) {
                         player[action](data.state[action]);
@@ -1891,12 +1895,16 @@ function main() {
 
             socket.on('volume', data => {
                 const player = discovery.getPlayerByUUID(data.uuid);
+                if (!player) return;
+
                 player.setVolume(data.volume);
             });
 
             socket.on('group-mute', data => {
                 //console.log(data);
                 const player = discovery.getPlayerByUUID(data.uuid);
+                if (!player) return;
+
                 if (data.mute)
                     player.muteGroup();
                 else
@@ -1905,6 +1913,8 @@ function main() {
 
             socket.on('mute', data => {
                 const player = discovery.getPlayerByUUID(data.uuid);
+                if (!player) return;
+
                 if (data.mute)
                     player.mute();
                 else
@@ -1913,6 +1923,8 @@ function main() {
 
             socket.on('track-seek', data => {
                 const player = discovery.getPlayerByUUID(data.uuid);
+                if (!player) return;
+
                 player.timeSeek(data.elapsed);
             });
 
