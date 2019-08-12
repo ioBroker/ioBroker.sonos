@@ -1,8 +1,20 @@
 {
     "common": {
         "name": "sonos",
-        "version": "1.8.0",
+        "version": "2.0.0",
         "news": {
+            "2.0.0": {
+                "en": "Breaking change: no web server\nUsed latest packages",
+                "de": "Breaking Change: Kein Webserver\nBenutzte späteste Pakete",
+                "ru": "Несовместимые изменения: нет веб-сервера\nИспользуются последние пакеты",
+                "pt": "Quebrando a mudança: sem servidor web\nUsado pacotes mais recentes",
+                "nl": "Brekende verandering: geen webserver\nGebruikte nieuwste pakketten",
+                "fr": "Briser le changement: pas de serveur web\nDerniers paquets utilisés",
+                "it": "Rottura del cambiamento: nessun web server\nUltimi pacchetti usati",
+                "es": "Cambio de última hora: sin servidor web\nÚltimos paquetes usados",
+                "pl": "Przełomowa zmiana: brak serwera WWW\nUżywane najnowsze pakiety",
+                "zh-cn": "突破性的变化：没有网络服务器\n使用最新的包"
+            },
             "1.8.0": {
                 "en": "Added compact mode support"
             },
@@ -83,17 +95,17 @@
         },
         "title": "SONOS",
         "desc": {
-    "en": "This adapter allows to monitor and control SONOS players from ioBroker",
-    "de": "Mit diesem Adapter können Sie SONOS-Player von ioBroker aus überwachen und steuern",
-    "ru": "Этот адаптер позволяет контролировать и управлять SONOS-плеерами из ioBroker",
-    "pt": "Este adaptador permite monitorar e controlar os players do SONOS a partir do ioBroker",
-    "nl": "Met deze adapter kunnen SONOS-spelers van ioBroker worden bewaakt en bestuurd",
-    "fr": "Cet adaptateur permet de surveiller et de contrôler les lecteurs SONOS de ioBroker",
-    "it": "Questo adattatore consente di monitorare e controllare i lettori SONOS da ioBroker",
-    "es": "Este adaptador permite monitorear y controlar los reproductores SONOS desde ioBroker",
-    "pl": "Ten adapter pozwala monitorować i kontrolować odtwarzacze SONOS z ioBroker",
-    "zh-cn": "此适配器允许从ioBroker监视和控制SONOS播放器"
-  },
+            "en": "This adapter allows to monitor and control SONOS players from ioBroker",
+            "de": "Mit diesem Adapter können Sie SONOS-Player von ioBroker aus überwachen und steuern",
+            "ru": "Этот адаптер позволяет контролировать и управлять SONOS-плеерами из ioBroker",
+            "pt": "Este adaptador permite monitorar e controlar os players do SONOS a partir do ioBroker",
+            "nl": "Met deze adapter kunnen SONOS-spelers van ioBroker worden bewaakt en bestuurd",
+            "fr": "Cet adaptateur permet de surveiller et de contrôler les lecteurs SONOS de ioBroker",
+            "it": "Questo adattatore consente di monitorare e controllare i lettori SONOS da ioBroker",
+            "es": "Este adaptador permite monitorear y controlar los reproductores SONOS desde ioBroker",
+            "pl": "Ten adapter pozwala monitorować i kontrolować odtwarzacze SONOS z ioBroker",
+            "zh-cn": "此适配器允许从ioBroker监视和控制SONOS播放器"
+        },
         "authors": [
             "bluefox <dogafox@gmail.com>"
         ],
@@ -118,19 +130,13 @@
             "music"
         ],
         "extIcon": "https://raw.githubusercontent.com/ioBroker/ioBroker.sonos/master/admin/sonos.png",
-        "localLink": "http://%ip%:%webserverPort%",
-        "localLinks": {
-            "desktop": "http://%ip%:%webserverPort%",
-            "mobile": "http://%ip%:%webserverPort%/m"
-        },
         "type": "multimedia"
     },
     "native": {
-        "webserverEnabled": true,
-        "webserverPort": 8080,
         "elapsedInterval": 2000,
         "fadeIn": 500,
         "fadeOut": 500,
+        "webServer": "",
         "devices": [
             {
                 "name": "Sonos1",

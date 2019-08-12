@@ -88,6 +88,16 @@
             }
         });
 
+        getAdapterInstances('web', function (res) {
+            if (!res) return;
+            var $webServer = $('#webServer');
+            for (var t = 0; t < res.length; t++) {
+                $('#webServer').append('<option value="' + res[t]._id + '">' + res[t].common.name + ' [' + res[t]._id.replace('system.adapter.', '') + ']</option>');
+            }
+            $webServer.val(settings.webServer);
+            $webServer.select();
+        });
+
         onChange(false);
     }
 
@@ -125,13 +135,11 @@
                 </div>
             </div>
             <div class="row">
-                <div class="input-field col s12 m4">
-                    <input  class="value" id="webserverEnabled" type="checkbox"/>
-                    <span class="translate active" for="webserverEnabled">Web server:</span>
-                </div>
-                <div class="input-field col s12 m4">
-                    <input  class="value" type="number" id="webserverPort" min="1" max="65535"/>
-                    <label class="translate active" for="webserverPort">Port:</label>
+                <div class="col s12 m3">
+                    <select class="value" id="webServer">
+                        <option value="" class="translate">disabled</option>
+                    </select>
+                    <label for="webServer"><span>Web Instance</span> (<span class="translate" style="padding-left: 20px">Used for TTS</span>)</label>
                 </div>
             </div>
             <div class="row">

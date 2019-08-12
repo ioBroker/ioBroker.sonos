@@ -6,18 +6,21 @@
  *      derived from https://github.com/jishi/node-sonos-web-controller by Jimmy Shimizu
  */
 'use strict';
-const loglevel    = process.argv[3] || 'info';
-const utils = require('@iobroker/adapter-core'); // Get common adapter utils
-const tools       = require(utils.controllerDir + '/lib/tools.js');
-//const logger      = require(utils.controllerDir + '/lib/logger.js')(loglevel, [getAppName()], undefined, 'sonos');
 const async       = require('async');
-const aliveIds    = [];
 const adapterName = require('./package.json').name.split('.').pop();
+const utils       = require('@iobroker/adapter-core'); // Get common adapter utils
+const tools       = require(utils.controllerDir + '/lib/tools.js');
+const aliveIds    = [];
 
-function getAppName() {
-    const parts = __dirname.replace(/\\/g, '/').split('/');
-    return parts[parts.length - 2].split('.')[0];
-}
+const http           = require('http');
+const fs             = require('fs');
+const crypto         = require('crypto');
+const SonosDiscovery = require('sonos-discovery');
+const path           = require('path');
+
+let channels         = {};
+let lastCover        =   null;
+let socketServer;
 
 let adapter;
 function startAdapter(options) {
@@ -213,10 +216,6 @@ function startAdapter(options) {
                 }
 
                 adapter.log && adapter.log.info && adapter.log.info('terminating');
-
-                if (adapter.config && adapter.config.webserverEnabled && socketServer && socketServer.server) {
-                    socketServer.server.close();
-                }
             }
             callback();
         } catch (e) {
@@ -288,20 +287,6 @@ function startAdapter(options) {
     return adapter;
 }
 
-const io             = require('socket.io');
-const http           = require('http');
-const Static         = require('node-static');
-const fs             = require('fs');
-const crypto         = require('crypto');
-const SonosDiscovery = require('sonos-discovery');
-const path           = require('path');
-// const dgram          = require('dgram');
-
-let channels    = {};
-let server;        // Sonos HTTP server
-let socketServer;  // Sonos socket for HTTP Server
-let lastCover =   null;
-
 function toFormattedTime(time) {
     let hours = Math.floor(time / 3600);
     hours = (hours) ? (hours + ':') : '';
@@ -312,6 +297,7 @@ function toFormattedTime(time) {
 
     return hours + min + ':' + sec;
 }
+
 const newGroupStates = {
     'add_to_group': {
         def:   '',
@@ -727,38 +713,69 @@ function text2speech(fileName, sonosIp, callback) {
     }
 
     if (fileName && !fileName.match(/^http(s)?:\/\//)) {
-        if (!adapter.config.webserverEnabled) {
+        if (!adapter.config.webServer) {
             adapter.log.warn('Web server must be enabled to play TTS');
             return;
         }
 
         const parts = fileName.split('.');
-        const dest  = 'tts' + (currentFileNum++) + '.' + parts[parts.length - 1];
-        if (currentFileNum > 10) currentFileNum = 0;
-        // Copy this file
-        if (fileName !== path.join(cacheDir, dest)) {
-            try {
-                fs.createReadStream(fileName).pipe(fs.createWriteStream(path.join(cacheDir, dest)));
-            } catch (e) {
-                adapter.log.error(e);
-                return;
-            }
+        const dest  = 'tts' + (currentFileNum++) + '.' + parts.pop();
+
+        if (currentFileNum > 10) {
+            currentFileNum = 0;
         }
-        fileName = 'http://' + discovery.localEndpoint + ':' + adapter.config.webserverPort + '/tts/' + dest;
+
+        // Upload this file to objects DB
+        try {
+            const data = fs.readFileSync(fileName);
+            const id = adapter.namespace + '.TTS.' + dest;
+
+            adapter.setForeignObject(id, {
+                common: {
+                    type: 'file',
+                    name: fileName,
+                    read: true,
+                    write: false,
+                },
+                native: {},
+                type: 'state'
+            }, err => {
+                adapter.setBinaryState(id, data, err => {
+                    if (err) {
+                        adapter.log.error('Cannot upload ' + id + ': ' + err);
+                        callback && callback(err);
+                    } else {
+                        adapter.getForeignObject(adapter.config.webServer, (err, obj) => {
+                            if (obj && obj.native) {
+                                fileName = `http${obj.native.secure ? 's' : ''}://${discovery.localEndpoint}:${obj.native.port}/state/${id}`;
+                                if (sonosIp) {
+                                    sonosIp = sonosIp.replace(/[.\s]+/g, '_');
+                                }
+
+                                // Play on all players
+                                for (let i = 0; i < discovery.players.length; i++) {
+                                    if (!discovery.players[i]._address) {
+                                        discovery.players[i]._address = getIp(discovery.players[i]);
+                                    }
+
+                                    const ip = discovery.players[i]._address;
+
+                                    if (sonosIp && ip !== sonosIp) continue;
+
+                                    setTimeout(playOnSonos, 10, fileName, discovery.players[i].uuid, volume);
+                                }
+                            }
+
+                            callback && callback();
+                        });
+                    }
+                });
+            });
+        } catch (e) {
+            adapter.log.error(e);
+            callback && callback(e);
+        }
     }
-    if (sonosIp) sonosIp = sonosIp.replace(/[.\s]+/g, '_');
-
-    // Play on all players
-    for (let i = 0; i < discovery.players.length; i++) {
-        if (!discovery.players[i]._address) discovery.players[i]._address = getIp(discovery.players[i]);
-
-        const ip = discovery.players[i]._address;
-
-        if (sonosIp && ip !== sonosIp) continue;
-        setTimeout(playOnSonos, 10, fileName, discovery.players[i].uuid, volume);
-    }
-
-    if (callback) callback();
 }
 
 function fadeIn(player, to, options, callback) {
@@ -1506,9 +1523,7 @@ function processSonosEvents(event, data) {
                     if (!player._address) player._address = getIp(player);
 
                     ip = player._address;
-                    if (channels[ip]) {
-                        takeSonosFavorites(ip, favorites);
-                    }
+                    channels[ip] && takeSonosFavorites(ip, favorites);
                 }
             });
     } else if (event === 'queue') {
@@ -1689,301 +1704,54 @@ function main() {
     });
     // from here the code is mostly from https://github.com/jishi/node-sonos-web-controller/blob/master/server.js
 
-    if (adapter.config.webserverEnabled) {
-        // we cannot look for sonos-web-controller because on main in package.json
-        let staticPath;
-        try {
-            let sonosPath = require.resolve('sonos-discovery');
-            sonosPath = sonosPath.replace(/\\/g, '/');
-            const parts = sonosPath.split('/');
-            parts.splice(parts.length - 3);
-            staticPath = parts.join('/') + '/sonos-web-controller/static';
-        } catch (e) {
-            if (fs.existsSync(__dirname + '/../sonos-web-controller/static')) {
-                staticPath = __dirname + '/../sonos-web-controller/static';
-            } else {
-                staticPath = __dirname + '/node_modules/sonos-web-controller/static';
-            }
-        }
-
-
-        // patch socket
-        if (fs.existsSync(staticPath + '/js/socket.js')) {
-            let data = fs.readFileSync(staticPath + '/js/socket.js').toString();
-            if (data.indexOf('io.connect(target);') !== -1) {
-                data = data.replace('io.connect(target);', "io.connect('/', {path: location.pathname.replace('/m/', '/') + 'socket.io'}); // io.connect(target);");
-                fs.writeFileSync(staticPath + '/js/socket.js', data);
-            }
-        }
-        if (fs.existsSync(staticPath + '/js/all.js')) {
-            let data = fs.readFileSync(staticPath + '/js/all.js').toString();
-            if (data.indexOf('"/svg/mute_on.svg" : "/svg/mute_off.svg"') !== -1) {
-                data = data.replace('"/svg/mute_on.svg" : "/svg/mute_off.svg"', '"svg/mute_on.svg" : "svg/mute_off.svg"');
-                data = data.replace('"/images/browse_missing_album_art.png";', '"images/browse_missing_album_art.png";');
-                fs.writeFileSync(staticPath + '/js/all.js', data);
-            }
-        }
-
-        const fileServer  = new Static.Server(staticPath);
-
-        cacheDir = adapter.config.cacheDir ? (__dirname + adapter.config.cacheDir) : cacheDir;
-        // Remove last "/"
-        if (cacheDir[cacheDir.length - 1] !== '/') cacheDir += '/';
-
-        fs.mkdir(cacheDir, e => {
-            if (e && e.code !== 'EEXIST') {
-                adapter.log.error('creating cache dir failed.', e);
-            }
-        });
-
-        server = http.createServer((req, res) => {
-            let fileName;
-            if (/^\/tts/.test(req.url)) {
-                let parts = req.url.split('/');
-                fileName = parts[parts.length - 1];
-                parts = fileName.split('?');
-                fileName = parts[0];
-                fileName = path.join(cacheDir, fileName);
-                adapter.log.debug('Request ' + req.url);
-                fs.exists(fileName, exists => {
-                    if (exists) {
-                        const stat = fs.statSync(fileName);
-
-                        res.writeHead(200, {
-                            'Content-Type':  'audio/mpeg',
-                            'Content-Length': stat.size,
-                            'Expires':        '30000'
-                        });
-                        fs.createReadStream(fileName).pipe(res);
-                    } else {
-                        res.writeHead(404, {'Content-Type': 'text/plain'});
-                        res.write('404 Not found. File ' + fileName + ' not found in ' + cacheDir);
-                        res.end();
-                    }
-                });
-            } else
-            if (/^\/getaa/.test(req.url)) {
-                // this is a resource, download from player and put in cache folder
-                const md5url = crypto.createHash('md5').update(req.url).digest('hex');
-                const fileName = path.join(cacheDir, md5url);
-
-                fs.exists(fileName, exists => {
-                    if (exists) {
-                        const readCache = fs.createReadStream(fileName);
-                        readCache.pipe(res);
-                        return;
-                    }
-
-                    const player = discovery.getAnyPlayer();
-                    if (!player) return;
-
-                    adapter.log.debug('fetching album art from', player.localEndpoint);
-                    http.get(player.baseUrl + req.url, res2 => {
-                        if (res2.statusCode === 200) {
-                            if (!fs.existsSync(fileName)) {
-                                const cacheStream = fs.createWriteStream(fileName);
-                                res2.pipe(cacheStream);
-                            } else {
-                                res2.resume();
-                            }
-                        } else if (res2.statusCode === 404) {
-                            // no image exists! link it to the default image.
-                            fs.link( __dirname + '/img/browse_missing_album_art.png', fileName, e => {
-                                res2.resume();
-                                if (e) adapter.log.warn(e);
-                            });
-                        }
-
-                        res2.on('end', () => {
-                            adapter.log.debug('serving ', req.url);
-                            const readCache = fs.createReadStream(fileName);
-                            readCache.on('error', e => adapter.log.error(e));
-                            readCache.pipe(res);
-                        });
-                    }).on('error', e => adapter.log.error('Got error: ' + e.message));
-                });
-            } else {
-                req.addListener('end', () => fileServer.serve(req, res)).resume();
-            }
-        });
-
-        socketServer = io.listen(server);
-        //socketServer.set('log level', 1);
-
-        socketServer.sockets.on('connection', socket => {
-            // Send it in a better format
-            const players = discovery.players;
-
-            if (players.length === 0) return;
-
-            socket.emit('topology-change', players);
-            discovery.getFavorites()
-                .then(favorites =>socket.emit('favorites', favorites));
-
-            socket.on('transport-state', data => {
-                // find player based on uuid
-                const player = discovery.getPlayerByUUID(data.uuid);
-
-                if (!player) return;
-
-                // invoke action
-                //console.log(data)
-                player[data.state]();
-            });
-
-            socket.on('group-volume', data => {
-                // find player based on uuid
-                const player = discovery.getPlayerByUUID(data.uuid);
-                if (!player) return;
-
-                // invoke action
-                player.setGroupVolume(data.volume);
-            });
-
-            socket.on('group-management', data => {
-                // find player based on uuid
-                //console.log(data);
-                const player = discovery.getPlayerByUUID(data.player);
-                if (!player) return;
-
-                if (data.group == null) {
-                    player.becomeCoordinatorOfStandaloneGroup();
-                    return;
-                }
-
-                player.setAVTransport('x-rincon:' + data.group);
-            });
-
-            socket.on('play-favorite', data => {
-                const player = discovery.getPlayerByUUID(data.uuid);
-                if (!player) return;
-
-                player.replaceWithFavorite(data.favorite)
-                    .then(() => player.play());
-            });
-
-            socket.on('queue', data => {
-                loadQueue(data.uuid)
-                    .then(queue => socket.emit('queue', { uuid: data.uuid, queue: queue }));
-            });
-
-            socket.on('seek', data => {
-                const player = discovery.getPlayerByUUID(data.uuid);
-                if (!player) return;
-
-                if (player.avTransportUri.startsWith('x-rincon-queue')) {
-                    player.trackSeek(data.trackNo);
-                    return;
-                }
-
-                // Player is not using queue, so start queue first
-                player.setAVTransport('x-rincon-queue:' + player.uuid + '#0')
-                    .then(() => player.trackSeek(data.trackNo))
-                    .then(() => player.play());
-            });
-
-            socket.on('playmode', data => {
-                const player = discovery.getPlayerByUUID(data.uuid);
-                if (!player) return;
-
-                for (const action in data.state) {
-                    if (data.state.hasOwnProperty(action)) {
-                        player[action](data.state[action]);
-                    }
-                }
-            });
-
-            socket.on('volume', data => {
-                const player = discovery.getPlayerByUUID(data.uuid);
-                if (!player) return;
-
-                player.setVolume(data.volume);
-            });
-
-            socket.on('group-mute', data => {
-                //console.log(data);
-                const player = discovery.getPlayerByUUID(data.uuid);
-                if (!player) return;
-
-                if (data.mute)
-                    player.muteGroup();
-                else
-                    player.unMuteGroup();
-            });
-
-            socket.on('mute', data => {
-                const player = discovery.getPlayerByUUID(data.uuid);
-                if (!player) return;
-
-                if (data.mute)
-                    player.mute();
-                else
-                    player.unMute();
-            });
-
-            socket.on('track-seek', data => {
-                const player = discovery.getPlayerByUUID(data.uuid);
-                if (!player) return;
-
-                player.timeSeek(data.elapsed);
-            });
-
-            socket.on('search', data => search(data.term, socket));
-
-            socket.on('error', e => adapter.log.error('Sonos reported error: ' + e));
-        });
-    }
-
     discovery.on('topology-change', data => {
-        if (socketServer) socketServer.sockets.emit('topology-change', discovery.players);
+        socketServer && socketServer.sockets.emit('topology-change', discovery.players);
         processSonosEvents('topology-change', data);
     });
 
     discovery.on('transport-state', data => {
-        if (socketServer) socketServer.sockets.emit('transport-state', data);
+        socketServer && socketServer.sockets.emit('transport-state', data);
         processSonosEvents('transport-state', data);
     });
 
     discovery.on('group-volume', data => {
-        if (socketServer) socketServer.sockets.emit('group-volume', data);
+        socketServer && socketServer.sockets.emit('group-volume', data);
         processSonosEvents('group-volume', data);
     });
 
     discovery.on('volume-change', data => {
-        if (socketServer) socketServer.sockets.emit('volume', data);
+        socketServer && socketServer.sockets.emit('volume', data);
         processSonosEvents('volume', data);
     });
 
     discovery.on('group-mute', data => {
-        if (socketServer)socketServer.sockets.emit('group-mute', data);
+        socketServer && socketServer.sockets.emit('group-mute', data);
         processSonosEvents('group-mute', data);
     });
 
     discovery.on('mute-change', data => {
-        if (socketServer) socketServer.sockets.emit('mute', data);
+        socketServer && socketServer.sockets.emit('mute', data);
         processSonosEvents('mute', data);
     });
 
     discovery.on('favorites', data => {
-        if (socketServer) socketServer.sockets.emit('favorites', data);
+        socketServer && socketServer.sockets.emit('favorites', data);
         processSonosEvents('favorites', data);
     });
 
     discovery.on('queue-change', player => {
         //console.log('queue-change', data);
         delete queues[player.uuid];
-        if (socketServer) {
-            loadQueue(player.uuid)
-                .then(queue => {
-                    socketServer.sockets.emit('queue', { uuid: player.uuid, queue: queue });
-                    processSonosEvents('queue', { uuid: player.uuid, queue: queue });
-                });
-        }
+        loadQueue(player.uuid)
+            .then(queue => {
+                socketServer && socketServer.sockets.emit('queue', {uuid: player.uuid, queue});
+                processSonosEvents('queue', {uuid: player.uuid, queue});
+            });
     });
     
     discovery.on('list-change', data => {
         //console.log('queue-change', data);
-        if (socketServer) socketServer.sockets.emit('favorites', data);
+        socketServer && socketServer.sockets.emit('favorites', data);
         processSonosEvents('favorites', data);
     });
     
@@ -2045,11 +1813,6 @@ function main() {
             }
         ], 
             players.length, (err, result) => socket.emit('search-result', response));
-    }
-
-    if (adapter.config.webserverEnabled) {
-        server.listen(adapter.config.webserverPort);
-        adapter.log.info('http sonos server listening on port ' + adapter.config.webserverPort);
     }
 }
 
