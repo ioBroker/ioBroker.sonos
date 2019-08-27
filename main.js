@@ -1234,7 +1234,7 @@ function takeSonosState(ip, sonosState) {
 
     if (sonosState.currentTrack.type === 'radio') {
         adapter.setState({device: 'root', channel: ip, state: 'current_type'}, {val: 1, ack: true});
-        adapter.setState({device: 'root', channel: ip, state: 'current_station'}, {val: sonosState.currentTrack.artist || '', ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'current_station'}, {val: sonosState.currentTrack.stationName || '', ack: true});
     }
     else if (sonosState.currentTrack.type === 'line_in') {
         adapter.setState({device: 'root', channel: ip, state: 'current_type'}, {val: 2, ack: true});
