@@ -6,7 +6,6 @@
  *      derived from https://github.com/jishi/node-sonos-web-controller by Jimmy Shimizu
  */
 'use strict';
-const async       = require('async');
 const adapterName = require('./package.json').name.split('.').pop();
 const utils       = require('@iobroker/adapter-core'); // Get common adapter utils
 const tools       = require(utils.controllerDir + '/lib/tools.js');
