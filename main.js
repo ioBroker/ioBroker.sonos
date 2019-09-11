@@ -512,9 +512,18 @@ function createChannel(name, ip, room, callback) {
             read:   true,
             write:  false,
             role:   'media.type',
-            states: {0: 'track', 1: 'radio'},
-            desc:   'Type of Stream (0 = track, 1 = radio)',
+            states: {0: 'track', 1: 'radio', 2: 'line_in'},
+            desc:   'Type of Stream (0 = track, 1 = radio, 2 = line_in)',
             name:   'Current stream type'
+        },
+        'current_station': {    // media.current.station -   current station (read only)
+            def:    '',
+            type:   'string',
+            read:   true,
+            write:  false,
+            role:   'media.station',
+            desc:   'Radio station currently played',
+            name:   'Current radio station'
         },
         'alive': {             // indicator.reachable -    if player alive (read only)
             type:   'boolean',
@@ -1222,7 +1231,7 @@ function takeSonosState(ip, sonosState) {
     }
 
     // [hraab]
-    // type: radio|track
+    // type: radio|track|line_in
     // when radio:
     //   radioShowMetaData (current show, contains an id separated by comma)
     //   streamInfo (kind of currently played title and artist info)
@@ -1233,9 +1242,15 @@ function takeSonosState(ip, sonosState) {
 
     if (sonosState.currentTrack.type === 'radio') {
         adapter.setState({device: 'root', channel: ip, state: 'current_type'}, {val: 1, ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'current_station'}, {val: sonosState.currentTrack.stationName || '', ack: true});
+    }
+    else if (sonosState.currentTrack.type === 'line_in') {
+        adapter.setState({device: 'root', channel: ip, state: 'current_type'}, {val: 2, ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'current_station'}, {val: '', ack: true});
     }
     else {
         adapter.setState({device: 'root', channel: ip, state: 'current_type'}, {val: 0, ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'current_station'}, {val: '', ack: true});
     }
     adapter.setState({device: 'root', channel: ip, state: 'current_title'},  {val: sonosState.currentTrack.title  || '', ack: true});
     adapter.setState({device: 'root', channel: ip, state: 'current_album'},  {val: sonosState.currentTrack.album  || '', ack: true});
