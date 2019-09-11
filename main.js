@@ -553,6 +553,15 @@ function createChannel(name, ip, room, callback) {
             desc:   'List of favorites song or stations, divided by comma',
             name:   'Favorites list'
         },
+        'favorites_list_array': {    // media.favorites.array -   list of favorite channels in JSON format (read only)
+            def:    '',
+            type:   'object',
+            read:   true,
+            write:  false,
+            role:   'media.favorites.array',
+            desc:   'Array of favorites song or stations',
+            name:   'Favorites Array'
+        },
         'favorites_set': {     // media.favorites.set -    select favorites from list (write only)
             def:    '',
             type:   'string',
@@ -1344,14 +1353,18 @@ function readCoverFileToState(fileName, stateName, ip) {
 
 function takeSonosFavorites(ip, favorites) {
     let sFavorites = '';
-    for (const favorite in favorites) {
+	let aFavorites = [];
+
+	for (const favorite in favorites) {
         if (!favorites.hasOwnProperty(favorite)) continue;
         if (favorites[favorite].title) {
             sFavorites += ((sFavorites) ? ', ' : '') + favorites[favorite].title;
+			aFavorites.push(favorites[favorite].title);
         }
     }
 
     adapter.setState({device: 'root', channel: ip, state: 'favorites_list'}, {val: sFavorites, ack: true});
+    adapter.setState({device: 'root', channel: ip, state: 'favorites_list_array'}, {val: aFavorites, ack: true});
 }
 
 function getIp(player, noReplace) {
