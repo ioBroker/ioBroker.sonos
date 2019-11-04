@@ -37,7 +37,7 @@
                 "it": "Aggiunto supporto per la modalità compatta",
                 "es": "Soporte de modo compacto agregado",
                 "pl": "Dodano obsługę trybu kompaktowego",
-                "zh-cn": "添加了紧凑模式支持",
+                "zh-cn": "添加了紧凑模式支持"
             },
             "1.7.7": {
                 "en": "Fixed error with node.js 6",
