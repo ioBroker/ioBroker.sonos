@@ -1,8 +1,20 @@
 {
     "common": {
         "name": "sonos",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "news": {
+            "2.0.1": {
+                "en": "create sonos cache directory",
+                "de": "Erstellen Sie ein Sonos-Cache-Verzeichnis",
+                "ru": "создать каталог кэша sonos",
+                "pt": "criar diretório de cache de sonos",
+                "nl": "maak een Sonos-cachemap",
+                "fr": "créer un répertoire de cache sonos",
+                "it": "creare la directory della cache di Sonos",
+                "es": "crear directorio de caché sonos",
+                "pl": "utwórz katalog pamięci podręcznej sonos",
+                "zh-cn": "创建sonos缓存目录"
+            },
             "2.0.0": {
                 "en": "Breaking change: no web server\nUsed latest packages",
                 "de": "Breaking Change: Kein Webserver\nBenutzte späteste Pakete",
@@ -16,7 +28,16 @@
                 "zh-cn": "突破性的变化：没有网络服务器\n使用最新的包"
             },
             "1.8.0": {
-                "en": "Added compact mode support"
+                "en": "Added compact mode support",
+                "de": "Kompaktmodus-Unterstützung hinzugefügt",
+                "ru": "Добавлена поддержка компактного режима",
+                "pt": "Adicionado suporte ao modo compacto",
+                "nl": "Ondersteuning voor compacte modus toegevoegd",
+                "fr": "Ajout du support du mode compact",
+                "it": "Aggiunto supporto per la modalità compatta",
+                "es": "Soporte de modo compacto agregado",
+                "pl": "Dodano obsługę trybu kompaktowego",
+                "zh-cn": "添加了紧凑模式支持",
             },
             "1.7.7": {
                 "en": "Fixed error with node.js 6",
