@@ -1723,6 +1723,10 @@ function main() {
     _path.pop();
     cacheDir = _path.join('/') + '/sonosCache/';
 
+    if (!fs.existsSync(cacheDir)){
+        fs.mkdirSync(cacheDir);
+    }
+
     discovery = new SonosDiscovery({
         household:  null,
         log:        adapter.log, //logger,
