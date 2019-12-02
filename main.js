@@ -1476,7 +1476,7 @@ function processSonosEvents(event, data) {
                 }
             }
         }
-    }  else if (event === 'group-mute') {
+    } else if (event === 'group-mute') {
         //{
         //    uuid:         _this.uuid,
         //    previousMute: previousMute,
