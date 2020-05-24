@@ -34,6 +34,9 @@ Workaround for text to speech is to use the [SONOS HTTP API](https://github.com/
 * Show queue with covers
 
 ## Changelog
+### 2.0.2 (2020-05-25)
+* (bluefox) Refactoring
+
 ### 2.0.1 (2019-11-04)
 * (klein0r) create sonos cache directory
 
