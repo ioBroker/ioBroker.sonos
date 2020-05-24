@@ -1,8 +1,12 @@
 {
     "common": {
         "name": "sonos",
-        "version": "2.0.1",
+        "version": "2.0.2",
         "news": {
+            "2.0.2": {
+                "en": "implemented direct http/https TTS support",
+                "de": "direkte Unterstützung für http/https tts support hinzugefügt"
+             },
             "2.0.1": {
                 "en": "create sonos cache directory",
                 "de": "Erstellen Sie ein Sonos-Cache-Verzeichnis",

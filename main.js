@@ -728,10 +728,28 @@ function text2speech(fileName, sonosIp, callback) {
         volume = fileName.substring(0, pos);
         fileName = fileName.substring(pos + 1);
     }
+    fileName = fileName.trim();
 
-    if (fileName && !fileName.match(/^http(s)?:\/\//)) {
+    // play http/https urls directly on sonos device
+    if (fileName && fileName.match(/^https?:\/\//)) {
+        if (sonosIp) {
+            sonosIp = sonosIp.replace(/[.\s]+/g, '_');
+        }
+        // Play on all players
+        for (let i = 0; i < discovery.players.length; i++) {
+            if (!discovery.players[i]._address) {
+                discovery.players[i]._address = getIp(discovery.players[i]);
+            }
+
+            const ip = discovery.players[i]._address;
+
+            if (sonosIp && ip !== sonosIp) continue;
+
+            setTimeout(playOnSonos, 10, fileName, discovery.players[i].uuid, volume);
+        }
+    } else if (fileName) {
         if (!adapter.config.webServer) {
-            adapter.log.warn('Web server must be enabled to play TTS');
+            adapter.log.warn('Web server must be enabled to play local TTS files');
             return;
         }
 
@@ -792,6 +810,9 @@ function text2speech(fileName, sonosIp, callback) {
             adapter.log.error(e);
             callback && callback(e);
         }
+    }
+    else {
+        adapter.log.error("invalid filename specified");
     }
 }
 
