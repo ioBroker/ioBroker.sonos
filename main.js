@@ -1,24 +1,23 @@
 /**
  *      ioBroker Sonos Adapter
- *      Copyright (c) 12'2013-2019 Bluefox <dogafox@gmail.com>
+ *      Copyright (c) 12'2013-2020 Bluefox <dogafox@gmail.com>
  *      MIT License
  *
  *      derived from https://github.com/jishi/node-sonos-web-controller by Jimmy Shimizu
  */
 'use strict';
-const adapterName = require('./package.json').name.split('.').pop();
-const utils       = require('@iobroker/adapter-core'); // Get common adapter utils
-const tools       = require(utils.controllerDir + '/lib/tools.js');
-const aliveIds    = [];
+const adapterName    = require('./package.json').name.split('.').pop();
+const utils          = require('@iobroker/adapter-core'); // Get common adapter utils
+const tools          = require(utils.controllerDir + '/lib/tools.js');
+const aliveIds       = [];
 
 const http           = require('http');
 const fs             = require('fs');
 const crypto         = require('crypto');
 const SonosDiscovery = require('sonos-discovery');
-const path           = require('path');
 
 let channels         = {};
-let lastCover        =   null;
+let lastCover        = null;
 let socketServer;
 
 let adapter;
@@ -28,7 +27,7 @@ function startAdapter(options) {
 
     adapter  = new utils.Adapter(options);
 
-    // {"val": state, "ack":false, "ts":1408294295, "from":"admin.0", "lc":1408294295}
+    // {'val': state, 'ack':false, 'ts':1408294295, 'from':'admin.0', 'lc':1408294295}
     // id = sonos.0.192_168_1_55.state
     adapter.on('stateChange', (_id, state) => {
         if (!state || state.ack) return;
@@ -37,127 +36,138 @@ function startAdapter(options) {
         const id = adapter.idToDCS(_id);
 
         if (id && id.channel && channels[id.channel]) {
-            if (state.val === 'false') state.val = false;
-            if (state.val === 'true')  state.val = true;
-            if (parseInt(state.val) == state.val) state.val = parseInt(state.val);
+            if (state.val === 'false') {
+                state.val = false;
+            }
+            if (state.val === 'true') {
+                state.val = true;
+            }
+            if (parseInt(state.val) == state.val) {
+                state.val = parseInt(state.val);
+            }
 
             let player = channels[id.channel].player;
             if (!player) {
                 player = discovery.getPlayerByUUID(channels[id.channel].uuid);
                 channels[id.channel].player = player;
             }
+
+            let promise;
             if (player) {
                 if (id.state === 'state_simple') {
                     if (!state.val) {
-                        player.pause();
+                        promise = player.pause();
                     } else {
-                        player.play();
+                        promise = player.play();
                     }
                 } else
                 if (id.state === 'shuffle') {
-                    player.shuffle(!!state.val);
+                    promise = player.shuffle(!!state.val);
                 } else
                 if (id.state === 'crossfade') {
-                    player.crossfade(!!state.val);
+                    promise = player.crossfade(!!state.val);
                 } else
                 if (id.state === 'repeat') {
                     if (state.val === 0 || state.val === '0') {
-                        player.repeat('none');
+                        promise = player.repeat('none');
                     } else if (state.val === 1 || state.val === '1') {
-                        player.repeat('all');
+                        promise = player.repeat('all');
                     } else if (state.val === 2 || state.val === '2') {
-                        player.repeat('one');
+                        promise = player.repeat('one');
                     } else {
-                        player.repeat(state.val);
+                        promise = player.repeat(state.val);
                     }
                 } else
                 if (id.state === 'play') {
                     if (!!state.val) {
-                        player.play(); // !! is toBoolean()
+                        promise = player.play(); // !! is toBoolean()
                     }
                 } else
                 if (id.state === 'stop') {
                     if (!!state.val) {
-                        player.pause(); // !! is toBoolean()
+                        promise = player.pause(); // !! is toBoolean()
                     }
                 } else
                 if (id.state === 'pause') {
                     if (!!state.val) {
-                        player.pause(); // !! is toBoolean()
+                        promise = player.pause(); // !! is toBoolean()
                     }
                 } else
                 if (id.state === 'next') {
                     if (!!state.val) {
-                        player.nextTrack(); // !! is toBoolean()
+                        promise = player.nextTrack(); // !! is toBoolean()
                     }
                 } else
                 if (id.state === 'prev') {
                     if (!!state.val) {
-                        player.previousTrack(); // !! is toBoolean()
+                        promise = player.previousTrack(); // !! is toBoolean()
                     }
                 } else
                 if (id.state === 'seek') {
                     state.val  = parseFloat(state.val);
-                    if (state.val < 0)   state.val = 0;
-                    if (state.val > 100) state.val = 100;
-                    player.timeSeek(Math.round((channels[id.channel].duration * state.val) / 100));
+                    if (state.val < 0)   {
+                        state.val = 0;
+                    }
+                    if (state.val > 100) {
+                        state.val = 100;
+                    }
+                    promise = player.timeSeek(Math.round((channels[id.channel].duration * state.val) / 100));
                 } else
                 if (id.state === 'current_elapsed') {
-                    state.val  = parseInt(state.val, 10);
-                    player.timeSeek(state.val);
+                    state.val = parseInt(state.val, 10);
+                    promise = player.timeSeek(state.val);
                 } else
                 if (id.state === 'current_elapsed_s') {
                     const parts = state.val.toString().split(':');
                     let seconds;
-                    if (parts === 3) {
+                    if (parts.length === 3) {
                         seconds = parseInt(parts[0]) * 3600;
                         seconds += parseInt(parts[1]) * 60;
                         seconds = parseInt(parts[2]);
-                    } else if (parts === 2) {
+                    } else if (parts.length === 2) {
                         seconds = parseInt(parts[0]) * 60;
                         seconds += parseInt(parts[1]);
-                    } else if (parts === 1) {
+                    } else if (parts.length === 1) {
                         seconds = parseInt(parts[0]);
                     } else {
-                        adapter.log.error('Invalid elapsed time: ' + state.val);
-                        return;
+                        return adapter.log.error('Invalid elapsed time: ' + state.val);
                     }
-                    player.timeSeek(seconds);
+                    promise = player.timeSeek(seconds);
                 } else
                 if (id.state === 'muted') {
                     if (!!state.val) {
-                        player.mute(); // !! is toBoolean()
+                        promise = player.mute(); // !! is toBoolean()
                     } else {
-                        player.unMute(); // !! is toBoolean()
+                        promise = player.unMute(); // !! is toBoolean()
                     }
                 } else
                 if (id.state === 'volume') {
-                    player.setVolume(state.val);
+                    promise = player.setVolume(state.val);
                 } else //stop,play,pause,next,previous,mute,unmute
                 if (id.state === 'state') {
                     if (state.val && typeof state.val === 'string') {
                         state.val = state.val.toLowerCase();
                         switch (state.val) {
                             case 'stop':
-                                player.pause();
+                                promise = player.pause();
                                 break;
                             case 'play':
-                                player.play();
+                                promise = player.play();
                                 break;
                             case 'pause':
-                                player.pause();
+                                promise = player.pause();
                                 break;
                             case 'next':
-                                player.nextTrack();
+                                promise = player.nextTrack();
                                 break;
                             case 'previous':
-                                player.previousTrack();
+                                promise = player.previousTrack();
                                 break;
                             case 'mute':
-                                player.mute();
+                                promise = player.mute();
                                 break;
                             case 'unmute':
-                                player.unMute();
+                                promise = player.unMute();
                                 break;
                             default:
                                 adapter.log.warn('Unknown state: ' + state.val);
@@ -167,36 +177,42 @@ function startAdapter(options) {
                         adapter.log.warn('Invalid state: ' + state.val);
                     }
                 } else if (id.state === 'favorites_set') {
-                    player.replaceWithFavorite(state.val).then(() => {
-                        player.play();
-                        adapter.setState({device: 'root', channel: id.channel, state: 'current_album'},  {val: state.val, ack: true});
-                        adapter.setState({device: 'root', channel: id.channel, state: 'current_artist'}, {val: state.val, ack: true});
-                    }, error =>adapter.log.error('Cannot replaceWithFavorite: ' + error));
+                    promise = player.replaceWithFavorite(state.val)
+                        .then(() => player.play())
+                        .then(() => {
+                            adapter.setState({device: 'root', channel: id.channel, state: 'current_album'},  {val: state.val, ack: true});
+                            adapter.setState({device: 'root', channel: id.channel, state: 'current_artist'}, {val: state.val, ack: true});
+                        })
+                        .catch(error => adapter.log.error('Cannot replaceWithFavorite: ' + error));
                 } else
                 if (id.state === 'tts') {
                     adapter.log.debug('Play TTS file ' + state.val + ' on ' + id.channel);
                     text2speech(state.val, id.channel);
                 } else if (id.state === 'add_to_group') {
-                    addToGroup(state.val, player); //xxxx
+                    promise = addToGroup(state.val, player); //xxxx
                 } else if (id.state === 'remove_from_group') {
-                    removeFromGroup(state.val, player);
+                    promise = removeFromGroup(state.val, player);
                 } else if (id.state === 'coordinator') {
                     if (state.val === id.channel) {
-                        player.becomeCoordinatorOfStandaloneGroup();
+                        promise = player.becomeCoordinatorOfStandaloneGroup();
                     } else {
-                        attachTo(player, getPlayerByName(state.val));
+                        promise = attachTo(player, getPlayerByName(state.val));
                     }
                 } else if (id.state === 'group_volume') {
-                    player.setGroupVolume(state.val);
+                    promise = player.setGroupVolume(state.val);
                 } else if (id.state === 'group_muted') {
                     if (!!state.val) {
-                        player.muteGroup(); // !! is toBoolean()
+                        promise = player.muteGroup(); // !! is toBoolean()
                     } else {
-                        player.unMuteGroup(); // !! is toBoolean()
+                        promise = player.unMuteGroup(); // !! is toBoolean()
                     }
                 } else {
                     adapter.log.warn('try to control unknown id ' + JSON.stringify(id));
                 }
+
+                promise && promise
+                    .then(() => adapter.log.debug('command done'))
+                    .catch(e => adapter.log.error(e));
             } else {
                 adapter.log.warn('SONOS "' + channels[id.channel].uuid + '" not found');
             }
@@ -208,11 +224,8 @@ function startAdapter(options) {
     adapter.on('unload', callback => {
         try {
             if (adapter) {
-                if (adapter.setState) {
-                    aliveIds.forEach(id => {
-                        adapter.setState(id, false, true);
-                    });
-                }
+                adapter.setState && aliveIds.forEach(id =>
+                        adapter.setState(id, false, true));
 
                 adapter.log && adapter.log.info && adapter.log.info('terminating');
             }
@@ -222,15 +235,14 @@ function startAdapter(options) {
         }
     });
 
-    adapter.on('ready', () => {
+    adapter.on('ready', () =>
         adapter.getObject(adapter.namespace + '.root', (err, obj) => {
             if (!obj || !obj.common || !obj.common.name) {
                 adapter.createDevice('root', {}, () => main());
             } else {
                 main ();
             }
-        });
-    });
+        }));
 
 // New message arrived. obj is array with current messages
     adapter.on('message', obj => {
@@ -672,7 +684,7 @@ function browse(callback) {
         result.push({roomName: discovery.players[i].roomName, ip: getIp(discovery.players[i], true)});
     }
 
-    if (callback) callback(result);
+    callback && callback(result);
 
     /*
     const strngtoXmit = new Buffer(["M-SEARCH * HTTP/1.1",
@@ -689,7 +701,7 @@ function browse(callback) {
         server.on("error", function (err) {
             console.log("ERROR: " + err);
             server.close();
-            if (callback) callback('ERROR - Cannot send request: ' + err);
+            callback && callback('ERROR - Cannot send request: ' + err);
         });
 
         server.bind (53004, "0.0.0.0");
@@ -705,29 +717,31 @@ function browse(callback) {
         setTimeout (function () {
             server.close();
             console.log ("Send:" + result);
-            if (callback) callback(result);
+            callback && callback(result);
         }, 2000);
 
         server.send (strngtoXmit, 0, strngtoXmit.length, 1900, "239.255.255.250", function (err, bytes) {
             if (err) {
                 console.log("ERROR - Cannot send request: " + err);
                 server.close();
-                if (callback) callback('ERROR - Cannot send request: ' + err);
+                callback && callback('ERROR - Cannot send request: ' + err);
             }
         });
     }*/
 }
 
 let currentFileNum = 0;
+
 function text2speech(fileName, sonosIp, callback) {
     // Extract volume
     let volume = null;
 
     const pos = fileName.indexOf(';');
     if (pos !== -1) {
-        volume = fileName.substring(0, pos);
+        volume   = fileName.substring(0, pos);
         fileName = fileName.substring(pos + 1);
     }
+
     fileName = fileName.trim();
 
     // play http/https urls directly on sonos device
@@ -737,20 +751,21 @@ function text2speech(fileName, sonosIp, callback) {
         }
         // Play on all players
         for (let i = 0; i < discovery.players.length; i++) {
-            if (!discovery.players[i]._address) {
-                discovery.players[i]._address = getIp(discovery.players[i]);
-            }
+            discovery.players[i]._address = discovery.players[i]._address || getIp(discovery.players[i]);
 
             const ip = discovery.players[i]._address;
 
-            if (sonosIp && ip !== sonosIp) continue;
+            if (sonosIp && ip !== sonosIp) {
+                continue;
+            }
 
-            setTimeout(playOnSonos, 10, fileName, discovery.players[i].uuid, volume);
+            setTimeout(() => playOnSonos(fileName, discovery.players[i].uuid, volume), 100);
         }
+        
+        callback && callback();
     } else if (fileName) {
         if (!adapter.config.webServer) {
-            adapter.log.warn('Web server must be enabled to play local TTS files');
-            return;
+            return adapter.log.warn('Web server must be enabled to play local TTS files');
         }
 
         const parts = fileName.split('.');
@@ -795,9 +810,11 @@ function text2speech(fileName, sonosIp, callback) {
 
                                     const ip = discovery.players[i]._address;
 
-                                    if (sonosIp && ip !== sonosIp) continue;
+                                    if (sonosIp && ip !== sonosIp) {
+                                        continue;
+                                    }
 
-                                    setTimeout(playOnSonos, 10, fileName, discovery.players[i].uuid, volume);
+                                    setTimeout(() => playOnSonos(fileName, discovery.players[i].uuid, volume), 100);
                                 }
                             }
 
@@ -810,21 +827,15 @@ function text2speech(fileName, sonosIp, callback) {
             adapter.log.error(e);
             callback && callback(e);
         }
-    }
-    else {
-        adapter.log.error("invalid filename specified");
+    } else {
+        adapter.log.error('invalid filename specified');
+        callback && callback('invalid filename specified');
     }
 }
 
-function fadeIn(player, to, options, callback) {
-    if (typeof options === 'function') {
-        callback = options;
-        options = undefined;
-    }
-
+function fadeIn(player, to, options) {
     if (!adapter.config.fadeIn && !adapter.config.fadeOut) {
-        player.setVolume(to);
-        return callback && callback();
+        return player.setVolume(to);
     }
 
     if (options === undefined) {
@@ -832,8 +843,7 @@ function fadeIn(player, to, options, callback) {
         const duration = parseInt(adapter.config.fadeIn, 10) || 0;
 
         if (!duration) {
-            player.setVolume(to);
-            return callback && callback();
+            return player.setVolume(to);
         }
 
         options = {
@@ -844,8 +854,7 @@ function fadeIn(player, to, options, callback) {
     }
 
     if (!options.duration) {
-        player.setVolume(to);
-        return callback && callback();
+        return player.setVolume(to);
     }
 
     options.step = options.step || 1;
@@ -856,23 +865,19 @@ function fadeIn(player, to, options, callback) {
 
     if (options.actual >= to) {
         adapter.log.debug('<< fadeIn to ' + to);
-        player.setVolume(to);
-        if (callback) callback();
+        return player.setVolume(to);
     } else {
-        player.setVolume(options.actual);
-        setTimeout(fadeIn, 100, player, to, options, callback);
+        return player.setVolume(options.actual)
+            .then(() =>
+                new Promise(resolve =>
+                    setTimeout(() => fadeIn(player, to)
+                        .then(() => resolve()), 100)));
     }
 }
 
-function fadeOut(player, options, callback) {
-    if (typeof options === 'function') {
-        callback = options;
-        options = undefined;
-    }
-
+function fadeOut(player, options) {
     if ((!adapter.config.fadeIn && !adapter.config.fadeOut) || options === true) {
-        callback && callback(typeof options === 'boolean' && options);
-        return;
+        return Promise.resolve(typeof options === 'boolean' && options);
     }
 
     if (options === false) {
@@ -882,11 +887,11 @@ function fadeOut(player, options, callback) {
     if (options === undefined) {
         const duration = parseInt(adapter.config.fadeOut, 10);
         if (!duration) {
-            player.setVolume(0);
-            if (callback) callback();
-            return;
+            return player.setVolume(0);
         }
+
         const actual = parseInt(player._volume, 10);
+
         options = {
             duration: duration,
             actual: actual,
@@ -895,9 +900,7 @@ function fadeOut(player, options, callback) {
     }
 
     if (!options.duration) {
-        player.setVolume(0);
-        if (callback) callback();
-        return;
+        return player.setVolume(0);
     }
 
     options.step = options.step || 1;
@@ -905,26 +908,41 @@ function fadeOut(player, options, callback) {
     options.actual -= options.step;
 
     if (!player._isMute && options.actual > 0 && player.state.currentState === 'PLAYING') {
-        player.setVolume(options.actual);
-        adapter.log.debug('>> fadeOut: setVolume: ' + options.actual);
-        setTimeout(fadeOut, 100, player, options, callback);
+        return player.setVolume(options.actual)
+            .then(() => {
+                adapter.log.debug('>> fadeOut: setVolume: ' + options.actual);
+
+                return new Promise(resolve =>
+                    setTimeout(() =>
+                        fadeOut(player, options)
+                            .then(() =>
+                                resolve()), 100));
+            });
     } else {
-        player.setVolume(0);
-        adapter.log.debug('<< fadeOut ');
-        if (callback) callback ();
+        return player.setVolume(0)
+            .then(() => adapter.log.debug('<< fadeOut '));
     }
 }
 
 function startPlayer(player, volume, noFadeIn, start) {
-    adapter.log.debug('startPlayer volume: ' + volume + ' start=' + start + ' player.queuedTts.length=' + (player.queuedTts && player.queuedTts.length ? player.queuedTts.length : 0));
+    adapter.log.debug(`startPlayer volume: ${volume} start=${start} player.queuedTts.length=${player.queuedTts && player.queuedTts.length ? player.queuedTts.length : 0}`);
     //fadeOut(player);
 
-    if (start || noFadeIn) player.play();
-
-    if (!noFadeIn) {
-        fadeIn(player, volume);
+    if (start || noFadeIn) {
+        return player.play()
+            .then(() => {
+                if (!noFadeIn) {
+                    return fadeIn(player, volume);
+                } else {
+                    return player.setVolume(volume);
+                }
+            });
     } else {
-        player.setVolume(volume);
+        if (!noFadeIn) {
+            return fadeIn(player, volume);
+        } else {
+            return player.setVolume(volume);
+        }
     }
 }
 
@@ -933,8 +951,12 @@ function startPlayer(player, volume, noFadeIn, start) {
 
 function getPlayerByName(name) {
     for (const i in discovery.players) {
-        if (!discovery.players.hasOwnProperty(i)) continue;
+        if (!discovery.players.hasOwnProperty(i)) {
+            continue;
+        }
+
         const player = discovery.players[i];
+
         if (player.roomName === name || getIp(player) === name || player._address === name || player.uuid === name) {
             return player;
         }
@@ -942,31 +964,40 @@ function getPlayerByName(name) {
 }
 
 function attachTo(player, coordinator) {
-    player.setAVTransport('x-rincon:' + coordinator.uuid);
+    return player.setAVTransport('x-rincon:' + coordinator.uuid);
 }
 
 function addToGroup(playerNameToAdd, coordinator) {
-    if (typeof coordinator === 'string') coordinator = getPlayerByName(coordinator);
-    const playerToAdd = getPlayerByName(playerNameToAdd);
-    if(!coordinator || !playerToAdd) {
-        return;
+    if (typeof coordinator === 'string') {
+        coordinator = getPlayerByName(coordinator);
     }
-    attachTo(playerToAdd, coordinator);
+
+    const playerToAdd = getPlayerByName(playerNameToAdd);
+
+    if (!coordinator || !playerToAdd) {
+        return Promise.reject();
+    } else {
+        return attachTo(playerToAdd, coordinator);
+    }
 }
 
 function removeFromGroup(leavingName, coordinator) {
-    if (typeof coordinator === 'string') coordinator = getPlayerByName(coordinator);
-    const leavingPlayer = getPlayerByName(leavingName);
-    if (!coordinator || !leavingPlayer) {
-        return;
+    if (typeof coordinator === 'string') {
+        coordinator = getPlayerByName(coordinator);
     }
+
+    const leavingPlayer = getPlayerByName(leavingName);
+
+    if (!coordinator || !leavingPlayer) {
+        return Promise.reject();
+    } else
     if (leavingPlayer.coordinator === coordinator) {
-        leavingPlayer.becomeCoordinatorOfStandaloneGroup();
+        return leavingPlayer.becomeCoordinatorOfStandaloneGroup();
     } else if (coordinator.coordinator === leavingPlayer) {
-        coordinator.becomeCoordinatorOfStandaloneGroup();
+        return coordinator.becomeCoordinatorOfStandaloneGroup();
     }
     //else {
-    //    attachTo(leavingPlayer, coordinator)
+    //    return  attachTo(leavingPlayer, coordinator)
     //}
 }
 
@@ -1009,34 +1040,40 @@ function getPositionInfo(player, callback) {
 */
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+function wait(ms) {
+    return new Promise(resolve => setTimeout(() => resolve(), ms));
+}
+
+// Promise
 function playOnSonos(uri, sonosUuid, volume) {
     const now = Date.now();
     const player = discovery.getPlayerByUUID(sonosUuid);
     let noFadeOut = false;
     if (!uri) { // stop actual tts
-        if (player.tts) player.pause();
-        return;
+        return player.tts ? player.pause() : Promise.resolve();
     }
 
-    if (!player.tts || now - player.tts.time > 30000) {
-        adapter.log.debug('Play on sonos[' + sonosUuid + ']: ' + uri + ', Volume: ' + volume);
-        if (player.prevTts && now - player.prevTts.ts <= 2000) { // use prev player state also for next tts
-            player.tts = player.prevTts;
-            player.prevTts = null;
-            noFadeOut = true;
-        } else if (!player.tts) {
-            player.tts = JSON.parse(JSON.stringify(player.state)); // only get akt payer state, if no previous
-            player.tts.avTransportUriMetadata = player.avTransportUriMetadata;
-        }
-        adapter.log.debug('player.tts= volume=' + player.tts.volume + ' currentTrack.uri=' + player.tts.currentTrack.uri + ' tts.playbackState=' + player.tts.playbackState);
-        //player.tts.ourUri = uri;
-        player.tts.time = now;
-    } else {
+    // if queue is empty => start playback
+    if (player.tts && now - player.tts.time < 30000) {
         adapter.log.debug('Queue on sonos[' + sonosUuid + ']: ' + uri + ', Volume: ' + volume);
         player.queuedTts = player.queuedTts || [];
         player.queuedTts.push({uri: uri, volume: volume});
-        return;
+        return Promise.resolve();
     }
+    
+    adapter.log.debug('Play on sonos[' + sonosUuid + ']: ' + uri + ', Volume: ' + volume);
+    
+    if (player.prevTts && now - player.prevTts.ts <= 2000) { // use prev player state also for next tts
+        player.tts = player.prevTts;
+        player.prevTts = null;
+        noFadeOut = true;
+    } else if (!player.tts) {
+        player.tts = JSON.parse(JSON.stringify(player.state)); // only get akt payer state, if no previous
+        player.tts.avTransportUriMetadata = player.avTransportUriMetadata;
+    }
+    adapter.log.debug('player.tts= volume=' + player.tts.volume + ' currentTrack.uri=' + player.tts.currentTrack.uri + ' tts.playbackState=' + player.tts.playbackState);
+    //player.tts.ourUri = uri;
+    player.tts.time = now;
 
     //const oldVolume = player._volume;
     //const oldIsMute = player._isMute;
@@ -1051,31 +1088,39 @@ function playOnSonos(uri, sonosUuid, volume) {
     const parts = player.tts.currentTrack.uri ? player.tts.currentTrack.uri.split('.') : ['none'];
 
     if (player.tts.currentTrack.uri &&
-        ((player.tts.currentTrack.uri.indexOf('x-file-cifs:') !== -1) ||
-         (player.tts.currentTrack.uri.indexOf('x-sonos-spotify:') !== -1) ||
-         (player.tts.currentTrack.uri.indexOf('x-sonosapi-hls-static:') !== -1) ||
-         (audioExtensions.indexOf(parts[parts.length - 1]) !== -1))
+        (player.tts.currentTrack.uri.includes('x-file-cifs:') ||
+         player.tts.currentTrack.uri.includes('x-sonos-spotify:') ||
+         player.tts.currentTrack.uri.includes('x-sonosapi-hls-static:') ||
+         audioExtensions.includes(parts[parts.length - 1]))
        ) {
         player.tts.radio = false;
 
-        player.addURIToQueue(uri).then(res => {
-            // Find out added track
-            if (!player.tts) {
-                //adapter.log.warn('Cannot restore sonos state');
-                adapter.log.warn('Cannot add track (URI) to Sonos Queue');
-                return;
-            }
-            player.tts.addedTrack = parseInt(res.firsttracknumberenqueued, 10);
+        return player.addURIToQueue(uri)
+            .then(res => {
+                // Find out added track
+                if (!player.tts) {
+                    //adapter.log.warn('Cannot restore sonos state');
+                    return adapter.log.warn('Cannot add track (URI) to Sonos Queue');
+                } else {
+                    player.tts.addedTrack = parseInt(res.firsttracknumberenqueued, 10);
 
-            fadeOut(player, noFadeOut, noFadeIn => {
-                adapter.log.debug('player.seek: ' + player.tts.addedTrack);
-
-                player.trackSeek(player.tts.addedTrack).then(() => {
-                    // Send command PLAY
-                    startPlayer(player, volume, noFadeIn, player.tts.playbackState !== 'PLAYING');
-                });
-            });
-        });
+                    let noFadeIn;
+                    return fadeOut(player, noFadeOut)
+                        .then(_noFadeIn => {
+                            noFadeIn = _noFadeIn;
+                            adapter.log.debug('player.seek: ' + player.tts.addedTrack);
+                            return wait(1000);
+                        })
+                        .then(() =>
+                            player.tts && player.trackSeek(player.tts.addedTrack))
+                        // Send command PLAY
+                        .then(() =>
+                            startPlayer(player, volume, noFadeIn, player.tts.playbackState !== 'PLAYING'))
+                        .catch(e => adapter.log.error('Cannot trackSeek: ' + e));
+                }
+            })
+            .catch(e =>
+                adapter.log.error('Cannot addURIToQueue: ' + e));
     } else {
         if (player.tts.currentTrack && player.tts.currentTrack.uri) {
             const parts = player.tts.currentTrack.uri.split(':');
@@ -1084,14 +1129,16 @@ function playOnSonos(uri, sonosUuid, volume) {
 
         // Radio
         player.tts.radio = true;
-        fadeOut(player, noFadeOut, noFadeIn => {
-            adapter.log.debug('setAVTransport: ' + uri);
-
-            player.setAVTransport(uri).then(res => {
-                // Send command PLAY
-                startPlayer(player, volume, noFadeIn, true);
-            });
-        });
+        let noFadeIn;
+        return fadeOut(player, noFadeOut)
+            .then(_noFadeIn => {
+                noFadeIn = _noFadeIn;
+                adapter.log.debug('setAVTransport: ' + uri)
+            })
+            .then(() => player.setAVTransport(uri))
+            // Send command PLAY
+            .then(() => startPlayer(player, volume, noFadeIn, true))
+            .catch(e => adapter.log.error('Cannot setAVTransport: ' + e));
     }
 }
 
@@ -1099,7 +1146,8 @@ function addChannel(name, ip, room, callback) {
     adapter.getObject('root', (err, obj) => {
         if (err || !obj) {
             // if root does not exist, channel will not be created
-            adapter.createDevice('root', [], () => createChannel(name, ip, room, callback));
+            adapter.createDevice('root', [], () =>
+                createChannel(name, ip, room, callback));
         } else {
             createChannel(name, ip, room, callback);
         }
@@ -1108,42 +1156,64 @@ function addChannel(name, ip, room, callback) {
 
 function resetTts(player) {
     //adapter.log.debug('setting tts = null' + (arguments.callee.caller.name !== undefined ? arguments.callee.caller.name : 'no caller'));
-    if (!player.tts) return;
+    if (!player.tts) {
+        return;
+    }
     player.prevTts = player.tts;
-    player.prevTts.ts = new Date().getTime();
+    player.prevTts.ts = Date.now();
     player.tts = null;
 }
 
 function _getPs(playbackState) {
     const ps = {playing: false, paused: false, transitioning: false, stopped: false};
     switch (playbackState) {
-        case 'PLAYING':         ps.playing       = true; break;
-        case 'PAUSED_PLAYBACK': ps.paused        = true; break;
-        case 'STOPPED':         ps.stopped       = true; break;
-        case 'TRANSITIONING':   ps.transitioning = true; break;
+        case 'PLAYING':
+            ps.playing       = true;
+            break;
+
+        case 'PAUSED_PLAYBACK':
+            ps.paused        = true;
+            break;
+
+        case 'STOPPED':
+            ps.stopped       = true;
+            break;
+
+        case 'TRANSITIONING':
+            ps.transitioning = true;
+            break;
     }
+
     return ps;
 }
 
+// State of sonos device was changed
 function takeSonosState(ip, sonosState) {
     adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
-    const ps = _getPs(sonosState.playbackState);
-    const player = discovery.getPlayerByUUID(channels[ip].uuid);
+    const ps       = _getPs(sonosState.playbackState);
+    const player   = discovery.getPlayerByUUID(channels[ip].uuid);
     const playMode = sonosState.playMode;
 
+    // If something queued
     if (!player.tts && player.queuedTts && player.queuedTts.length) {
         const q = player.queuedTts.shift();
         const uuid = channels[ip].uuid;
-        adapter.log.debug('Taking next queue entry, tts=' + (!!player.tts) + 'playState=' + sonosState.playbackState);
-        setImmdiate(() => playOnSonos(q.uri, uuid, q.volume));
+        
+        adapter.log.debug(`Taking next queue entry, tts=${!!player.tts}, playState=${sonosState.playbackState}`);
+
+        // play the file after state analysis finished
+        setImmediate(() =>
+            playOnSonos(q.uri, uuid, q.volume));
     }
 
-    adapter.log.debug('>  playbackState: ' + sonosState.playbackState + ' - ' + (sonosState.currentTrack && sonosState.currentTrack.title ? sonosState.currentTrack.title : ''));
+    adapter.log.debug(`>  playbackState: ${sonosState.playbackState} - ${sonosState.currentTrack && sonosState.currentTrack.title ? sonosState.currentTrack.title : ''}`);
 
+    // If some stable state
     if (!ps.transitioning) {
         adapter.setState({device: 'root', channel: ip, state: 'state_simple'}, {val: ps.playing, ack: true});
         adapter.setState({device: 'root', channel: ip, state: 'state'},        {val: ps.paused ? 'pause' : (ps.playing ? 'play' : 'stop'), ack: true});
 
+        // If paused and TTS played
         if (player.tts && (ps.paused || ps.stopped) //{
             /*&& (sonosState.currentTrack.uri === player.tts.ourUri)*/) {
 
@@ -1157,73 +1227,79 @@ function takeSonosState(ip, sonosState) {
                 // remove track
                 if (tts.addedTrack !== undefined) {
                     adapter.log.debug('player.removeTrackFromQueue, Track=' + tts.addedTrack);
-                    player.removeTrackFromQueue(tts.addedTrack).then(() => {
-                        setImmediate(() => playOnSonos(q.uri, uuid, q.volume));
-                    }, error => {
-                        adapter.log.error('Cannot removeTrackFromQueue: ' + error);
-                        setImmediate(() => playOnSonos(q.uri, uuid, q.volume));
-                    });
+                    return player.removeTrackFromQueue(tts.addedTrack)
+                        .catch(error => adapter.log.error('Cannot removeTrackFromQueue: ' + error))
+                        .then(() => setImmediate(() => playOnSonos(q.uri, uuid, q.volume)));
                 } else {
-                    setImmediate(() => playOnSonos(q.uri, uuid, q.volume));
+                    return setImmediate(() => playOnSonos(q.uri, uuid, q.volume));
                 }
-                return;
             }
-            if ((new Date()).getTime() - player.tts.time > 1000) { // else: do not restore old state, if queue is not empty
+            
+            // no files to play => restore state
+            if (Date.now() - player.tts.time > 1000) { // else: do not restore old state, if queue is not empty
                 const tts = player.tts;
 
                 resetTts(player);
 
                 // Restore state before tts
-                adapter.log.debug('>> Restore state: volume - ' + tts.volume + ', mute: ' + tts.mute + ', uri: ' + tts.currentTrack.uri);
+                adapter.log.debug(`>> Restore state: volume - ${tts.volume}, mute: ${tts.mute}, uri: ${tts.currentTrack.uri}`);
 
                 if (player._isMuted === undefined) {
                     player._isMuted = player.groupState.mute;
                 }
-                if (player._isMuted !== tts.mute) {
-                    if (tts.mute) {
-                        player.mute();
+                
+                return new Promise(resolve => {
+                    if (player._isMuted !== tts.mute) {
+                        return (tts.mute ? player.mute() : player.unMute())
+                            .then(() => resolve());
                     } else {
-                        player.unMute();
-                    }
-                }
+                        return resolve();
+                    }  
+                })
+                    // required for fadeIn
+                    .then(() => player.setVolume(0))
+                    .then(() => {
+                        // remove track
+                        if (tts.addedTrack !== undefined) {
+                            adapter.log.debug('player.removeTrackFromQueue, Track=' + tts.addedTrack);
+                            return player.removeTrackFromQueue(tts.addedTrack);
+                        } else {
+                            return Promise.resolve();
+                        }
+                    })
+                    .then(() => {
+                        if (tts.radio) {
+                            if (tts.playbackState !== 'PLAYING') {
+                                resetTts(player);
+                            }
 
-                // required for fadeIn
-                player.setVolume(0);
-
-                // remove track
-                if (tts.addedTrack !== undefined) {
-                    adapter.log.debug('player.removeTrackFromQueue, Track=' + tts.addedTrack);
-                    player.removeTrackFromQueue(tts.addedTrack);
-                }
-
-                if (tts.radio) {
-                    if (tts.playbackState !== 'PLAYING') resetTts(player);
-
-                    player.setAVTransport(tts.currentTrack.uri, tts.avTransportUriMetadata).then(res => {
-                        resetTts(player);
-                        startPlayer(player, tts.volume, false, tts.playbackState === 'PLAYING');
-                    }, error => {
-                        adapter.log.error('Cannot setAVTransport: ' + error);
-                        resetTts(player);
-                        startPlayer(player, tts.volume, false, tts.playbackState === 'PLAYING');
+                            return player.setAVTransport(tts.currentTrack.uri, tts.avTransportUriMetadata)
+                                .then(() => {
+                                    resetTts(player);
+                                    return startPlayer(player, tts.volume, false, tts.playbackState === 'PLAYING');
+                                })
+                                .catch(error => 
+                                    adapter.log.error('Cannot setAVTransport: ' + error));
+                        } else {
+                            // if not radio
+                            // Remove added track
+                            // Set old track number
+                            return player.trackSeek(tts.trackNo)
+                                .then(() => {
+                                    resetTts(player);
+                                    // Set elapsed time
+                                    return wait(200)
+                                        .then(() => player.timeSeek(tts.elapsedTime))
+                                        .then(() => wait(200))
+                                        .then(() => startPlayer(player, tts.volume, false, /*true ||*/ tts.playbackState === 'PLAYING'))
+                                        .catch(error => adapter.log.error('Cannot trackSeek: ' + error));
+                                })
+                                .catch(error => {
+                                    adapter.log.error('Cannot seek: ' + error);
+                                    resetTts(player);
+                                });
+                        }  
                     });
-                } else {
-                    // if not radio
-                    // Remove added track
-                    // Set old track number
-                    player.trackSeek(tts.trackNo).then(res => {
-                        resetTts(player);
-                        // Set elapsed time
-                        player.timeSeek(tts.elapsedTime).then(res => {
-                            startPlayer(player, tts.volume, false, /*true ||*/ tts.playbackState === 'PLAYING');
-                        }, error => {
-                            adapter.log.error('Cannot trackSeek: ' + error);
-                        });
-                    }, error => {
-                        adapter.log.error('Cannot seek: ' + error);
-                        resetTts(player);
-                    });
-                }
             }
         }
 
@@ -1262,15 +1338,15 @@ function takeSonosState(ip, sonosState) {
     // - Tracks w/o Album name keeps album name from previous track or some random album. Don't know if this is already wrong from SONOS API.
 
     if (sonosState.currentTrack.type === 'radio') {
-        adapter.setState({device: 'root', channel: ip, state: 'current_type'}, {val: 1, ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'current_type'},    {val: 1, ack: true});
         adapter.setState({device: 'root', channel: ip, state: 'current_station'}, {val: sonosState.currentTrack.stationName || '', ack: true});
     }
     else if (sonosState.currentTrack.type === 'line_in') {
-        adapter.setState({device: 'root', channel: ip, state: 'current_type'}, {val: 2, ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'current_type'},    {val: 2, ack: true});
         adapter.setState({device: 'root', channel: ip, state: 'current_station'}, {val: '', ack: true});
     }
     else {
-        adapter.setState({device: 'root', channel: ip, state: 'current_type'}, {val: 0, ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'current_type'},    {val: 0, ack: true});
         adapter.setState({device: 'root', channel: ip, state: 'current_station'}, {val: '', ack: true});
     }
     adapter.setState({device: 'root', channel: ip, state: 'current_title'},  {val: sonosState.currentTrack.title  || '', ack: true});
@@ -1286,21 +1362,24 @@ function takeSonosState(ip, sonosState) {
         const stateName  = adapter.namespace + '.root.' + ip + '.cover_png';
         let fileName;
         let md5url;
+        
         if (sonosState.currentTrack.albumArtUri) {
-            md5url     = crypto.createHash('md5').update(sonosState.currentTrack.albumArtUri).digest('hex');
-            fileName   = cacheDir + md5url;
+            md5url   = crypto.createHash('md5').update(sonosState.currentTrack.albumArtUri).digest('hex');
+            fileName = cacheDir + md5url;
         } else {
-            fileName   = defaultImg;
+            fileName = defaultImg;
         }
-
+        
         if (!fs.existsSync(fileName)) {
             adapter.log.debug('Cover file does not exist. Fetching via HTTP');
+            
             http.get({
                 hostname: getIp(discovery.getPlayerByUUID(channels[ip].uuid), true),
                 port: 1400,
                 path: sonosState.currentTrack.albumArtUri
             }, res2 => {
                 adapter.log.debug('HTTP status code ' + res2.statusCode);
+                
                 if (res2.statusCode === 200) {
                     if (!fs.existsSync(fileName)) {
                         const cacheStream = fs.createWriteStream(fileName);
@@ -1317,7 +1396,8 @@ function takeSonosState(ip, sonosState) {
                 }
 
                 res2.on('end', () => adapter.log.debug('Response "end" event'));
-            }).on('error', e => adapter.log.warn('Got error: ' + e.message));
+            })
+                .on('error', e => adapter.log.warn('Got error: ' + e.message));
         } else {
             adapter.log.debug('Cover exists. Try reading from fs');
             let fileData = null;
@@ -1335,9 +1415,8 @@ function takeSonosState(ip, sonosState) {
                 }
             }
             if (fileData) {
-                adapter.setBinaryState(stateName, fileData, () => {
-                    adapter.setState({device: 'root', channel: ip, state: 'current_cover'}, {val: '/state/' + stateName, ack: true});
-                });
+                adapter.setBinaryState(stateName, fileData, () => 
+                    adapter.setState({device: 'root', channel: ip, state: 'current_cover'}, {val: '/state/' + stateName, ack: true}));
             }
         }
 
@@ -1353,9 +1432,10 @@ function takeSonosState(ip, sonosState) {
         adapter.setState({device: 'root', channel: ip, state: 'current_elapsed_s'},  {val: sonosState.elapsedTimeFormatted, ack: true});
     }
 
-    adapter.setState({device: 'root', channel: ip, state: 'volume'},             {val: sonosState.volume, ack: true});
+    adapter.setState({device: 'root', channel: ip, state: 'volume'}, {val: sonosState.volume, ack: true});
+    
     if (sonosState.groupState) {
-        adapter.setState({device: 'root', channel: ip, state: 'muted'},          {val: sonosState.groupState.mute, ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'muted'}, {val: sonosState.groupState.mute, ack: true});
     }
 
     if (playMode) {
@@ -1366,7 +1446,7 @@ function takeSonosState(ip, sonosState) {
 }
 
 function readCoverFileToState(fileName, stateName, ip) {
-    let fileData = null;
+    let fileData;
     try {
         fileData = fs.readFileSync(fileName);
     } catch (e) {
@@ -1381,9 +1461,8 @@ function readCoverFileToState(fileName, stateName, ip) {
         }
     }
     if (fileData) {
-        adapter.setBinaryState(stateName, fileData, () => {
-            adapter.setState({device: 'root', channel: ip, state: 'current_cover'}, {val: '/state/' + stateName, ack: true});
-        });
+        adapter.setBinaryState(stateName, fileData, () =>
+            adapter.setState({device: 'root', channel: ip, state: 'current_cover'}, {val: '/state/' + stateName, ack: true}));
     }
 }
 
@@ -1391,20 +1470,20 @@ function takeSonosFavorites(ip, favorites) {
     let sFavorites = '';
 	let aFavorites = [];
 
-	for (const favorite in favorites) {
-        if (!favorites.hasOwnProperty(favorite)) continue;
+	Object.keys(favorites).forEach(favorite => {
         if (favorites[favorite].title) {
             sFavorites += ((sFavorites) ? ', ' : '') + favorites[favorite].title;
 			aFavorites.push(favorites[favorite].title);
         }
-    }
+    });
 
-    adapter.setState({device: 'root', channel: ip, state: 'favorites_list'}, {val: sFavorites, ack: true});
+    adapter.setState({device: 'root', channel: ip, state: 'favorites_list'},       {val: sFavorites, ack: true});
     adapter.setState({device: 'root', channel: ip, state: 'favorites_list_array'}, {val: aFavorites, ack: true});
 }
 
 function getIp(player, noReplace) {
     const m = player.baseUrl.match(/http:\/\/([.\d]+):?/);
+    
     if (m && m[1]) {
         return noReplace ? m[1] : m[1].replace(/[.\s]+/g, '_');
     } else {
@@ -1416,16 +1495,19 @@ function processSonosEvents(event, data) {
     let ip;
     let i;
     let player;
+    
     if (event === 'topology-change') {
         // TODO: Check
         let member_ip;
         let j;
         let member;
+        
         if (typeof data.length === 'undefined') {
             player = discovery.getPlayerByUUID(data.uuid);
-            if (!player._address) player._address = getIp(player);
+            player._address = player._address || getIp(player);
 
             ip = player._address;
+            
             if (channels[ip]) {
                 channels[ip].uuid = data.uuid;
                 adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
@@ -1433,7 +1515,7 @@ function processSonosEvents(event, data) {
         } else if (data.length) {
             for (i = 0; i < data.length; i++) {
                 player = discovery.getPlayerByUUID(data[i].uuid);
-                if (!player._address) player._address = getIp(player);
+                player._address = player._address || getIp(player);
 
                 ip = player._address;
                 if (channels[ip]) {
@@ -1444,29 +1526,31 @@ function processSonosEvents(event, data) {
                 const membersChannels = [];
                 for (j = 0; j < data[i].members.length; j++) {
                     member = discovery.getPlayerByUUID(data[i].members[j].uuid);
-                    if (!member._address) member._address = getIp(member);
+                    member._address = member._address || getIp(member);
                     
                     member_ip = member._address;
+                    
                     if (channels[member_ip]) {
                         channels[member_ip].uuid = data[i].members[j].uuid;
                         membersChannels.push(member_ip);
                         adapter.setState({device: 'root', channel: member_ip, state: 'coordinator'}, {val: ip, ack: true});
                     }
+
                     if (data[i].members[j].roomName) {
                         members.push(data[i].members[j].roomName);
                     }
                 }
                 if (members.length) {
-                    adapter.setState ({device: 'root', channel: ip, state: 'members'}, { val: members.join(','), ack: true })
+                    adapter.setState({device: 'root', channel: ip, state: 'members'}, { val: members.join(','), ack: true })
                 }
                 if (membersChannels.length) {
-                    adapter.setState ({device: 'root', channel: ip, state: 'membersChannels'}, { val: membersChannels.join(','), ack: true })
+                    adapter.setState({device: 'root', channel: ip, state: 'membersChannels'}, { val: membersChannels.join(','), ack: true })
                 }
             }
         }
     } else if (event === 'transport-state') {
         player = discovery.getPlayerByUUID(data.uuid);
-        if (!player._address) player._address = getIp(player);
+        player._address = player._address || getIp(player);
 
         ip = player._address;
         if (channels[ip]) {
@@ -1484,16 +1568,17 @@ function processSonosEvents(event, data) {
         for (i = 0; i < discovery.players.length; i++) {
             if (discovery.players[i].roomName === data.roomName) {
                 player = discovery.getPlayerByUUID(discovery.players[i].uuid);
-                if (!player._address) player._address = getIp(player);
+                player._address = player._address || getIp(player);
 
                 ip = player._address;
+
                 if (channels[ip]) {
                     channels[ip].uuid = discovery.players[i].uuid;
                     adapter.setState({device: 'root', channel: ip, state: 'volume'}, {val: data.newVolume, ack: true});
                     //adapter.setState({device: 'root', channel: ip, state: 'muted'},  {val: data.groupState.mute,  ack: true});
                     //player._isMuted = data.groupState.mute;
                     player._volume  = data.newVolume;
-                    adapter.log.debug('group-volume: Volume for ' + player.baseUrl + ': ' + data.newVolume);
+                    adapter.log.debug(`group-volume: Volume for ${player.baseUrl}: ${data.newVolume}`);
                 }
             }
         }
@@ -1508,9 +1593,10 @@ function processSonosEvents(event, data) {
 //            if (discovery.players[i].roomName === data.roomName) {
 //                player = discovery.getPlayerByUUID(discovery.players[i].uuid);
                 player = discovery.getPlayerByUUID(data.uuid);
-                if (!player._address) player._address = getIp(player);
+                player._address = player._address || getIp(player);
 
                 ip = player._address;
+
                 if (channels[ip]) {
 //                    channels[ip].uuid = discovery.players[i].uuid;
                     channels[ip].uuid = data.uuid;
@@ -1532,7 +1618,7 @@ function processSonosEvents(event, data) {
         //     roomName:         _this.roomName
         // }
         player = discovery.getPlayerByUUID(data.uuid);
-        if (!player._address) player._address = getIp(player);
+        player._address = player._address || getIp(player);
 
         ip = player._address;
         if (channels[ip]) {
@@ -1540,6 +1626,7 @@ function processSonosEvents(event, data) {
             adapter.setState({device: 'root', channel: ip, state: 'volume'}, {val: data.newVolume, ack: true});
             player._volume  = data.newVolume;
             adapter.log.debug('volume: Volume for ' + player.baseUrl + ': ' + data.newVolume);
+
             setTimeout (() => {
                 adapter.setState({device: 'root', channel: ip, state: 'group_volume'}, {val: player.groupState.volume, ack: true});
                 adapter.log.debug('group_volume: groupVolume for ' + player.baseUrl + ': ' + player.groupState.volume);
@@ -1553,7 +1640,7 @@ function processSonosEvents(event, data) {
         //     roomName:    _this.roomName
         // }
         player = discovery.getPlayerByUUID(data.uuid);
-        if (!player._address) player._address = getIp(player);
+        player._address = player._address || getIp(player);
 
         ip = player._address;
         if (channels[ip]) {
@@ -1568,17 +1655,19 @@ function processSonosEvents(event, data) {
                 // Go through all players
                 for (i = 0; i < discovery.players.length; i++) {
                     player = discovery.players[i];
-                    if (!player._address) player._address = getIp(player);
+                    player._address = player._address || getIp(player);
 
                     ip = player._address;
                     channels[ip] && takeSonosFavorites(ip, favorites);
                 }
-            });
+            })
+            .catch(e => adapter.log.error('Cannot getFavorites: ' + e));
     } else if (event === 'queue') {
         player = discovery.getPlayerByUUID(data.uuid);
-        if (!player._address) player._address = getIp(player);
+        player._address = player._address || getIp(player);
 
         ip = player._address;
+
         if (channels[ip]) {
             channels[ip].uuid = data.uuid;
             const _text = [];
@@ -1594,14 +1683,14 @@ function processSonosEvents(event, data) {
                 // Go through all players
                 for (i = 0; i < discovery.players.length; i++) {
                     player = discovery.players[i];
-                    if (!player._address) player._address = getIp(player);
+
+                    player._address = player._address || getIp(player);
 
                     ip = player._address;
-                    if (channels[ip]) {
-                        takeSonosFavorites(ip, favorites);
-                    }
+                    channels[ip] && takeSonosFavorites(ip, favorites);
                 }
-            });
+            })
+            .catch(e => adapter.log.error('Cannot getFavorites: ' + e));
     } else {
         adapter.log.debug(event + ' ' + (typeof data === 'object' ? JSON.stringify(data) : data));
     }
@@ -1673,7 +1762,6 @@ function syncConfig() {
                                 };
                                 adapter.setState('root.' + sId + '.alive', false, true);
                                 aliveIds.push('root.' + sId + '.alive');
-
                             } else {
                                 configToDelete.push(ip);
                             }
@@ -1700,6 +1788,7 @@ function syncConfig() {
                             }
                         }
                     }
+
                     if (configToDelete.length) {
                         for (let e = 0; e < configToDelete.length; e++) {
                             if (configToDelete[e]) {
@@ -1744,9 +1833,8 @@ function main() {
     _path.pop();
     cacheDir = _path.join('/') + '/sonosCache/';
 
-    if (!fs.existsSync(cacheDir)){
-        fs.mkdirSync(cacheDir);
-    }
+    // create directory for cached files
+    !fs.existsSync(cacheDir) && fs.mkdirSync(cacheDir);
 
     discovery = new SonosDiscovery({
         household:  null,
@@ -1754,6 +1842,7 @@ function main() {
         cacheDir:   cacheDir,
         port:       adapter.config.webserverPort
     });
+
     // from here the code is mostly from https://github.com/jishi/node-sonos-web-controller/blob/master/server.js
 
     discovery.on('topology-change', data => {
@@ -1793,12 +1882,16 @@ function main() {
 
     discovery.on('queue-change', player => {
         //console.log('queue-change', data);
-        delete queues[player.uuid];
-        loadQueue(player.uuid)
+        return player.getQueue()
+            .then(queue => {
+                queues[player.uuid] = queue;
+                return queue;
+            })
             .then(queue => {
                 socketServer && socketServer.sockets.emit('queue', {uuid: player.uuid, queue});
                 processSonosEvents('queue', {uuid: player.uuid, queue});
-            });
+            })
+            .catch(e => adapter.log.error('Cannot loadQueue: ' + e));
     });
     
     discovery.on('list-change', data => {
@@ -1806,21 +1899,8 @@ function main() {
         socketServer && socketServer.sockets.emit('favorites', data);
         processSonosEvents('favorites', data);
     });
-    
-    function loadQueue(uuid) {
-        if (queues[uuid]) {
-            return Promise.resolve(queues[uuid]);
-        }
 
-        const player = discovery.getPlayerByUUID(uuid);
-        return player.getQueue()
-            .then(queue => {
-                queues[uuid] = queue;
-                return queue;
-            });
-    }
-
-    function search(term, socket) {
+    /*function search(term, socket) {
         adapter.log.debug('search for', term);
         let playerCycle = 0;
         const players = [];
@@ -1865,7 +1945,7 @@ function main() {
             }
         ], 
             players.length, (err, result) => socket.emit('search-result', response));
-    }
+    }*/
 }
 
 // If started as allInOne mode => return function to create instance

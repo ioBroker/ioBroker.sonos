@@ -97,25 +97,6 @@
                 "it": "Aggiunto il supporto di Admin3",
                 "es": "Se agregó el soporte de Admin3",
                 "pl": "Dodano obsługę Admin3"
-            },
-            "1.6.2": {
-                "en": "no duration/elapsed update on radio",
-                "de": "Kein Erneuern der states duration/elapsed bei Radiobetrieb",
-                "ru": "Не обновлять статус если играет радио"
-            },
-            "1.6.1": {
-                "en": "States for group members added",
-                "de": "Status für Gruppemmitglieder hinzugefügt"
-            },
-            "1.6.0": {
-                "en": "Enhance handling of groups",
-                "de": "Behandlung von Gruppen verbessert",
-                "ru": "Enhance handling of groups"
-            },
-            "1.5.0": {
-                "en": "use new configuration dialog",
-                "de": "Benutze neue Konfigurationsdialog",
-                "ru": "Новая таблица редактирования настроек"
             }
         },
         "title": "SONOS",
@@ -159,8 +140,8 @@
     },
     "native": {
         "elapsedInterval": 2000,
-        "fadeIn": 500,
-        "fadeOut": 500,
+        "fadeIn": 0,
+        "fadeOut": 0,
         "webServer": "",
         "devices": [
             {
