@@ -4,6 +4,8 @@ gulpfile.js
 !/img/*
 !/admin/**/*
 !/admin/*
+!/lib/**/*
+!/lib/*
 !/io-package.json
 !/package.json
 !/LICENSE

@@ -1,8 +1,20 @@
 {
     "common": {
         "name": "sonos",
-        "version": "2.0.2",
+        "version": "2.1.0",
         "news": {
+            "2.1.0": {
+                "en": "TTS Refactoring",
+                "de": "TTS Refactoring",
+                "ru": "TTS Рефакторинг",
+                "pt": "Refatoração TTS",
+                "nl": "TTS Refactoring",
+                "fr": "Refactoring TTS",
+                "it": "Refactoring TTS",
+                "es": "Refactorización TTS",
+                "pl": "Refaktoryzacja TTS",
+                "zh-cn": "TTS重构"
+            },
             "2.0.2": {
                 "en": "Implemented the direct http/https TTS support\nRefactoring",
                 "de": "Implementierung der direkten http/https TTS-Unterstützung\nRefactoring",
