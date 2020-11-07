@@ -1,8 +1,20 @@
 {
     "common": {
         "name": "sonos",
-        "version": "2.1.0",
+        "version": "2.1.1",
         "news": {
+            "2.1.1": {
+                "en": "Prevent crash case (Sentry IOBROKER-JS-CONTROLLER-S7, #78)",
+                "de": "Absturz verhindern (Sentry IOBROKER-JS-CONTROLLER-S7, # 78)",
+                "ru": "Случай предотвращения сбоя (Sentry IOBROKER-JS-CONTROLLER-S7, # 78)",
+                "pt": "Evitar caso de travamento (Sentry IOBROKER-JS-CONTROLLER-S7, # 78)",
+                "nl": "Voorkom een crashgeval (Sentry IOBROKER-JS-CONTROLLER-S7, # 78)",
+                "fr": "Prévenir les cas de crash (Sentry IOBROKER-JS-CONTROLLER-S7, # 78)",
+                "it": "Prevenire il crash case (Sentry IOBROKER-JS-CONTROLLER-S7, # 78)",
+                "es": "Prevenir caso de bloqueo (Sentry IOBROKER-JS-CONTROLLER-S7, # 78)",
+                "pl": "Zapobiegaj awariom (Sentry IOBROKER-JS-CONTROLLER-S7, # 78)",
+                "zh-cn": "防止发生崩溃情况（Sentry IOBROKER-JS-CONTROLLER-S7，＃78）"
+            },
             "2.1.0": {
                 "en": "TTS Refactoring",
                 "de": "TTS Refactoring",
