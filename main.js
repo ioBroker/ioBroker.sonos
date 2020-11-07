@@ -1551,17 +1551,20 @@ function processSonosEvents(event, data) {
         
         if (typeof data.length === 'undefined') {
             player = discovery.getPlayerByUUID(data.uuid);
-            player._address = player._address || getIp(player);
+            if (player) {
+                player._address = player._address || getIp(player);
 
-            ip = player._address;
-            
-            if (channels[ip]) {
-                channels[ip].uuid = data.uuid;
-                adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
+                ip = player._address;
+
+                if (channels[ip]) {
+                    channels[ip].uuid = data.uuid;
+                    adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
+                }
             }
         } else if (data.length) {
             for (i = 0; i < data.length; i++) {
                 player = discovery.getPlayerByUUID(data[i].uuid);
+                if (!player) continue;
                 player._address = player._address || getIp(player);
 
                 ip = player._address;
@@ -1597,12 +1600,14 @@ function processSonosEvents(event, data) {
         }
     } else if (event === 'transport-state') {
         player = discovery.getPlayerByUUID(data.uuid);
-        player._address = player._address || getIp(player);
+        if (player) {
+            player._address = player._address || getIp(player);
 
-        ip = player._address;
-        if (channels[ip]) {
-            channels[ip].uuid = data.uuid;
-            takeSonosState(ip, data.state);
+            ip = player._address;
+            if (channels[ip]) {
+                channels[ip].uuid = data.uuid;
+                takeSonosState(ip, data.state);
+            }
         }
     } else if (event === 'group-volume') {
         // {
@@ -1615,6 +1620,7 @@ function processSonosEvents(event, data) {
         for (i = 0; i < discovery.players.length; i++) {
             if (discovery.players[i].roomName === data.roomName) {
                 player = discovery.getPlayerByUUID(discovery.players[i].uuid);
+                if (!player) continue;
                 player._address = player._address || getIp(player);
 
                 ip = player._address;
@@ -1640,20 +1646,26 @@ function processSonosEvents(event, data) {
 //            if (discovery.players[i].roomName === data.roomName) {
 //                player = discovery.getPlayerByUUID(discovery.players[i].uuid);
                 player = discovery.getPlayerByUUID(data.uuid);
-                player._address = player._address || getIp(player);
+                if (player) {
+                    player._address = player._address || getIp(player);
 
-                ip = player._address;
+                    ip = player._address;
 
-                if (channels[ip]) {
-//                    channels[ip].uuid = discovery.players[i].uuid;
-                    channels[ip].uuid = data.uuid;
-                    adapter.setState({device: 'root', channel: ip, state: 'muted'}, {val: data.newMute, ack: true});
-                    //adapter.setState({device: 'root', channel: ip, state: 'muted'},  {val: data.groupState.mute,  ack: true});
-                    //player._isMuted = data.groupState.mute;
-                    player._isMuted  = data.newMute;
-                    adapter.log.debug('mute: Mute for ' + player.baseUrl + ': ' + data.newMute);
-                    adapter.setState({device: 'root', channel: ip, state: 'group_muted'}, {val: player.groupState.mute, ack: true});
-                    adapter.log.debug('group_muted: groupMuted for ' + player.baseUrl + ': ' + player.groupState.mute);
+                    if (channels[ip]) {
+                        //                    channels[ip].uuid = discovery.players[i].uuid;
+                        channels[ip].uuid = data.uuid;
+                        adapter.setState({device: 'root', channel: ip, state: 'muted'}, {val: data.newMute, ack: true});
+                        //adapter.setState({device: 'root', channel: ip, state: 'muted'},  {val: data.groupState.mute,  ack: true});
+                        //player._isMuted = data.groupState.mute;
+                        player._isMuted = data.newMute;
+                        adapter.log.debug('mute: Mute for ' + player.baseUrl + ': ' + data.newMute);
+                        adapter.setState({
+                            device: 'root',
+                            channel: ip,
+                            state: 'group_muted'
+                        }, {val: player.groupState.mute, ack: true});
+                        adapter.log.debug('group_muted: groupMuted for ' + player.baseUrl + ': ' + player.groupState.mute);
+                    }
                 }
 //            }
 //        }
@@ -1665,19 +1677,25 @@ function processSonosEvents(event, data) {
         //     roomName:         _this.roomName
         // }
         player = discovery.getPlayerByUUID(data.uuid);
-        player._address = player._address || getIp(player);
+        if (player) {
+            player._address = player._address || getIp(player);
 
-        ip = player._address;
-        if (channels[ip]) {
-            channels[ip].uuid = data.uuid;
-            adapter.setState({device: 'root', channel: ip, state: 'volume'}, {val: data.newVolume, ack: true});
-            player._volume  = data.newVolume;
-            adapter.log.debug('volume: Volume for ' + player.baseUrl + ': ' + data.newVolume);
+            ip = player._address;
+            if (channels[ip]) {
+                channels[ip].uuid = data.uuid;
+                adapter.setState({device: 'root', channel: ip, state: 'volume'}, {val: data.newVolume, ack: true});
+                player._volume = data.newVolume;
+                adapter.log.debug('volume: Volume for ' + player.baseUrl + ': ' + data.newVolume);
 
-            setTimeout (() => {
-                adapter.setState({device: 'root', channel: ip, state: 'group_volume'}, {val: player.groupState.volume, ack: true});
-                adapter.log.debug('group_volume: groupVolume for ' + player.baseUrl + ': ' + player.groupState.volume);
-            }, 2000);
+                setTimeout(() => {
+                    adapter.setState({
+                        device: 'root',
+                        channel: ip,
+                        state: 'group_volume'
+                    }, {val: player.groupState.volume, ack: true});
+                    adapter.log.debug('group_volume: groupVolume for ' + player.baseUrl + ': ' + player.groupState.volume);
+                }, 2000);
+            }
         }
     } else if (event === 'mute') {
         // {
@@ -1687,57 +1705,67 @@ function processSonosEvents(event, data) {
         //     roomName:    _this.roomName
         // }
         player = discovery.getPlayerByUUID(data.uuid);
-        player._address = player._address || getIp(player);
+        if (player) {
+            player._address = player._address || getIp(player);
 
-        ip = player._address;
-        if (channels[ip]) {
-            channels[ip].uuid = data.uuid;
-            adapter.setState({device: 'root', channel: ip, state: 'muted'},  {val: data.newMute,  ack: true});
-            player._isMuted  = data.newMute;
-            adapter.log.debug('mute: Mute for ' + player.baseUrl + ': ' + data.newMute);
+            ip = player._address;
+            if (channels[ip]) {
+                channels[ip].uuid = data.uuid;
+                adapter.setState({device: 'root', channel: ip, state: 'muted'}, {val: data.newMute, ack: true});
+                player._isMuted = data.newMute;
+                adapter.log.debug('mute: Mute for ' + player.baseUrl + ': ' + data.newMute);
+            }
         }
     } else if (event === 'favorites') {
-        discovery.getFavorites()
-            .then(favorites => {
-                // Go through all players
-                for (i = 0; i < discovery.players.length; i++) {
-                    player = discovery.players[i];
-                    player._address = player._address || getIp(player);
+        try {
+            discovery.getFavorites()
+                .then(favorites => {
+                    // Go through all players
+                    for (i = 0; i < discovery.players.length; i++) {
+                        player = discovery.players[i];
+                        if (!player) continue;
+                        player._address = player._address || getIp(player);
 
-                    ip = player._address;
-                    channels[ip] && takeSonosFavorites(ip, favorites);
-                }
-            })
-            .catch(e => adapter.log.error('Cannot getFavorites: ' + e));
+                        ip = player._address;
+                        channels[ip] && takeSonosFavorites(ip, favorites);
+                    }
+                })
+                .catch(e => adapter.log.error('Cannot getFavorites: ' + e));
+        }
+        catch (err) {
+            adapter.log.error('Cannot getFavorites: ' + err);
+        }
     } else if (event === 'queue') {
         player = discovery.getPlayerByUUID(data.uuid);
-        player._address = player._address || getIp(player);
+        if (player) {
+            player._address = player._address || getIp(player);
 
-        ip = player._address;
+            ip = player._address;
 
-        if (channels[ip]) {
-            channels[ip].uuid = data.uuid;
-            const _text = [];
-            for (let q = 0; q < data.queue.length; q++) {
-                _text.push(data.queue[q].artist + ' - ' + data.queue[q].title);
-            }
-            const qtext = _text.join(', ');
-            adapter.setState({device: 'root', channel: ip, state: 'queue'},  {val: qtext, ack: true});
-            adapter.log.debug('queue for ' + player.baseUrl + ': ' + qtext);
-        }
-        discovery.getFavorites()
-            .then(favorites => {
-                // Go through all players
-                for (i = 0; i < discovery.players.length; i++) {
-                    player = discovery.players[i];
-
-                    player._address = player._address || getIp(player);
-
-                    ip = player._address;
-                    channels[ip] && takeSonosFavorites(ip, favorites);
+            if (channels[ip]) {
+                channels[ip].uuid = data.uuid;
+                const _text = [];
+                for (let q = 0; q < data.queue.length; q++) {
+                    _text.push(data.queue[q].artist + ' - ' + data.queue[q].title);
                 }
-            })
-            .catch(e => adapter.log.error('Cannot getFavorites: ' + e));
+                const qtext = _text.join(', ');
+                adapter.setState({device: 'root', channel: ip, state: 'queue'}, {val: qtext, ack: true});
+                adapter.log.debug('queue for ' + player.baseUrl + ': ' + qtext);
+            }
+            discovery.getFavorites()
+                .then(favorites => {
+                    // Go through all players
+                    for (i = 0; i < discovery.players.length; i++) {
+                        player = discovery.players[i];
+
+                        player._address = player._address || getIp(player);
+
+                        ip = player._address;
+                        channels[ip] && takeSonosFavorites(ip, favorites);
+                    }
+                })
+                .catch(e => adapter.log.error('Cannot getFavorites: ' + e));
+        }
     } else {
         adapter.log.debug(event + ' ' + (typeof data === 'object' ? JSON.stringify(data) : data));
     }

@@ -30,10 +30,11 @@
     "@iobroker/adapter-core": "^2.4.0"
   },
   "devDependencies": {
+    "@alcalzone/release-script": "^1.8.1",
     "gulp": "^4.0.2",
-    "mocha": "^7.2.0",
+    "mocha": "^8.2.1",
     "chai": "^4.2.0",
-    "@iobroker/testing": "^2.2.0"
+    "@iobroker/testing": "^2.3.0"
   },
   "bugs": {
     "url": "https://github.com/ioBroker/ioBroker.sonos/issues"
@@ -43,7 +44,8 @@
     "test": "npm run test:package && npm run test:unit",
     "test:package": "mocha test/package --exit",
     "test:unit": "mocha test/unit --exit",
-    "test:integration": "mocha test/integration --exit"
+    "test:integration": "mocha test/integration --exit",
+    "release": "release-script"
   },
   "license": "MIT"
 }
