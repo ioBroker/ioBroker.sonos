@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "sonos-discovery": "^1.7.3",
-    "@iobroker/adapter-core": "^2.5.0"
+    "@iobroker/adapter-core": "^2.5.1"
   },
   "devDependencies": {
     "@alcalzone/release-script": "^2.2.1",
