@@ -45,7 +45,7 @@ Workaround for text to speech is to use the [SONOS HTTP API](https://github.com/
 	### __WORK IN PROGRESS__
 -->
 ## Changelog
-### __WORK IN PROGRESS__
+### 2.1.2 (2021-12-16)
 * (bluefox) Catch possible errors by the start and unload
 
 ### 2.1.1 (2020-11-08)
@@ -171,7 +171,6 @@ Workaround for text to speech is to use the [SONOS HTTP API](https://github.com/
 
 ### 0.0.5 (2014-11-24)
 * (bluefox) support of new naming concept
-
 
 ### 0.0.4 (2014-11-22)
 * (bluefox) support of text to speech
