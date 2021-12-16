@@ -1,6 +1,6 @@
 /**
  *      ioBroker Sonos Adapter
- *      Copyright (c) 12'2013-2020 Bluefox <dogafox@gmail.com>
+ *      Copyright (c) 12'2013-2021 Bluefox <dogafox@gmail.com>
  *      MIT License
  *
  *      derived from https://github.com/jishi/node-sonos-web-controller by Jimmy Shimizu
@@ -32,7 +32,7 @@ function startAdapter(options) {
     // id = sonos.0.192_168_1_55.state
     adapter.on('stateChange', (_id, state) => {
         if (!state || state.ack) return;
-        adapter.log.info('try to control id ' + _id + ' with ' + JSON.stringify(state));
+        adapter.log.info(`try to control id ${_id} with ${JSON.stringify(state)}`);
         // Try to find the object
         const id = adapter.idToDCS(_id);
 
@@ -657,14 +657,14 @@ function createChannel(name, ip, room, callback) {
     }
     const id = ip.replace(/[.\s]+/g, '_');
 
-    adapter.createChannel('root', id, 
+    adapter.createChannel('root', id,
         {
             role: 'media.music',
             name: name || ip
-        }, 
+        },
         {
-            ip: ip
-        }, 
+            ip
+        },
         (err, obj) => callback && callback(err, obj)
     );
 
@@ -675,9 +675,9 @@ function createChannel(name, ip, room, callback) {
         adapter.createState('root', id, states_list[j], states[states_list[j]]);
     }
     // Create cover object
-    adapter.setForeignObject(adapter.namespace + '.root.' + id + '.cover_png',
+    adapter.setForeignObject(`${adapter.namespace}.root.${id}.cover_png`,
         {
-            _id: adapter.namespace + '.root.' + id + '.cover_png',
+            _id: `${adapter.namespace}.root.${id}.cover_png`,
             common: {
                 name:   'Cover URL',
                 type:   'file',
@@ -688,15 +688,18 @@ function createChannel(name, ip, room, callback) {
             },
             native: {},
             type: 'state'
-        }, 
+        },
         err => err && adapter.log.error(err)
     );
 }
 
 function browse(callback) {
     const result = [];
-    for (let i = 0; i < discovery.players.length; i++) {
-        result.push({roomName: discovery.players[i].roomName, ip: getIp(discovery.players[i], true)});
+
+    if (discovery) {
+        for (let i = 0; i < discovery.players.length; i++) {
+            result.push({roomName: discovery.players[i].roomName, ip: getIp(discovery.players[i], true)});
+        }
     }
 
     callback && callback(result);
@@ -764,20 +767,22 @@ function text2speech(fileName, sonosIp, callback) {
         if (sonosIp) {
             sonosIp = sonosIp.replace(/[.\s]+/g, '_');
         }
-        // Play on all players
-        for (let i = 0; i < discovery.players.length; i++) {
-            discovery.players[i]._address = discovery.players[i]._address || getIp(discovery.players[i]);
+        if (discovery) {
+            // Play on all players
+            for (let i = 0; i < discovery.players.length; i++) {
+                discovery.players[i]._address = discovery.players[i]._address || getIp(discovery.players[i]);
 
-            const ip = discovery.players[i]._address;
+                const ip = discovery.players[i]._address;
 
-            if (sonosIp && ip !== sonosIp) {
-                continue;
+                if (sonosIp && ip !== sonosIp) {
+                    continue;
+                }
+
+                setTimeout(() =>
+                    playOnSonos(fileName, discovery.players[i].uuid, volume), 100);
             }
-
-            setTimeout(() =>
-                playOnSonos(fileName, discovery.players[i].uuid, volume), 100);
         }
-        
+
         callback && callback();
     } else if (fileName) {
         if (!adapter.config.webServer) {
@@ -785,7 +790,7 @@ function text2speech(fileName, sonosIp, callback) {
         }
 
         const parts = fileName.split('.');
-        const dest  = 'tts' + (currentFileNum++) + '.' + parts.pop();
+        const dest  = `tts${currentFileNum++}.${parts.pop()}`;
 
         if (currentFileNum > 10) {
             currentFileNum = 0;
@@ -808,11 +813,11 @@ function text2speech(fileName, sonosIp, callback) {
             }, err => {
                 adapter.setBinaryState(id, data, err => {
                     if (err) {
-                        adapter.log.error('Cannot upload ' + id + ': ' + err);
+                        adapter.log.error(`Cannot upload ${id}: ${err}`);
                         callback && callback(err);
                     } else {
                         adapter.getForeignObject(adapter.config.webServer, (err, obj) => {
-                            if (obj && obj.native) {
+                            if (obj && obj.native && discovery) {
                                 fileName = `http${obj.native.secure ? 's' : ''}://${discovery.localEndpoint}:${obj.native.port}/state/${id}`;
                                 if (sonosIp) {
                                     sonosIp = sonosIp.replace(/[.\s]+/g, '_');
@@ -973,15 +978,17 @@ function startPlayer(player, volume, noFadeIn, start, reason) {
 // Group management
 
 function getPlayerByName(name) {
-    for (const i in discovery.players) {
-        if (!discovery.players.hasOwnProperty(i)) {
-            continue;
-        }
+    if (discovery) {
+        for (const i in discovery.players) {
+            if (!discovery.players.hasOwnProperty(i)) {
+                continue;
+            }
 
-        const player = discovery.players[i];
+            const player = discovery.players[i];
 
-        if (player.roomName === name || getIp(player) === name || player._address === name || player.uuid === name) {
-            return player;
+            if (player.roomName === name || getIp(player) === name || player._address === name || player.uuid === name) {
+                return player;
+            }
         }
     }
 }
@@ -1068,12 +1075,14 @@ function wait(ms) {
 */
 // Promise
 function playOnSonos(uri, sonosUuid, volume) {
-    const player = discovery.getPlayerByUUID(sonosUuid);
-    if (!uri) {
-        player.tts && player.tts.immediatelyStopTTS();
-    } else {
-        player.tts = player.tts || (new TTS(adapter, player));
-        player.tts.add(uri, volume);
+    if (discovery) {
+        const player = discovery.getPlayerByUUID(sonosUuid);
+        if (!uri) {
+            player.tts && player.tts.immediatelyStopTTS();
+        } else {
+            player.tts = player.tts || (new TTS(adapter, player));
+            player.tts.add(uri, volume);
+        }
     }
 
     /*const now = Date.now();
@@ -1091,9 +1100,9 @@ function playOnSonos(uri, sonosUuid, volume) {
         player.queuedTts.push({uri: uri, volume: volume});
         return Promise.resolve();
     }
-    
+
     adapter.log.debug('Play on sonos[' + sonosUuid + ']: ' + uri + ', Volume: ' + volume);
-    
+
     if (player.prevTts && now - player.prevTts.ts <= 2000) { // use prev player state also for next tts
         player.tts = player.prevTts;
         player.prevTts = null;
@@ -1222,6 +1231,10 @@ function _getPs(playbackState) {
 // State of sonos device was changed
 function takeSonosState(ip, sonosState) {
     adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
+
+    if (!discovery) {
+        return;
+    }
     const ps       = _getPs(sonosState.playbackState);
     const player   = discovery.getPlayerByUUID(channels[ip].uuid);
     const playMode = sonosState.playMode;
@@ -1294,24 +1307,24 @@ function takeSonosState(ip, sonosState) {
         const stateName  = adapter.namespace + '.root.' + ip + '.cover_png';
         let fileName;
         let md5url;
-        
+
         if (sonosState.currentTrack.albumArtUri) {
             md5url   = crypto.createHash('md5').update(sonosState.currentTrack.albumArtUri).digest('hex');
             fileName = cacheDir + md5url;
         } else {
             fileName = defaultImg;
         }
-        
+
         if (!fs.existsSync(fileName)) {
             adapter.log.debug('Cover file does not exist. Fetching via HTTP');
-            
+
             http.get({
                 hostname: getIp(discovery.getPlayerByUUID(channels[ip].uuid), true),
                 port: 1400,
                 path: sonosState.currentTrack.albumArtUri
             }, res2 => {
                 adapter.log.debug('HTTP status code ' + res2.statusCode);
-                
+
                 if (res2.statusCode === 200) {
                     if (!fs.existsSync(fileName)) {
                         const cacheStream = fs.createWriteStream(fileName);
@@ -1347,7 +1360,7 @@ function takeSonosState(ip, sonosState) {
                 }
             }
             if (fileData) {
-                adapter.setBinaryState(stateName, fileData, () => 
+                adapter.setBinaryState(stateName, fileData, () =>
                     adapter.setState({device: 'root', channel: ip, state: 'current_cover'}, {val: '/state/' + stateName, ack: true}));
             }
         }
@@ -1366,7 +1379,7 @@ function takeSonosState(ip, sonosState) {
     }
 
     adapter.setState({device: 'root', channel: ip, state: 'volume'}, {val: sonosState.volume, ack: true});
-    
+
     if (sonosState.groupState) {
         adapter.setState({device: 'root', channel: ip, state: 'muted'}, {val: sonosState.groupState.mute, ack: true});
     }
@@ -1530,7 +1543,7 @@ function takeSonosFavorites(ip, favorites) {
 
 function getIp(player, noReplace) {
     const m = player.baseUrl.match(/http:\/\/([.\d]+):?/);
-    
+
     if (m && m[1]) {
         return noReplace ? m[1] : m[1].replace(/[.\s]+/g, '_');
     } else {
@@ -1539,22 +1552,21 @@ function getIp(player, noReplace) {
 }
 
 function processSonosEvents(event, data) {
-    let ip;
-    let i;
-    let player;
-    
+    if (!discovery) {
+        return;
+    }
+
     if (event === 'topology-change') {
         // TODO: Check
         let member_ip;
-        let j;
         let member;
-        
+
         if (typeof data.length === 'undefined') {
-            player = discovery.getPlayerByUUID(data.uuid);
+            const player = discovery.getPlayerByUUID(data.uuid);
             if (player) {
                 player._address = player._address || getIp(player);
 
-                ip = player._address;
+                const ip = player._address;
 
                 if (channels[ip]) {
                     channels[ip].uuid = data.uuid;
@@ -1562,24 +1574,26 @@ function processSonosEvents(event, data) {
                 }
             }
         } else if (data.length) {
-            for (i = 0; i < data.length; i++) {
-                player = discovery.getPlayerByUUID(data[i].uuid);
-                if (!player) continue;
+            for (let i = 0; i < data.length; i++) {
+                const player = discovery.getPlayerByUUID(data[i].uuid);
+                if (!player) {
+                    continue;
+                }
                 player._address = player._address || getIp(player);
 
-                ip = player._address;
+                const ip = player._address;
                 if (channels[ip]) {
                     channels[ip].uuid = data[i].uuid;
                     adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
                 }
                 const members = [];
                 const membersChannels = [];
-                for (j = 0; j < data[i].members.length; j++) {
+                for (let j = 0; j < data[i].members.length; j++) {
                     member = discovery.getPlayerByUUID(data[i].members[j].uuid);
                     member._address = member._address || getIp(member);
-                    
+
                     member_ip = member._address;
-                    
+
                     if (channels[member_ip]) {
                         channels[member_ip].uuid = data[i].members[j].uuid;
                         membersChannels.push(member_ip);
@@ -1599,11 +1613,11 @@ function processSonosEvents(event, data) {
             }
         }
     } else if (event === 'transport-state') {
-        player = discovery.getPlayerByUUID(data.uuid);
+        const player = discovery.getPlayerByUUID(data.uuid);
         if (player) {
             player._address = player._address || getIp(player);
 
-            ip = player._address;
+            const ip = player._address;
             if (channels[ip]) {
                 channels[ip].uuid = data.uuid;
                 takeSonosState(ip, data.state);
@@ -1617,13 +1631,15 @@ function processSonosEvents(event, data) {
         //     roomName:    this.roomName
         // }
 
-        for (i = 0; i < discovery.players.length; i++) {
+        for (let i = 0; i < discovery.players.length; i++) {
             if (discovery.players[i].roomName === data.roomName) {
-                player = discovery.getPlayerByUUID(discovery.players[i].uuid);
-                if (!player) continue;
+                const player = discovery.getPlayerByUUID(discovery.players[i].uuid);
+                if (!player) {
+                    continue;
+                }
                 player._address = player._address || getIp(player);
 
-                ip = player._address;
+                const ip = player._address;
 
                 if (channels[ip]) {
                     channels[ip].uuid = discovery.players[i].uuid;
@@ -1645,28 +1661,28 @@ function processSonosEvents(event, data) {
 //        for (i = 0; i < discovery.players.length; i++) {
 //            if (discovery.players[i].roomName === data.roomName) {
 //                player = discovery.getPlayerByUUID(discovery.players[i].uuid);
-                player = discovery.getPlayerByUUID(data.uuid);
-                if (player) {
-                    player._address = player._address || getIp(player);
+        const player = discovery.getPlayerByUUID(data.uuid);
+        if (player) {
+            player._address = player._address || getIp(player);
 
-                    ip = player._address;
+            const ip = player._address;
 
-                    if (channels[ip]) {
-                        //                    channels[ip].uuid = discovery.players[i].uuid;
-                        channels[ip].uuid = data.uuid;
-                        adapter.setState({device: 'root', channel: ip, state: 'muted'}, {val: data.newMute, ack: true});
-                        //adapter.setState({device: 'root', channel: ip, state: 'muted'},  {val: data.groupState.mute,  ack: true});
-                        //player._isMuted = data.groupState.mute;
-                        player._isMuted = data.newMute;
-                        adapter.log.debug('mute: Mute for ' + player.baseUrl + ': ' + data.newMute);
-                        adapter.setState({
-                            device: 'root',
-                            channel: ip,
-                            state: 'group_muted'
-                        }, {val: player.groupState.mute, ack: true});
-                        adapter.log.debug('group_muted: groupMuted for ' + player.baseUrl + ': ' + player.groupState.mute);
-                    }
-                }
+            if (channels[ip]) {
+                //                    channels[ip].uuid = discovery.players[i].uuid;
+                channels[ip].uuid = data.uuid;
+                adapter.setState({device: 'root', channel: ip, state: 'muted'}, {val: data.newMute, ack: true});
+                //adapter.setState({device: 'root', channel: ip, state: 'muted'},  {val: data.groupState.mute,  ack: true});
+                //player._isMuted = data.groupState.mute;
+                player._isMuted = data.newMute;
+                adapter.log.debug('mute: Mute for ' + player.baseUrl + ': ' + data.newMute);
+                adapter.setState({
+                    device: 'root',
+                    channel: ip,
+                    state: 'group_muted'
+                }, {val: player.groupState.mute, ack: true});
+                adapter.log.debug('group_muted: groupMuted for ' + player.baseUrl + ': ' + player.groupState.mute);
+            }
+        }
 //            }
 //        }
     }  else if (event === 'volume') {
@@ -1676,11 +1692,11 @@ function processSonosEvents(event, data) {
         //     newVolume:        state.volume,
         //     roomName:         _this.roomName
         // }
-        player = discovery.getPlayerByUUID(data.uuid);
+        const player = discovery.getPlayerByUUID(data.uuid);
         if (player) {
             player._address = player._address || getIp(player);
 
-            ip = player._address;
+            const ip = player._address;
             if (channels[ip]) {
                 channels[ip].uuid = data.uuid;
                 adapter.setState({device: 'root', channel: ip, state: 'volume'}, {val: data.newVolume, ack: true});
@@ -1704,11 +1720,11 @@ function processSonosEvents(event, data) {
         //     newMute:     state.mute,
         //     roomName:    _this.roomName
         // }
-        player = discovery.getPlayerByUUID(data.uuid);
+        const player = discovery.getPlayerByUUID(data.uuid);
         if (player) {
             player._address = player._address || getIp(player);
 
-            ip = player._address;
+            const ip = player._address;
             if (channels[ip]) {
                 channels[ip].uuid = data.uuid;
                 adapter.setState({device: 'root', channel: ip, state: 'muted'}, {val: data.newMute, ack: true});
@@ -1721,12 +1737,12 @@ function processSonosEvents(event, data) {
             discovery.getFavorites()
                 .then(favorites => {
                     // Go through all players
-                    for (i = 0; i < discovery.players.length; i++) {
-                        player = discovery.players[i];
+                    for (let i = 0; i < discovery.players.length; i++) {
+                        const player = discovery.players[i];
                         if (!player) continue;
                         player._address = player._address || getIp(player);
 
-                        ip = player._address;
+                        const ip = player._address;
                         channels[ip] && takeSonosFavorites(ip, favorites);
                     }
                 })
@@ -1736,11 +1752,11 @@ function processSonosEvents(event, data) {
             adapter.log.error('Cannot getFavorites: ' + err);
         }
     } else if (event === 'queue') {
-        player = discovery.getPlayerByUUID(data.uuid);
+        const player = discovery.getPlayerByUUID(data.uuid);
         if (player) {
             player._address = player._address || getIp(player);
 
-            ip = player._address;
+            const ip = player._address;
 
             if (channels[ip]) {
                 channels[ip].uuid = data.uuid;
@@ -1750,24 +1766,24 @@ function processSonosEvents(event, data) {
                 }
                 const qtext = _text.join(', ');
                 adapter.setState({device: 'root', channel: ip, state: 'queue'}, {val: qtext, ack: true});
-                adapter.log.debug('queue for ' + player.baseUrl + ': ' + qtext);
+                adapter.log.debug(`queue for ${player.baseUrl}: ${qtext}`);
             }
             discovery.getFavorites()
                 .then(favorites => {
                     // Go through all players
-                    for (i = 0; i < discovery.players.length; i++) {
-                        player = discovery.players[i];
+                    for (let i = 0; i < discovery.players.length; i++) {
+                        const player = discovery.players[i];
 
                         player._address = player._address || getIp(player);
 
-                        ip = player._address;
+                        const ip = player._address;
                         channels[ip] && takeSonosFavorites(ip, favorites);
                     }
                 })
                 .catch(e => adapter.log.error('Cannot getFavorites: ' + e));
         }
     } else {
-        adapter.log.debug(event + ' ' + (typeof data === 'object' ? JSON.stringify(data) : data));
+        adapter.log.debug(`${event} ${typeof data === 'object' ? JSON.stringify(data) : data}`);
     }
 }
 
@@ -1968,7 +1984,7 @@ function main() {
             })
             .catch(e => adapter.log.error('Cannot loadQueue: ' + e));
     });
-    
+
     discovery.on('list-change', data => {
         //console.log('queue-change', data);
         socketServer && socketServer.sockets.emit('favorites', data);
@@ -2018,7 +2034,7 @@ function main() {
                     callback(null, 'album');
                 });
             }
-        ], 
+        ],
             players.length, (err, result) => socket.emit('search-result', response));
     }*/
 }
