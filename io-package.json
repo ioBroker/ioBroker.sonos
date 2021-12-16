@@ -89,6 +89,18 @@
       }
     },
     "title": "SONOS",
+    "titleLang": {
+      "en": "Sonos",
+      "de": "Sonos",
+      "ru": "Sonos",
+      "pt": "Sonos",
+      "nl": "Sonos",
+      "fr": "Sonos",
+      "it": "Sonos",
+      "es": "Sonos",
+      "pl": "Sonos",
+      "zh-cn": "Sonos"
+    },
     "desc": {
       "en": "This adapter allows to monitor and control SONOS players from ioBroker",
       "de": "Mit diesem Adapter können Sie SONOS-Player von ioBroker aus überwachen und steuern",

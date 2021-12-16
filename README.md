@@ -34,7 +34,6 @@ Workaround for text to speech is to use the [SONOS HTTP API](https://github.com/
 * Show queue with covers
 * Rewrite with https://github.com/svrooij/node-sonos-ts
 
-
 ## Configuration
 - Web server - [optional] If web server enabled or not
 - Port       - If Webserver is enabled, so the port for this. Default 8083
@@ -45,7 +44,7 @@ Workaround for text to speech is to use the [SONOS HTTP API](https://github.com/
 	### __WORK IN PROGRESS__
 -->
 ## Changelog
-### 2.1.2 (2021-12-16)
+### __WORK IN PROGRESS__
 * (bluefox) Catch possible errors by the start and unload
 
 ### 2.1.1 (2020-11-08)
