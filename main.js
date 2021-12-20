@@ -1199,7 +1199,7 @@ async function addChannel(name, ip, room) {
         await adapter.createDeviceAsync('root', []);
     }
 
-    await createChannel(name, ip, room);
+    return await createChannel(name, ip, room);
 }
 /*
 function resetTts(player) {
@@ -1881,7 +1881,7 @@ async function syncConfig() {
             if (configToAdd.length) {
                 for (let r = 0; r < adapter.config.devices.length; r++) {
                     if (adapter.config.devices[r].ip && configToAdd.includes(adapter.config.devices[r].ip)) {
-                        const obj = await addChannel(adapter.config.devices[r].name, adapter.config.devices[r].ip, adapter.config.devices[r].room)
+                        const obj = await addChannel(adapter.config.devices[r].name, adapter.config.devices[r].ip, adapter.config.devices[r].room);
                         const _obj = await adapter.getObjectAsync(obj.id);
                         const sId = _obj.native.ip.replace(/[.\s]+/g, '_');
                         aliveIds.push('root.' + sId + '.alive');
