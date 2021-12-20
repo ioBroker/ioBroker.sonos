@@ -229,6 +229,18 @@ function startAdapter(options) {
                 adapter.setState && aliveIds.forEach(id =>
                         adapter.setState(id, false, true));
 
+                channels && Object.keys(channels).forEach(ip => {
+                    if (channels[ip] && channels[ip].elapsedTimer) {
+                        clearInterval(channels[ip].elapsedTimer);
+                        channels[ip].elapsedTimer = null;
+                    }
+
+                    if (channels[ip] && channels[ip].timerVolume) {
+                        clearTimeout(channels[ip].timerVolume);
+                        channels[ip].timerVolume = null;
+                    }
+                });
+
                 adapter.log && adapter.log.info && adapter.log.info('terminating');
             }
 
@@ -1263,12 +1275,13 @@ function takeSonosState(ip, sonosState) {
                 channels[ip].elapsedTimer = setInterval(ip_ =>{
                     channels[ip_].elapsed += ((adapter.config.elapsedInterval || 5000) / 1000);
 
-                    if (channels[ip_].elapsed > channels[ip_].duration) channels[ip_].elapsed = channels[ip_].duration;
+                    if (channels[ip_].elapsed > channels[ip_].duration) {
+                        channels[ip_].elapsed = channels[ip_].duration;
+                    }
 
                     adapter.setState({device: 'root', channel: ip, state: 'seek'},              {val: Math.round((channels[ip_].elapsed / channels[ip_].duration) * 1000) / 10, ack: true});
                     adapter.setState({device: 'root', channel: ip, state: 'current_elapsed'},   {val: channels[ip_].elapsed, ack: true});
                     adapter.setState({device: 'root', channel: ip, state: 'current_elapsed_s'}, {val: toFormattedTime(channels[ip_].elapsed), ack: true});
-
                 }, adapter.config.elapsedInterval || 5000, ip);
             }
         } else {
@@ -1708,16 +1721,18 @@ function processSonosEvents(event, data) {
                 channels[ip].uuid = data.uuid;
                 adapter.setState({device: 'root', channel: ip, state: 'volume'}, {val: data.newVolume, ack: true});
                 player._volume = data.newVolume;
-                adapter.log.debug('volume: Volume for ' + player.baseUrl + ': ' + data.newVolume);
+                adapter.log.debug(`volume: Volume for ${player.baseUrl}: ${data.newVolume}`);
 
-                setTimeout(() => {
+                channels[ip].timerVolume = setTimeout(_ip => {
+                    channels[_ip].timerVolume = null;
+
                     adapter.setState({
                         device: 'root',
-                        channel: ip,
+                        channel: _ip,
                         state: 'group_volume'
                     }, {val: player.groupState.volume, ack: true});
-                    adapter.log.debug('group_volume: groupVolume for ' + player.baseUrl + ': ' + player.groupState.volume);
-                }, 2000);
+                    adapter.log.debug(`group_volume: groupVolume for ${player.baseUrl}: ${player.groupState.volume}`);
+                }, 2000, ip);
             }
         }
     } else if (event === 'mute') {
