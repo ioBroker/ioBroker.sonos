@@ -187,7 +187,7 @@ function startAdapter(options) {
                         .catch(error => adapter.log.error('Cannot replaceWithFavorite: ' + error));
                 } else
                 if (id.state === 'tts') {
-                    adapter.log.debug('Play TTS file ' + state.val + ' on ' + id.channel);
+                    adapter.log.debug(`Play TTS file ${state.val} on ${id.channel}`);
                     text2speech(state.val, id.channel);
                 } else if (id.state === 'add_to_group') {
                     promise = addToGroup(state.val, player); //xxxx
@@ -215,7 +215,8 @@ function startAdapter(options) {
                     .then(() => adapter.log.debug('command done'))
                     .catch(e => adapter.log.error(e));
             } else {
-                adapter.log.warn('SONOS "' + channels[id.channel].uuid + '" not found');
+                adapter.log.warn(`SONOS "${id.channel}"/"${channels[id.channel].uuid}" not found`);
+                discovery.players.forEach(player => adapter.log.debug(`UUID: ${player.uuid} in ${player.roomName} / ${player.baseUrl}`));
             }
         }
     });
@@ -384,7 +385,7 @@ const newGroupStates = {
     }
 };
 
-function createChannel(name, ip, room, callback) {
+async function createChannel(name, ip, room) {
     const states = {
         'state_simple': {      // media.state -            Text state of player: stop, play, pause (read, write)
             def:    false,
@@ -591,7 +592,7 @@ function createChannel(name, ip, room, callback) {
         },
         'favorites_list_array': {    // media.favorites.array -   list of favorite channels in JSON format (read only)
             def:    '',
-            type:   'object',
+            type:   'array',
             read:   true,
             write:  false,
             role:   'media.favorites.array',
@@ -644,38 +645,45 @@ function createChannel(name, ip, room, callback) {
             desc:   'Crossfade mode',
             name:   'Crossfade'
         },
-
+        'queue': { // queue
+            def:    '',
+            type:   'string',
+            read:   true,
+            write:  false,
+            role:   'state',
+            name:   'Play queue'
+        },
     };
 
     for (const g in newGroupStates) {
         states[g] = newGroupStates[g];
     }
 
-    const states_list = [];
+    const statesList = [];
     for (const state in states) {
-        states_list.push(state);
+        statesList.push(state);
     }
     const id = ip.replace(/[.\s]+/g, '_');
 
-    adapter.createChannel('root', id,
+    const obj = await adapter.createChannelAsync('root', id,
         {
             role: 'media.music',
             name: name || ip
         },
         {
             ip
-        },
-        (err, obj) => callback && callback(err, obj)
+        }
     );
 
     if (room) {
-        adapter.addChannelToEnum('room', room, 'root', id);
+        await adapter.addChannelToEnumAsync('room', room, 'root', id);
     }
-    for (let j = 0; j < states_list.length; j++) {
-        adapter.createState('root', id, states_list[j], states[states_list[j]]);
+    for (let j = 0; j < statesList.length; j++) {
+        await adapter.createStateAsync('root', id, statesList[j], states[statesList[j]]);
     }
+
     // Create cover object
-    adapter.setForeignObject(`${adapter.namespace}.root.${id}.cover_png`,
+    await adapter.setForeignObjectAsync(`${adapter.namespace}.root.${id}.cover_png`,
         {
             _id: `${adapter.namespace}.root.${id}.cover_png`,
             common: {
@@ -688,9 +696,10 @@ function createChannel(name, ip, room, callback) {
             },
             native: {},
             type: 'state'
-        },
-        err => err && adapter.log.error(err)
+        }
     );
+
+    return obj;
 }
 
 function browse(callback) {
@@ -1183,16 +1192,14 @@ function playOnSonos(uri, sonosUuid, volume) {
     }*/
 }
 
-function addChannel(name, ip, room, callback) {
-    adapter.getObject('root', (err, obj) => {
-        if (err || !obj) {
-            // if root does not exist, channel will not be created
-            adapter.createDevice('root', [], () =>
-                createChannel(name, ip, room, callback));
-        } else {
-            createChannel(name, ip, room, callback);
-        }
-    });
+async function addChannel(name, ip, room) {
+    const obj = await adapter.getObjectAsync('root');
+    if (!obj) {
+        // if root does not exist, channel will not be created
+        await adapter.createDeviceAsync('root', []);
+    }
+
+    await createChannel(name, ip, room);
 }
 /*
 function resetTts(player) {
@@ -1532,13 +1539,13 @@ function takeSonosFavorites(ip, favorites) {
 
 	Object.keys(favorites).forEach(favorite => {
         if (favorites[favorite].title) {
-            sFavorites += ((sFavorites) ? ', ' : '') + favorites[favorite].title;
+            sFavorites += (sFavorites ? ', ' : '') + favorites[favorite].title;
 			aFavorites.push(favorites[favorite].title);
         }
     });
 
     adapter.setState({device: 'root', channel: ip, state: 'favorites_list'},       {val: sFavorites, ack: true});
-    adapter.setState({device: 'root', channel: ip, state: 'favorites_list_array'}, {val: aFavorites, ack: true});
+    adapter.setState({device: 'root', channel: ip, state: 'favorites_list_array'}, {val: JSON.stringify(aFavorites), ack: true});
 }
 
 function getIp(player, noReplace) {
@@ -1762,7 +1769,7 @@ function processSonosEvents(event, data) {
                 channels[ip].uuid = data.uuid;
                 const _text = [];
                 for (let q = 0; q < data.queue.length; q++) {
-                    _text.push(data.queue[q].artist + ' - ' + data.queue[q].title);
+                    _text.push(`${data.queue[q].artist} - ${data.queue[q].title}`);
                 }
                 const qtext = _text.join(', ');
                 adapter.setState({device: 'root', channel: ip, state: 'queue'}, {val: qtext, ack: true});
@@ -1787,127 +1794,135 @@ function processSonosEvents(event, data) {
     }
 }
 
-function checkNewGroupStates(channel) {
+async function checkNewGroupStates(channel) {
     for (const g in newGroupStates) {
-        adapter.getState(channel._id + '.' + g, function (_g, err, obj) {
-            if (err || !obj) {
-                const dcs = adapter.idToDCS(channel._id + '.' + _g);
-                adapter.createState(dcs.device, dcs.channel, dcs.state, newGroupStates[_g]);
-            }
-        }.bind(null, g));
+        let obj;
+        try {
+            obj = await adapter.getStateAsync(channel._id + '.' + g);
+        } catch (err) {
+            obj = null;
+        }
+
+        if (!obj) {
+            const dcs = adapter.idToDCS(channel._id + '.' + g);
+            await adapter.createStateAsync(dcs.device, dcs.channel, dcs.state, newGroupStates[g]);
+        }
     }
 }
 
-function syncConfig() {
+async function syncConfig() {
     channels = {};
 
-    adapter.getDevices((err, devices) => {
-        if (devices && devices.length) {
-            // Go through all devices
-            for (let i = 0; i < devices.length; i++) {
+    const devices = await adapter.getDevicesAsync();
 
-                adapter.getChannelsOf(devices[i].common.name, (err, _channels) => {
-                    const configToDelete = [];
-                    const configToAdd    = [];
-                    let k;
-                    if (adapter.config.devices) {
-                        for (k = 0; k < adapter.config.devices.length; k++) {
-                            configToAdd.push(adapter.config.devices[k].ip);
-                        }
-                    }
+    if (devices && devices.length) {
+        // Go through all devices
+        for (let i = 0; i < devices.length; i++) {
+            const _channels = await adapter.getChannelsOfAsync(devices[i].common.name);
+            const configToDelete = [];
+            const configToAdd    = [];
+            let k;
+            if (adapter.config.devices) {
+                for (k = 0; k < adapter.config.devices.length; k++) {
+                    configToAdd.push(adapter.config.devices[k].ip);
+                }
+            }
 
-                    if (_channels) {
-                        for (let j = 0; j < _channels.length; j++) {
-                            const ip = _channels[j].native.ip;
-                            const id = ip.replace(/[.\s]+/g, '_');
-                            const pos = configToAdd.indexOf(ip);
-                            if (pos !== -1) {
-                                checkNewGroupStates(_channels[j]);
-                                configToAdd.splice(pos, 1);
-                                // Check name and room
-                                for (let u = 0; u < adapter.config.devices.length; u++) {
-                                    if (adapter.config.devices[u].ip === ip) {
-                                        if (_channels[j].common.name !== (adapter.config.devices[u].name || adapter.config.devices[u].ip)) {
-                                            adapter.extendObject(_channels[j]._id, {
-                                                common: {
-                                                    name: (adapter.config.devices[u].name || adapter.config.devices[u].ip)
-                                                },
-                                                type: 'channel'
-                                            });
-                                        }
-                                        if (adapter.config.devices[u].room) {
-                                            adapter.addChannelToEnum('room', adapter.config.devices[u].room, 'root', id);
-                                        } else {
-                                            adapter.deleteChannelFromEnum('room', 'root', id);
-                                        }
+            if (_channels) {
+                for (let j = 0; j < _channels.length; j++) {
+                    const ip = _channels[j].native.ip;
+                    const id = ip.replace(/[.\s]+/g, '_');
+                    const pos = configToAdd.indexOf(ip);
+                    if (pos !== -1) {
+                        await checkNewGroupStates(_channels[j]);
+                        configToAdd.splice(pos, 1);
+                        // Check name and room
+                        for (let u = 0; u < adapter.config.devices.length; u++) {
+                            if (adapter.config.devices[u].ip === ip) {
+                                if (_channels[j].common.name !== (adapter.config.devices[u].name || adapter.config.devices[u].ip)) {
+                                    await adapter.extendObjectAsync(_channels[j]._id, {
+                                        common: {
+                                            name: (adapter.config.devices[u].name || adapter.config.devices[u].ip)
+                                        },
+                                        type: 'channel'
+                                    });
+                                }
+                                if (adapter.config.devices[u].room) {
+                                    // BF 2021.12.20: there is an error in js-controller 3.3
+                                    adapter.addChannelToEnum('room', adapter.config.devices[u].room, 'root', id);
+                                    // When js-controller 4.x will be common, replace it with
+                                    // await adapter.addChannelToEnumAsync('room', adapter.config.devices[u].room, 'root', id);
+                                } else {
+                                    try {
+                                        await adapter.deleteChannelFromEnumAsync('room', 'root', id);
+                                    } catch (err) {
+                                        adapter.log.error('Cannot delete channel from enum: ' + err.message);
                                     }
                                 }
-
-                                const sId = ip.replace(/[.\s]+/g, '_');
-                                channels[sId] = {
-                                    uuid:     '',
-                                    player:   null,
-                                    duration: 0,
-                                    elapsed:  0,
-                                    obj:      _channels[j]
-                                };
-                                adapter.setState('root.' + sId + '.alive', false, true);
-                                aliveIds.push('root.' + sId + '.alive');
-                            } else {
-                                configToDelete.push(ip);
                             }
                         }
-                    }
 
-                    if (configToAdd.length) {
-                        for (let r = 0; r < adapter.config.devices.length; r++) {
-                            if (adapter.config.devices[r].ip && configToAdd.indexOf(adapter.config.devices[r].ip) !== -1) {
-                                addChannel(adapter.config.devices[r].name, adapter.config.devices[r].ip, adapter.config.devices[r].room, (err, obj) => {
-                                    adapter.getObject(obj.id, (err, obj) => {
-                                        const sId = obj.native.ip.replace(/[.\s]+/g, '_');
-                                        aliveIds.push('root.' + sId + '.alive');
-
-                                        channels[sId] = {
-                                            uuid:     '',
-                                            player:   null,
-                                            duration: 0,
-                                            elapsed:  0,
-                                            obj:      obj
-                                        };
-                                    });
-                                });
-                            }
-                        }
-                    }
-
-                    if (configToDelete.length) {
-                        for (let e = 0; e < configToDelete.length; e++) {
-                            if (configToDelete[e]) {
-                                const _id = configToDelete[e].replace(/[.\s]+/g, '_');
-                                adapter.deleteChannelFromEnum('room', 'root', _id);
-                                adapter.deleteChannel('root', _id);
-                            }
-                        }
-                    }
-                });
-            }
-        } else {
-            for (let r = 0; r < adapter.config.devices.length; r++) {
-                if (!adapter.config.devices[r].ip) continue;
-                addChannel(adapter.config.devices[r].name, adapter.config.devices[r].ip, adapter.config.devices[r].room, (err, obj) => {
-                    adapter.getObject(obj.id, (err, obj) => {
-                        channels[obj.native.ip.replace(/[.\s]+/g, '_')] = {
+                        const sId = ip.replace(/[.\s]+/g, '_');
+                        channels[sId] = {
                             uuid:     '',
                             player:   null,
                             duration: 0,
                             elapsed:  0,
-                            obj:      obj
+                            obj:      _channels[j]
                         };
-                    });
-                });
+                        await adapter.setStateAsync('root.' + sId + '.alive', false, true);
+                        aliveIds.push('root.' + sId + '.alive');
+                    } else {
+                        configToDelete.push(ip);
+                    }
+                }
+            }
+
+            if (configToAdd.length) {
+                for (let r = 0; r < adapter.config.devices.length; r++) {
+                    if (adapter.config.devices[r].ip && configToAdd.includes(adapter.config.devices[r].ip)) {
+                        const obj = await addChannel(adapter.config.devices[r].name, adapter.config.devices[r].ip, adapter.config.devices[r].room)
+                        const _obj = await adapter.getObjectAsync(obj.id);
+                        const sId = _obj.native.ip.replace(/[.\s]+/g, '_');
+                        aliveIds.push('root.' + sId + '.alive');
+
+                        channels[sId] = {
+                            uuid:     '',
+                            player:   null,
+                            duration: 0,
+                            elapsed:  0,
+                            obj:      _obj
+                        };
+                    }
+                }
+            }
+
+            if (configToDelete.length) {
+                for (let e = 0; e < configToDelete.length; e++) {
+                    if (configToDelete[e]) {
+                        const _id = configToDelete[e].replace(/[.\s]+/g, '_');
+                        await adapter.deleteChannelFromEnumAsync('room', 'root', _id);
+                        await adapter.deleteChannelAsync('root', _id);
+                    }
+                }
             }
         }
-    });
+    } else {
+        for (let r = 0; r < adapter.config.devices.length; r++) {
+            if (!adapter.config.devices[r].ip) {
+                continue;
+            }
+            const obj = await addChannel(adapter.config.devices[r].name, adapter.config.devices[r].ip, adapter.config.devices[r].room);
+            const _obj = adapter.getObjectAsync(obj.id);
+            channels[_obj.native.ip.replace(/[.\s]+/g, '_')] = {
+                uuid:     '',
+                player:   null,
+                duration: 0,
+                elapsed:  0,
+                obj:      _obj
+            };
+        }
+    }
 }
 
 let discovery = null;
@@ -1917,126 +1932,128 @@ let cacheDir  = '';
 function main() {
     adapter.config.fadeIn  = parseInt(adapter.config.fadeIn,  10) || 0;
     adapter.config.fadeOut = parseInt(adapter.config.fadeOut, 10) || 0;
-    syncConfig();
-    adapter.subscribeStates('*');
+    syncConfig()
+        .then(() => {
+            const _path = tools.getConfigFileName().split('/');
+            _path.pop();
+            cacheDir = _path.join('/') + '/sonosCache/';
 
-    const _path = tools.getConfigFileName().split('/');
-    _path.pop();
-    cacheDir = _path.join('/') + '/sonosCache/';
+            // create directory for cached files
+            !fs.existsSync(cacheDir) && fs.mkdirSync(cacheDir);
 
-    // create directory for cached files
-    !fs.existsSync(cacheDir) && fs.mkdirSync(cacheDir);
+            discovery = new SonosDiscovery({
+                household:  null,
+                log:        adapter.log, //logger,
+                cacheDir:   cacheDir,
+                port:       adapter.config.webserverPort
+            });
 
-    discovery = new SonosDiscovery({
-        household:  null,
-        log:        adapter.log, //logger,
-        cacheDir:   cacheDir,
-        port:       adapter.config.webserverPort
-    });
+            // from here the code is mostly from https://github.com/jishi/node-sonos-web-controller/blob/master/server.js
 
-    // from here the code is mostly from https://github.com/jishi/node-sonos-web-controller/blob/master/server.js
+            discovery.on('topology-change', data => {
+                socketServer && socketServer.sockets.emit('topology-change', discovery.players);
+                processSonosEvents('topology-change', data);
+            });
 
-    discovery.on('topology-change', data => {
-        socketServer && socketServer.sockets.emit('topology-change', discovery.players);
-        processSonosEvents('topology-change', data);
-    });
+            discovery.on('transport-state', data => {
+                socketServer && socketServer.sockets.emit('transport-state', data);
+                processSonosEvents('transport-state', data);
+            });
 
-    discovery.on('transport-state', data => {
-        socketServer && socketServer.sockets.emit('transport-state', data);
-        processSonosEvents('transport-state', data);
-    });
+            discovery.on('group-volume', data => {
+                socketServer && socketServer.sockets.emit('group-volume', data);
+                processSonosEvents('group-volume', data);
+            });
 
-    discovery.on('group-volume', data => {
-        socketServer && socketServer.sockets.emit('group-volume', data);
-        processSonosEvents('group-volume', data);
-    });
+            discovery.on('volume-change', data => {
+                socketServer && socketServer.sockets.emit('volume', data);
+                processSonosEvents('volume', data);
+            });
 
-    discovery.on('volume-change', data => {
-        socketServer && socketServer.sockets.emit('volume', data);
-        processSonosEvents('volume', data);
-    });
+            discovery.on('group-mute', data => {
+                socketServer && socketServer.sockets.emit('group-mute', data);
+                processSonosEvents('group-mute', data);
+            });
 
-    discovery.on('group-mute', data => {
-        socketServer && socketServer.sockets.emit('group-mute', data);
-        processSonosEvents('group-mute', data);
-    });
+            discovery.on('mute-change', data => {
+                socketServer && socketServer.sockets.emit('mute', data);
+                processSonosEvents('mute', data);
+            });
 
-    discovery.on('mute-change', data => {
-        socketServer && socketServer.sockets.emit('mute', data);
-        processSonosEvents('mute', data);
-    });
+            discovery.on('favorites', data => {
+                socketServer && socketServer.sockets.emit('favorites', data);
+                processSonosEvents('favorites', data);
+            });
 
-    discovery.on('favorites', data => {
-        socketServer && socketServer.sockets.emit('favorites', data);
-        processSonosEvents('favorites', data);
-    });
+            discovery.on('queue-change', player => {
+                //console.log('queue-change', data);
+                return player.getQueue()
+                    .then(queue => {
+                        queues[player.uuid] = queue;
+                        return queue;
+                    })
+                    .then(queue => {
+                        socketServer && socketServer.sockets.emit('queue', {uuid: player.uuid, queue});
+                        processSonosEvents('queue', {uuid: player.uuid, queue});
+                    })
+                    .catch(e => adapter.log.error('Cannot loadQueue: ' + e));
+            });
 
-    discovery.on('queue-change', player => {
-        //console.log('queue-change', data);
-        return player.getQueue()
-            .then(queue => {
-                queues[player.uuid] = queue;
-                return queue;
-            })
-            .then(queue => {
-                socketServer && socketServer.sockets.emit('queue', {uuid: player.uuid, queue});
-                processSonosEvents('queue', {uuid: player.uuid, queue});
-            })
-            .catch(e => adapter.log.error('Cannot loadQueue: ' + e));
-    });
+            discovery.on('list-change', data => {
+                //console.log('queue-change', data);
+                socketServer && socketServer.sockets.emit('favorites', data);
+                processSonosEvents('favorites', data);
+            });
 
-    discovery.on('list-change', data => {
-        //console.log('queue-change', data);
-        socketServer && socketServer.sockets.emit('favorites', data);
-        processSonosEvents('favorites', data);
-    });
+            /*function search(term, socket) {
+                adapter.log.debug('search for', term);
+                let playerCycle = 0;
+                const players = [];
 
-    /*function search(term, socket) {
-        adapter.log.debug('search for', term);
-        let playerCycle = 0;
-        const players = [];
+                for (const i in discovery.players) {
+                    if (discovery.players.hasOwnProperty(i)) {
+                        players.push(discovery.players[i]);
+                    }
+                }
 
-        for (const i in discovery.players) {
-            if (discovery.players.hasOwnProperty(i)) {
-                players.push(discovery.players[i]);
-            }
-        }
+                function getPlayer() {
+                    return players[playerCycle++ % players.length];
+                }
 
-        function getPlayer() {
-            return players[playerCycle++ % players.length];
-        }
+                const response = {};
 
-        const response = {};
+                async.parallelLimit([
+                    callback => {
+                        const player = getPlayer();
+                        console.log('fetching from', player.baseUrl);
+                        player.browse('A:ARTIST:' + term, 0, 600, (success, result) => {
+                            console.log(success, result);
+                            response.byArtist = result;
+                            callback(null, 'artist');
+                        });
+                    },
+                    callback => {
+                        const player = getPlayer();
+                        console.log('fetching from', player.baseUrl);
+                        player.browse('A:TRACKS:' + term, 0, 600, (success, result) => {
+                            response.byTrack = result;
+                            callback(null, 'track');
+                        });
+                    },
+                    callback => {
+                        const player = getPlayer();
+                        console.log('fetching from', player.baseUrl);
+                        player.browse('A:ALBUM:' + term, 0, 600, (success, result) => {
+                            response.byAlbum = result;
+                            callback(null, 'album');
+                        });
+                    }
+                ],
+                    players.length, (err, result) => socket.emit('search-result', response));
+            }*/
 
-        async.parallelLimit([
-            callback => {
-                const player = getPlayer();
-                console.log('fetching from', player.baseUrl);
-                player.browse('A:ARTIST:' + term, 0, 600, (success, result) => {
-                    console.log(success, result);
-                    response.byArtist = result;
-                    callback(null, 'artist');
-                });
-            },
-            callback => {
-                const player = getPlayer();
-                console.log('fetching from', player.baseUrl);
-                player.browse('A:TRACKS:' + term, 0, 600, (success, result) => {
-                    response.byTrack = result;
-                    callback(null, 'track');
-                });
-            },
-            callback => {
-                const player = getPlayer();
-                console.log('fetching from', player.baseUrl);
-                player.browse('A:ALBUM:' + term, 0, 600, (success, result) => {
-                    response.byAlbum = result;
-                    callback(null, 'album');
-                });
-            }
-        ],
-            players.length, (err, result) => socket.emit('search-result', response));
-    }*/
+            adapter.subscribeStates('*');
+        });
 }
 
 // If started as allInOne mode => return function to create instance
