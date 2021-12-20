@@ -1,8 +1,20 @@
 {
   "common": {
     "name": "sonos",
-    "version": "2.1.5",
+    "version": "2.1.6",
     "news": {
+      "2.1.6": {
+        "en": "Corrected error with \"SONOS not found\"",
+        "de": "Fehler mit \"SONOS nicht gefunden\" behoben",
+        "ru": "Исправлена ошибка \"SONOS не найден\".",
+        "pt": "Erro corrigido com \"SONOS não encontrado\"",
+        "nl": "Fout gecorrigeerd met \"SONOS niet gevonden\"",
+        "fr": "Erreur corrigée avec \"SONOS introuvable\"",
+        "it": "Errore corretto con \"SONOS non trovato\"",
+        "es": "Error corregido con \"SONOS no encontrado\"",
+        "pl": "Poprawiony błąd „Nie znaleziono SONOS”",
+        "zh-cn": "更正了“找不到 SONOS”的错误"
+      },
       "2.1.5": {
         "en": "Corrected error with \"SONOS not found\"",
         "de": "Fehler mit \"SONOS nicht gefunden\" behoben",
@@ -74,18 +86,6 @@
         "es": "Refactorización TTS",
         "pl": "Refaktoryzacja TTS",
         "zh-cn": "TTS重构"
-      },
-      "2.0.2": {
-        "en": "Implemented the direct http/https TTS support\nRefactoring",
-        "de": "Implementierung der direkten http/https TTS-Unterstützung\nRefactoring",
-        "ru": "Реализована прямая поддержка http/https TTS\nРефакторинг",
-        "pt": "Implementou o suporte direto http/https TTS\nReestruturação",
-        "nl": "Implementeerde de directe http/https TTS-ondersteuning\nRefactoring",
-        "fr": "Implémentation de la prise en charge directe http/https TTS\nRefactoring",
-        "it": "Implementato il supporto diretto TTS http/https\nrefactoring",
-        "es": "Implementado el soporte directo http/https TTS\nRefactorización",
-        "pl": "Wdrożono bezpośrednią obsługę TTS http/https\nRefaktoryzacja",
-        "zh-cn": "实现了直接的http/https TTS支持\n重构"
       }
     },
     "title": "SONOS",
