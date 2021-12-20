@@ -1,8 +1,20 @@
 {
   "common": {
     "name": "sonos",
-    "version": "2.1.6",
+    "version": "2.1.7",
     "news": {
+      "2.1.7": {
+        "en": "Corrected error with \"SONOS not found\"",
+        "de": "Fehler mit \"SONOS nicht gefunden\" behoben",
+        "ru": "Исправлена ошибка \"SONOS не найден\".",
+        "pt": "Erro corrigido com \"SONOS não encontrado\"",
+        "nl": "Fout gecorrigeerd met \"SONOS niet gevonden\"",
+        "fr": "Erreur corrigée avec \"SONOS introuvable\"",
+        "it": "Errore corretto con \"SONOS non trovato\"",
+        "es": "Error corregido con \"SONOS no encontrado\"",
+        "pl": "Poprawiony błąd „Nie znaleziono SONOS”",
+        "zh-cn": "更正了“找不到 SONOS”的错误"
+      },
       "2.1.6": {
         "en": "Corrected error with \"SONOS not found\"",
         "de": "Fehler mit \"SONOS nicht gefunden\" behoben",
@@ -74,18 +86,6 @@
         "es": "Prevenir caso de bloqueo (Sentry IOBROKER-JS-CONTROLLER-S7, # 78)",
         "pl": "Zapobiegaj awariom (Sentry IOBROKER-JS-CONTROLLER-S7, # 78)",
         "zh-cn": "防止发生崩溃情况（Sentry IOBROKER-JS-CONTROLLER-S7，＃78）"
-      },
-      "2.1.0": {
-        "en": "TTS Refactoring",
-        "de": "TTS Refactoring",
-        "ru": "TTS Рефакторинг",
-        "pt": "Refatoração TTS",
-        "nl": "TTS Refactoring",
-        "fr": "Refactoring TTS",
-        "it": "Refactoring TTS",
-        "es": "Refactorización TTS",
-        "pl": "Refaktoryzacja TTS",
-        "zh-cn": "TTS重构"
       }
     },
     "title": "SONOS",
