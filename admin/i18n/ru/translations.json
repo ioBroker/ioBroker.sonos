@@ -1,0 +1,21 @@
+{
+    "Devices": "Устройства",
+    "Fade in (text2speech)(ms):": "Нарастание речи в мс",
+    "Fade out (text2speech)(ms):": "Затухание речи в мс",
+    "IP Address": "IP Адрес",
+    "Name": "Имя",
+    "Port:": "Порт",
+    "Room": "Комната",
+    "SONOS Server settings": "Настройки веб сервера SONOS",
+    "SONOS adapter settings": "Настройки драйвера SONOS ",
+    "SONOS devices": "SONOS Устройства",
+    "Search": "Поиск",
+    "Update of elapsed time(ms):": "Обновления таймера композиции (мс)",
+    "Web server:": "Веб сервер",
+    "tooltip_elapsedInterval": "Как часто будет обновлятся текущее время проигрывания. Не делайте слишком маленьким, что бы уменьшить нагрузку на систему.",
+    "tooltip_fadeIn": "Нарастание громкости для произношения текста. 0 - выключено",
+    "tooltip_fadeOut": "Затухание громкости для произношения текста. 0 - выключено",
+    "tooltip_webserverEnabled": "Показывать веб интерфейс SONOS",
+    "tooltip_webserverPort": "Порт для веб интерфейса",
+    "update adapter information": "Поиск устройств"
+}

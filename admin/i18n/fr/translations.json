@@ -1,0 +1,21 @@
+{
+    "Devices": "Dispositifs",
+    "Fade in (text2speech)(ms):": "Fondu pour les sorties vocales (ms)",
+    "Fade out (text2speech)(ms):": "Fondu sortant pour les sorties vocales (ms)",
+    "IP Address": "Adresse IP",
+    "Name": "prénom",
+    "Port:": "Port",
+    "Room": "Chambre",
+    "SONOS Server settings": "Paramètres du serveur SONOS",
+    "SONOS adapter settings": "Paramètres de l'adaptateur SONOS",
+    "SONOS devices": "Les appareils SONOS",
+    "Search": "Chercher",
+    "Update of elapsed time(ms):": "Mise à jour du temps écoulé (ms)",
+    "Web server:": "serveur Web",
+    "tooltip_elapsedInterval": "À quelle fréquence sera mis à jour le temps écoulé pour les pistes en ms. Ne le faites pas trop petit pour réduire la charge sur le système.",
+    "tooltip_fadeIn": "Fade in interval en ms pour les annonces vocales. 0 - Le fondu entrant est désactivé.",
+    "tooltip_fadeOut": "Fade out intervalle en ms pour les annonces vocales. 0 - Le fondu est désactivé.",
+    "tooltip_webserverEnabled": "Afficher l'interface Web de SONOS",
+    "tooltip_webserverPort": "Port pour l'interface Web",
+    "update adapter information": "Parcourir pour les appareils"
+}

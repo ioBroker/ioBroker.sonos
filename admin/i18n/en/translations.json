@@ -1,0 +1,21 @@
+{
+    "Devices": "Devices",
+    "Fade in (text2speech)(ms):": "Fade in for voice outputs(ms)",
+    "Fade out (text2speech)(ms):": "Fade out for voice outputs(ms)",
+    "IP Address": "IP Address",
+    "Name": "Name",
+    "Port:": "Port",
+    "Room": "Room",
+    "SONOS Server settings": "SONOS Server settings",
+    "SONOS adapter settings": "SONOS adapter settings",
+    "SONOS devices": "SONOS devices",
+    "Search": "Search",
+    "Update of elapsed time(ms):": "Update of elapsed time(ms)",
+    "Web server:": "Web server",
+    "tooltip_elapsedInterval": "How often will be updated elapsed time for tracks in ms. Do not make it too small to reduce load on system.",
+    "tooltip_fadeIn": "Fade in interval in ms for speech announcements. 0 - fade in is disabled.",
+    "tooltip_fadeOut": "Fade out interval in ms for speech announcements. 0 - fade out is disabled.",
+    "tooltip_webserverEnabled": "Show SONOS web interface",
+    "tooltip_webserverPort": "Port for web interface",
+    "update adapter information": "Browse for devices"
+}

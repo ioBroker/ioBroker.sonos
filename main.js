@@ -1723,7 +1723,8 @@ function processSonosEvents(event, data) {
                 player._volume = data.newVolume;
                 adapter.log.debug(`volume: Volume for ${player.baseUrl}: ${data.newVolume}`);
 
-                channels[ip].timerVolume = setTimeout(_ip => {
+                // removed because of information from https://github.com/ioBroker/ioBroker.sonos/issues/149
+                /*channels[ip].timerVolume = setTimeout(_ip => {
                     channels[_ip].timerVolume = null;
 
                     adapter.setState({
@@ -1732,7 +1733,7 @@ function processSonosEvents(event, data) {
                         state: 'group_volume'
                     }, {val: player.groupState.volume, ack: true});
                     adapter.log.debug(`group_volume: groupVolume for ${player.baseUrl}: ${player.groupState.volume}`);
-                }, 2000, ip);
+                }, 2000, ip); */
             }
         }
     } else if (event === 'mute') {
@@ -1813,7 +1814,7 @@ async function checkNewGroupStates(channel) {
     for (const g in newGroupStates) {
         let obj;
         try {
-            obj = await adapter.getStateAsync(channel._id + '.' + g);
+            obj = await adapter.getObjectAsync(channel._id + '.' + g);
         } catch (err) {
             obj = null;
         }
