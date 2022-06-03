@@ -1831,6 +1831,7 @@ async function syncConfig() {
 
     const devices = await adapter.getDevicesAsync();
 
+    adapter.log.debug('Initialize known devices: ' + JSON.stringify(devices));
     if (devices && devices.length) {
         // Go through all devices
         for (let i = 0; i < devices.length; i++) {
@@ -1845,7 +1846,9 @@ async function syncConfig() {
             }
 
             if (_channels) {
+                adapter.log.debug(`Channels of ${devices[i].common.name}: ${JSON.stringify(_channels)}`);
                 for (let j = 0; j < _channels.length; j++) {
+                    adapter.log.debug('Process channel: ' + _channels[j]._id);
                     const ip = _channels[j].native.ip;
                     const id = ip.replace(/[.\s]+/g, '_');
                     const pos = configToAdd.indexOf(ip);
