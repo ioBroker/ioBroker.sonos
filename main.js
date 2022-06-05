@@ -26,6 +26,18 @@ function startAdapter(options) {
     options = options || {};
     options.name = adapterName;
 
+    options.error = (err) => {
+        // Identify unhandled errors originating from callbacks in scripts
+        // These are not caught by wrapping the execution code in try-catch
+        if (err ) {
+            const errStr = err.toString();
+            if (errStr.includes('EHOSTUNREACH') || errStr.includes('ECONNRESET') || errStr.includes('EAI_AGAIN')) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     adapter  = new utils.Adapter(options);
 
     // {'val': state, 'ack':false, 'ts':1408294295, 'from':'admin.0', 'lc':1408294295}
@@ -200,7 +212,11 @@ function startAdapter(options) {
                         promise = attachTo(player, getPlayerByName(state.val));
                     }
                 } else if (id.state === 'group_volume') {
-                    promise = player.setGroupVolume(state.val);
+                    try {
+                        promise = player.setGroupVolume(state.val);
+                    } catch (err) {
+                        adapter.log.warn(`Cannot set group volume: ${err}`);
+                    }
                 } else if (id.state === 'group_muted') {
                     if (!!state.val) {
                         promise = player.muteGroup(); // !! is toBoolean()

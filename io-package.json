@@ -127,10 +127,14 @@
         "compact": true,
         "connectionType": "local",
         "dataSource": "push",
+        "tier": 2,
         "icon": "sonos.png",
         "dependencies": [
             {
                 "web": ">=1.5.4"
+            },
+            {
+                "js-controller": ">=2.0.0"
             }
         ],
         "keywords": [
