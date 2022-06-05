@@ -1624,10 +1624,10 @@ function processSonosEvents(event, data) {
                         members.push(data[i].members[j].roomName);
                     }
                 }
-                if (members.length) {
+                if (channels[ip] && members.length) {
                     adapter.setState({device: 'root', channel: ip, state: 'members'}, { val: members.join(','), ack: true })
                 }
-                if (membersChannels.length) {
+                if (channels[ip] && membersChannels.length) {
                     adapter.setState({device: 'root', channel: ip, state: 'membersChannels'}, { val: membersChannels.join(','), ack: true })
                 }
             }

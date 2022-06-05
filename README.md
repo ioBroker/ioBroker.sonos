@@ -48,6 +48,7 @@ Workaround for text to speech is to use the [SONOS HTTP API](https://github.com/
 
 ### __WORK IN PROGRESS__
 * (Apollon77) Remove logic that adjusted the group volume after one member volume was set
+* (Apollon77) Make sure to not set state values for devices that are not configured
 
 ### 2.1.7 (2021-12-20)
 * (bluefox) Corrected error with "SONOS not found"
