@@ -1679,7 +1679,7 @@ function processSonosEvents(event, data) {
 
                 if (channels[ip]) {
                     channels[ip].uuid = discovery.players[i].uuid;
-                    adapter.setState({device: 'root', channel: ip, state: 'volume'}, {val: data.newVolume, ack: true});
+                    adapter.setState({device: 'root', channel: ip, state: 'group-volume'}, {val: data.newVolume, ack: true});
                     //adapter.setState({device: 'root', channel: ip, state: 'muted'},  {val: data.groupState.mute,  ack: true});
                     //player._isMuted = data.groupState.mute;
                     player._volume  = data.newVolume;
