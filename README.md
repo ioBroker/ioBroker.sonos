@@ -45,8 +45,7 @@ Workaround for text to speech is to use the [SONOS HTTP API](https://github.com/
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
-
-### __WORK IN PROGRESS__
+### 2.2.0 (2022-06-08)
 * (Apollon77) Remove logic that adjusted the group volume after one member volume was set
 * (Apollon77) Make sure to not set state values for devices that are not configured
 * (Apollon77) Try to catch network errors

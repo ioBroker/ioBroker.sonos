@@ -1,162 +1,162 @@
 {
-    "common": {
-        "name": "sonos",
-        "version": "2.1.7",
-        "news": {
-            "2.1.7": {
-                "en": "Corrected error with \"SONOS not found\"",
-                "de": "Fehler mit \"SONOS nicht gefunden\" behoben",
-                "ru": "Исправлена ошибка \"SONOS не найден\".",
-                "pt": "Erro corrigido com \"SONOS não encontrado\"",
-                "nl": "Fout gecorrigeerd met \"SONOS niet gevonden\"",
-                "fr": "Erreur corrigée avec \"SONOS introuvable\"",
-                "it": "Errore corretto con \"SONOS non trovato\"",
-                "es": "Error corregido con \"SONOS no encontrado\"",
-                "pl": "Poprawiony błąd „Nie znaleziono SONOS”",
-                "zh-cn": "更正了“找不到 SONOS”的错误"
-            },
-            "2.1.6": {
-                "en": "Corrected error with \"SONOS not found\"",
-                "de": "Fehler mit \"SONOS nicht gefunden\" behoben",
-                "ru": "Исправлена ошибка \"SONOS не найден\".",
-                "pt": "Erro corrigido com \"SONOS não encontrado\"",
-                "nl": "Fout gecorrigeerd met \"SONOS niet gevonden\"",
-                "fr": "Erreur corrigée avec \"SONOS introuvable\"",
-                "it": "Errore corretto con \"SONOS non trovato\"",
-                "es": "Error corregido con \"SONOS no encontrado\"",
-                "pl": "Poprawiony błąd „Nie znaleziono SONOS”",
-                "zh-cn": "更正了“找不到 SONOS”的错误"
-            },
-            "2.1.5": {
-                "en": "Corrected error with \"SONOS not found\"",
-                "de": "Fehler mit \"SONOS nicht gefunden\" behoben",
-                "ru": "Исправлена ошибка \"SONOS не найден\".",
-                "pt": "Erro corrigido com \"SONOS não encontrado\"",
-                "nl": "Fout gecorrigeerd met \"SONOS niet gevonden\"",
-                "fr": "Erreur corrigée avec \"SONOS introuvable\"",
-                "it": "Errore corretto con \"SONOS non trovato\"",
-                "es": "Error corregido con \"SONOS no encontrado\"",
-                "pl": "Poprawiony błąd „Nie znaleziono SONOS”",
-                "zh-cn": "更正了“找不到 SONOS”的错误"
-            },
-            "2.1.4": {
-                "en": "Catch possible errors by the start and unload",
-                "de": "Erfassen Sie mögliche Fehler beim Starten und Entladen",
-                "ru": "Выявить возможные ошибки при запуске и разгрузке",
-                "pt": "Capture possíveis erros ao iniciar e descarregar",
-                "nl": "Vang mogelijke fouten bij het starten en uitladen",
-                "fr": "Détectez les erreurs possibles au démarrage et au déchargement",
-                "it": "Rileva possibili errori all'inizio e scarica",
-                "es": "Detecta posibles errores desde el inicio y descarga",
-                "pl": "Wyłap ewentualne błędy przy starcie i rozładowaniu",
-                "zh-cn": "通过启动和卸载捕获可能的错误"
-            },
-            "2.1.3": {
-                "en": "Catch possible errors by the start and unload",
-                "de": "Erfassen Sie mögliche Fehler beim Starten und Entladen",
-                "ru": "Выявить возможные ошибки при запуске и разгрузке",
-                "pt": "Capture possíveis erros ao iniciar e descarregar",
-                "nl": "Vang mogelijke fouten bij het starten en uitladen",
-                "fr": "Détectez les erreurs possibles au démarrage et au déchargement",
-                "it": "Rileva possibili errori all'inizio e scarica",
-                "es": "Detecta posibles errores desde el inicio y descarga",
-                "pl": "Wyłap ewentualne błędy przy starcie i rozładowaniu",
-                "zh-cn": "通过启动和卸载捕获可能的错误"
-            },
-            "2.1.2": {
-                "en": "Catch possible errors by the start and unload",
-                "de": "Erfassen Sie mögliche Fehler beim Starten und Entladen",
-                "ru": "Выявить возможные ошибки при запуске и разгрузке",
-                "pt": "Capture possíveis erros ao iniciar e descarregar",
-                "nl": "Vang mogelijke fouten bij het starten en uitladen",
-                "fr": "Détectez les erreurs possibles au démarrage et au déchargement",
-                "it": "Rileva possibili errori all'inizio e scarica",
-                "es": "Detecta posibles errores desde el inicio y descarga",
-                "pl": "Wyłap ewentualne błędy przy starcie i rozładowaniu",
-                "zh-cn": "通过启动和卸载捕获可能的错误"
-            },
-            "2.1.1": {
-                "en": "Prevent crash case (Sentry IOBROKER-JS-CONTROLLER-S7, #78)",
-                "de": "Absturz verhindern (Sentry IOBROKER-JS-CONTROLLER-S7, # 78)",
-                "ru": "Случай предотвращения сбоя (Sentry IOBROKER-JS-CONTROLLER-S7, # 78)",
-                "pt": "Evitar caso de travamento (Sentry IOBROKER-JS-CONTROLLER-S7, # 78)",
-                "nl": "Voorkom een crashgeval (Sentry IOBROKER-JS-CONTROLLER-S7, # 78)",
-                "fr": "Prévenir les cas de crash (Sentry IOBROKER-JS-CONTROLLER-S7, # 78)",
-                "it": "Prevenire il crash case (Sentry IOBROKER-JS-CONTROLLER-S7, # 78)",
-                "es": "Prevenir caso de bloqueo (Sentry IOBROKER-JS-CONTROLLER-S7, # 78)",
-                "pl": "Zapobiegaj awariom (Sentry IOBROKER-JS-CONTROLLER-S7, # 78)",
-                "zh-cn": "防止发生崩溃情况（Sentry IOBROKER-JS-CONTROLLER-S7，＃78）"
-            }
-        },
-        "title": "SONOS",
-        "titleLang": {
-            "en": "Sonos",
-            "de": "Sonos",
-            "ru": "Sonos",
-            "pt": "Sonos",
-            "nl": "Sonos",
-            "fr": "Sonos",
-            "it": "Sonos",
-            "es": "Sonos",
-            "pl": "Sonos",
-            "zh-cn": "Sonos"
-        },
-        "desc": {
-            "en": "This adapter allows to monitor and control SONOS players from ioBroker",
-            "de": "Mit diesem Adapter können Sie SONOS-Player von ioBroker aus überwachen und steuern",
-            "ru": "Этот адаптер позволяет контролировать и управлять SONOS-плеерами из ioBroker",
-            "pt": "Este adaptador permite monitorar e controlar os players do SONOS a partir do ioBroker",
-            "nl": "Met deze adapter kunnen SONOS-spelers van ioBroker worden bewaakt en bestuurd",
-            "fr": "Cet adaptateur permet de surveiller et de contrôler les lecteurs SONOS de ioBroker",
-            "it": "Questo adattatore consente di monitorare e controllare i lettori SONOS da ioBroker",
-            "es": "Este adaptador permite monitorear y controlar los reproductores SONOS desde ioBroker",
-            "pl": "Ten adapter pozwala monitorować i kontrolować odtwarzacze SONOS z ioBroker",
-            "zh-cn": "此适配器允许从ioBroker监视和控制SONOS播放器"
-        },
-        "authors": [
-            "bluefox <dogafox@gmail.com>"
-        ],
-        "license": "MIT",
-        "platform": "Javascript/Node.js",
-        "mode": "daemon",
-        "loglevel": "info",
-        "messagebox": true,
-        "materialize": true,
-        "readme": "https://github.com/ioBroker/ioBroker.sonos/blob/master/README.md",
-        "enabled": true,
-        "compact": true,
-        "connectionType": "local",
-        "dataSource": "push",
-        "tier": 2,
-        "icon": "sonos.png",
-        "dependencies": [
-            {
-                "web": ">=1.5.4"
-            },
-            {
-                "js-controller": ">=2.0.0"
-            }
-        ],
-        "keywords": [
-            "sonos",
-            "player",
-            "music"
-        ],
-        "extIcon": "https://raw.githubusercontent.com/ioBroker/ioBroker.sonos/master/admin/sonos.png",
-        "type": "multimedia"
+  "common": {
+    "name": "sonos",
+    "version": "2.2.0",
+    "news": {
+      "2.2.0": {
+        "en": "Remove logic that adjusted the group volume after one member volume was set\nMake sure to not set state values for devices that are not configured\nTry to catch network errors",
+        "de": "Entfernen Sie die Logik, die das Gruppenvolumen nach einem Elementvolumen eingestellt wurde\nStellen Sie sicher, dass keine Zustandswerte für Geräte festgelegt werden, die nicht konfiguriert sind\nVersuchen Sie, Netzwerkfehler zu fangen",
+        "ru": "Удалить логику, которая скорректировала объем группы после того, как был установлен объем одного члена\nНе забудьте установить государственные значения для устройств, которые не настроены\nПопробуйте поймать сетевые ошибки",
+        "pt": "Remover a lógica que ajustou o volume do grupo após um volume de membro foi definido\nCertifique-se de não definir valores de estado para dispositivos que não estão configurados\nTente pegar erros de rede",
+        "nl": "Verwijder logica die het groeps volume aanpassen na een leden volume\nZorg ervoor dat je de staatswaarden niet in handen krijgt voor apparaten die niet in beslag genomen worden\nProbeer netwerkfouten te vangen",
+        "fr": "Supprimer la logique qui a ajusté le volume de groupe après un volume de membre a été défini\nAssurez-vous de ne pas définir les valeurs d'état pour les appareils qui ne sont pas configurés\nEssayez de capturer des erreurs réseau",
+        "it": "Rimuovere la logica che ha regolato il volume del gruppo dopo un volume di un membro è stato impostato\nAssicurarsi di non impostare valori di stato per i dispositivi che non sono configurati\nCerca di catturare errori di rete",
+        "es": "Quitar la lógica que ajusta el volumen del grupo después de un volumen de miembro\nAsegúrese de no establecer valores estatales para dispositivos que no estén configurados\nTrate de atrapar errores de red",
+        "pl": "Technologia przesuwająca się napięcie grupy po ustaleniu jednego tomu członkowskiego została określona\nNie ma pewności, że nie ustalają wartości dla urządzeń, które nie są konfigurowane\nPróba uniknięcia błędów sieciowych",
+        "zh-cn": "取消在某一成员数量之后调整小组数量的逻辑\n保证不对没有配置的装置规定国家价值\n收集网络错误"
+      },
+      "2.1.7": {
+        "en": "Corrected error with \"SONOS not found\"",
+        "de": "Fehler mit \"SONOS nicht gefunden\" behoben",
+        "ru": "Исправлена ошибка \"SONOS не найден\".",
+        "pt": "Erro corrigido com \"SONOS não encontrado\"",
+        "nl": "Fout gecorrigeerd met \"SONOS niet gevonden\"",
+        "fr": "Erreur corrigée avec \"SONOS introuvable\"",
+        "it": "Errore corretto con \"SONOS non trovato\"",
+        "es": "Error corregido con \"SONOS no encontrado\"",
+        "pl": "Poprawiony błąd „Nie znaleziono SONOS”",
+        "zh-cn": "更正了“找不到 SONOS”的错误"
+      },
+      "2.1.6": {
+        "en": "Corrected error with \"SONOS not found\"",
+        "de": "Fehler mit \"SONOS nicht gefunden\" behoben",
+        "ru": "Исправлена ошибка \"SONOS не найден\".",
+        "pt": "Erro corrigido com \"SONOS não encontrado\"",
+        "nl": "Fout gecorrigeerd met \"SONOS niet gevonden\"",
+        "fr": "Erreur corrigée avec \"SONOS introuvable\"",
+        "it": "Errore corretto con \"SONOS non trovato\"",
+        "es": "Error corregido con \"SONOS no encontrado\"",
+        "pl": "Poprawiony błąd „Nie znaleziono SONOS”",
+        "zh-cn": "更正了“找不到 SONOS”的错误"
+      },
+      "2.1.5": {
+        "en": "Corrected error with \"SONOS not found\"",
+        "de": "Fehler mit \"SONOS nicht gefunden\" behoben",
+        "ru": "Исправлена ошибка \"SONOS не найден\".",
+        "pt": "Erro corrigido com \"SONOS não encontrado\"",
+        "nl": "Fout gecorrigeerd met \"SONOS niet gevonden\"",
+        "fr": "Erreur corrigée avec \"SONOS introuvable\"",
+        "it": "Errore corretto con \"SONOS non trovato\"",
+        "es": "Error corregido con \"SONOS no encontrado\"",
+        "pl": "Poprawiony błąd „Nie znaleziono SONOS”",
+        "zh-cn": "更正了“找不到 SONOS”的错误"
+      },
+      "2.1.4": {
+        "en": "Catch possible errors by the start and unload",
+        "de": "Erfassen Sie mögliche Fehler beim Starten und Entladen",
+        "ru": "Выявить возможные ошибки при запуске и разгрузке",
+        "pt": "Capture possíveis erros ao iniciar e descarregar",
+        "nl": "Vang mogelijke fouten bij het starten en uitladen",
+        "fr": "Détectez les erreurs possibles au démarrage et au déchargement",
+        "it": "Rileva possibili errori all'inizio e scarica",
+        "es": "Detecta posibles errores desde el inicio y descarga",
+        "pl": "Wyłap ewentualne błędy przy starcie i rozładowaniu",
+        "zh-cn": "通过启动和卸载捕获可能的错误"
+      },
+      "2.1.3": {
+        "en": "Catch possible errors by the start and unload",
+        "de": "Erfassen Sie mögliche Fehler beim Starten und Entladen",
+        "ru": "Выявить возможные ошибки при запуске и разгрузке",
+        "pt": "Capture possíveis erros ao iniciar e descarregar",
+        "nl": "Vang mogelijke fouten bij het starten en uitladen",
+        "fr": "Détectez les erreurs possibles au démarrage et au déchargement",
+        "it": "Rileva possibili errori all'inizio e scarica",
+        "es": "Detecta posibles errores desde el inicio y descarga",
+        "pl": "Wyłap ewentualne błędy przy starcie i rozładowaniu",
+        "zh-cn": "通过启动和卸载捕获可能的错误"
+      },
+      "2.1.2": {
+        "en": "Catch possible errors by the start and unload",
+        "de": "Erfassen Sie mögliche Fehler beim Starten und Entladen",
+        "ru": "Выявить возможные ошибки при запуске и разгрузке",
+        "pt": "Capture possíveis erros ao iniciar e descarregar",
+        "nl": "Vang mogelijke fouten bij het starten en uitladen",
+        "fr": "Détectez les erreurs possibles au démarrage et au déchargement",
+        "it": "Rileva possibili errori all'inizio e scarica",
+        "es": "Detecta posibles errores desde el inicio y descarga",
+        "pl": "Wyłap ewentualne błędy przy starcie i rozładowaniu",
+        "zh-cn": "通过启动和卸载捕获可能的错误"
+      }
     },
-    "native": {
-        "elapsedInterval": 2000,
-        "fadeIn": 0,
-        "fadeOut": 0,
-        "webServer": "",
-        "devices": [
-            {
-                "name": "Sonos1",
-                "ip": "0.0.0.0",
-                "room": ""
-            }
-        ]
+    "title": "SONOS",
+    "titleLang": {
+      "en": "Sonos",
+      "de": "Sonos",
+      "ru": "Sonos",
+      "pt": "Sonos",
+      "nl": "Sonos",
+      "fr": "Sonos",
+      "it": "Sonos",
+      "es": "Sonos",
+      "pl": "Sonos",
+      "zh-cn": "Sonos"
     },
-    "objects": []
+    "desc": {
+      "en": "This adapter allows to monitor and control SONOS players from ioBroker",
+      "de": "Mit diesem Adapter können Sie SONOS-Player von ioBroker aus überwachen und steuern",
+      "ru": "Этот адаптер позволяет контролировать и управлять SONOS-плеерами из ioBroker",
+      "pt": "Este adaptador permite monitorar e controlar os players do SONOS a partir do ioBroker",
+      "nl": "Met deze adapter kunnen SONOS-spelers van ioBroker worden bewaakt en bestuurd",
+      "fr": "Cet adaptateur permet de surveiller et de contrôler les lecteurs SONOS de ioBroker",
+      "it": "Questo adattatore consente di monitorare e controllare i lettori SONOS da ioBroker",
+      "es": "Este adaptador permite monitorear y controlar los reproductores SONOS desde ioBroker",
+      "pl": "Ten adapter pozwala monitorować i kontrolować odtwarzacze SONOS z ioBroker",
+      "zh-cn": "此适配器允许从ioBroker监视和控制SONOS播放器"
+    },
+    "authors": [
+      "bluefox <dogafox@gmail.com>"
+    ],
+    "license": "MIT",
+    "platform": "Javascript/Node.js",
+    "mode": "daemon",
+    "loglevel": "info",
+    "messagebox": true,
+    "materialize": true,
+    "readme": "https://github.com/ioBroker/ioBroker.sonos/blob/master/README.md",
+    "enabled": true,
+    "compact": true,
+    "connectionType": "local",
+    "dataSource": "push",
+    "tier": 2,
+    "icon": "sonos.png",
+    "dependencies": [
+      {
+        "web": ">=1.5.4"
+      },
+      {
+        "js-controller": ">=2.0.0"
+      }
+    ],
+    "keywords": [
+      "sonos",
+      "player",
+      "music"
+    ],
+    "extIcon": "https://raw.githubusercontent.com/ioBroker/ioBroker.sonos/master/admin/sonos.png",
+    "type": "multimedia"
+  },
+  "native": {
+    "elapsedInterval": 2000,
+    "fadeIn": 0,
+    "fadeOut": 0,
+    "webServer": "",
+    "devices": [
+      {
+        "name": "Sonos1",
+        "ip": "0.0.0.0",
+        "room": ""
+      }
+    ]
+  },
+  "objects": []
 }
