@@ -45,6 +45,10 @@ Workaround for text to speech is to use the [SONOS HTTP API](https://github.com/
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
+
+### __WORK IN PROGRESS__
+* (Apollon77) Prevent js-controller warnings
+
 ### 2.2.1 (2022-06-12)
 * (Apollon77) fix group volume state
 

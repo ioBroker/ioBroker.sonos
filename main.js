@@ -393,8 +393,6 @@ const newGroupStates = {
         read:   true,
         write:  true,
         role:   'media.mute.group',
-        min:    false,
-        max:    true,
         desc:   'Group is muted'
     },
     'members': {             // indicator.reachable -    if player alive (read only)
@@ -501,8 +499,6 @@ async function createChannel(name, ip, room) {
             read:   true,
             write:  true,
             role:   'media.mute',
-            min:    false,
-            max:    true,
             desc:   'Is muted',
             name:   'Player mute'
         },
