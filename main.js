@@ -76,7 +76,6 @@ function startAdapter(options) {
                 } else
                 if (id.state === 'track_number') {
                     promise = player.trackSeek(!!state.val);
-                    }
                 } else
                 if (id.state === 'shuffle') {
                     promise = player.shuffle(!!state.val);
