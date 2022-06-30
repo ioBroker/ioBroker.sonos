@@ -72,6 +72,7 @@ function startAdapter(options) {
                         promise = player.pause();
                     } else {
                         promise = player.play();
+		    }
                 } else
                 if (id.state === 'track_number') {
                     promise = player.trackSeek(!!state.val);
@@ -1346,6 +1347,7 @@ function takeSonosState(ip, sonosState) {
     adapter.setState({device: 'root', channel: ip, state: 'current_duration_s'}, {val: toFormattedTime(sonosState.currentTrack.duration), ack: true});
 
 	// Track number
+	adapter.log.info('track number ' + sonosState.trackNo);
     adapter.setState({device: 'root', channel: ip, state: 'track_number'},   {val: sonosState.trackNo, ack: true});
 
     if (lastCover !== sonosState.currentTrack.albumArtUri) {
