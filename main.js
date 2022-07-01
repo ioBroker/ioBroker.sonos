@@ -417,13 +417,13 @@ const newGroupStates = {
 async function createChannel(name, ip, room) {
     const states = {
         'track_number': {
-       		 def:   '',
-        	type:  'string',
-        	read:  false,
+        	type:  'number',
+        	read:  true,
         	write: true,
         	role:  'media.trackNo',
-        	desc:  'Track Number'
-    	},
+        	desc:  'Track Number',
+		name:   'Track Number'
+   	},
 	    'state_simple': {      // media.state -            Text state of player: stop, play, pause (read, write)
             def:    false,
             type:   'boolean',
@@ -1345,8 +1345,8 @@ function takeSonosState(ip, sonosState) {
     adapter.setState({device: 'root', channel: ip, state: 'current_duration'},   {val: sonosState.currentTrack.duration, ack: true});
     adapter.setState({device: 'root', channel: ip, state: 'current_duration_s'}, {val: toFormattedTime(sonosState.currentTrack.duration), ack: true});
 
-	// Track number
-	adapter.log.info('track number ' + sonosState.trackNo);
+    // Track number
+    adapter.log.info('track number ' + sonosState.trackNo + ' - ' + sonosState.currentTrack.title);
     adapter.setState({device: 'root', channel: ip, state: 'track_number'},   {val: sonosState.trackNo, ack: true});
 
     if (lastCover !== sonosState.currentTrack.albumArtUri) {
