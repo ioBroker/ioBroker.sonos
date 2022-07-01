@@ -75,7 +75,7 @@ function startAdapter(options) {
 		    }
                 } else
                 if (id.state === 'track_number') {
-                    promise = player.trackSeek(!!state.val);
+                    promise = player.trackSeek(parseInt(state.val));
                 } else
                 if (id.state === 'shuffle') {
                     promise = player.shuffle(!!state.val);
@@ -416,18 +416,9 @@ const newGroupStates = {
 
 async function createChannel(name, ip, room) {
     const states = {
-        'track_test': {     // play text to speech mp3 file
-            def:    '',
-            type:   'string',
-            read:   false,
-            write:  true,
-            role:   'media.trackTest',
-            desc:   'trackTest',
-            name:   'trackTest'
-        },
         'track_number': {
-            def:    '',
-            type:   'string',
+            def:    0,
+            type:   'number',
         	read:  true,
         	write: true,
         	role:  'media.trackNo',
