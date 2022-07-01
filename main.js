@@ -416,8 +416,18 @@ const newGroupStates = {
 
 async function createChannel(name, ip, room) {
     const states = {
+        'track_test': {     // play text to speech mp3 file
+            def:    '',
+            type:   'string',
+            read:   false,
+            write:  true,
+            role:   'media.trackTest',
+            desc:   'trackTest',
+            name:   'trackTest'
+        },
         'track_number': {
-        	type:  'number',
+            def:    '',
+            type:   'string',
         	read:  true,
         	write: true,
         	role:  'media.trackNo',
