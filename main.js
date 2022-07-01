@@ -75,7 +75,7 @@ function startAdapter(options) {
 		    }
                 } else
                 if (id.state === 'track_number') {
-                    promise = player.trackSeek(parseInt(state.val));
+                    promise = player.trackSeek(state.val);
                 } else
                 if (id.state === 'shuffle') {
                     promise = player.shuffle(!!state.val);
@@ -417,8 +417,8 @@ const newGroupStates = {
 async function createChannel(name, ip, room) {
     const states = {
         'track_number': {
-            def:    0,
-            type:   'number',
+            def:    '',
+            type:   'string',
         	read:  true,
         	write: true,
         	role:  'media.trackNo',
