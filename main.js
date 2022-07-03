@@ -74,8 +74,7 @@ function startAdapter(options) {
                         promise = player.play();
 		    }
                 } else
-                if (id.state === 'track_number') {
-         	   adapter.log.info(`setting track_number to :` + state.val);
+                if (id.state === 'current_track_number') {
                    promise = player.trackSeek(state.val);
                 } else
                 if (id.state === 'shuffle') {
@@ -417,16 +416,7 @@ const newGroupStates = {
 
 async function createChannel(name, ip, room) {
     const states = {
-        'track_number': {
-            def:    1,
-            type:   'number',
-        	read:  true,
-        	write: true,
-        	role:  'media.trackNo',
-        	desc:  'Track Number',
-		name:   'Track Number'
-   	},
-	    'state_simple': {      // media.state -            Text state of player: stop, play, pause (read, write)
+        'state_simple': {      // media.state -            Text state of player: stop, play, pause (read, write)
             def:    false,
             type:   'boolean',
             read:   true,
@@ -590,6 +580,15 @@ async function createChannel(name, ip, room) {
             desc:   'Radio station currently played',
             name:   'Current radio station'
         },
+        'current_track_number': {    // media.trackNo -   current track number
+            def:    1,
+            type:   'number',
+            read:   true,
+            write:  true,
+            role:   'media.trackNo',
+            desc:   'Current track number',
+            name:   'Current track number'
+   	},
         'alive': {             // indicator.reachable -    if player alive (read only)
             type:   'boolean',
             read:   true,
@@ -1348,8 +1347,7 @@ function takeSonosState(ip, sonosState) {
     adapter.setState({device: 'root', channel: ip, state: 'current_duration_s'}, {val: toFormattedTime(sonosState.currentTrack.duration), ack: true});
 
     // Track number
-    adapter.log.info('track number ' + sonosState.trackNo + ' - ' + sonosState.currentTrack.title);
-    adapter.setState({device: 'root', channel: ip, state: 'track_number'},   {val: sonosState.trackNo, ack: true});
+    adapter.setState({device: 'root', channel: ip, state: 'current_track_number'},   {val: sonosState.trackNo, ack: true});
 
     if (lastCover !== sonosState.currentTrack.albumArtUri) {
         const defaultImg = __dirname + '/img/browse_missing_album_art.png';
