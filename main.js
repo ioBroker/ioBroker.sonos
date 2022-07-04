@@ -72,7 +72,10 @@ function startAdapter(options) {
                         promise = player.pause();
                     } else {
                         promise = player.play();
-                    }
+		    }
+                } else
+                if (id.state === 'current_track_number') {
+                   promise = player.trackSeek(state.val);
                 } else
                 if (id.state === 'shuffle') {
                     promise = player.shuffle(!!state.val);
@@ -577,6 +580,15 @@ async function createChannel(name, ip, room) {
             desc:   'Radio station currently played',
             name:   'Current radio station'
         },
+        'current_track_number': {    // media.trackNo -   current track number
+            def:    1,
+            type:   'number',
+            read:   true,
+            write:  true,
+            role:   'media.trackNo',
+            desc:   'Current track number',
+            name:   'Current track number'
+   	},
         'alive': {             // indicator.reachable -    if player alive (read only)
             type:   'boolean',
             read:   true,
@@ -1333,6 +1345,9 @@ function takeSonosState(ip, sonosState) {
     // elapsed time
     adapter.setState({device: 'root', channel: ip, state: 'current_duration'},   {val: sonosState.currentTrack.duration, ack: true});
     adapter.setState({device: 'root', channel: ip, state: 'current_duration_s'}, {val: toFormattedTime(sonosState.currentTrack.duration), ack: true});
+
+    // Track number
+    adapter.setState({device: 'root', channel: ip, state: 'current_track_number'},   {val: sonosState.trackNo, ack: true});
 
     if (lastCover !== sonosState.currentTrack.albumArtUri) {
         const defaultImg = __dirname + '/img/browse_missing_album_art.png';
