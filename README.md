@@ -45,6 +45,9 @@ Workaround for text to speech is to use the [SONOS HTTP API](https://github.com/
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
+### **WORK IN PROGRESS**
+* (Rello) Added track number state
+
 ### 2.2.2 (2022-06-12)
 * (Apollon77) Prevent js-controller warnings
 
