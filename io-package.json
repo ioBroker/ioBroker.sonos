@@ -1,8 +1,20 @@
 {
   "common": {
     "name": "sonos",
-    "version": "2.2.2",
+    "version": "2.2.3",
     "news": {
+      "2.2.3": {
+        "en": "Added track number state",
+        "de": "Hinzugefügt Gleisnummer Zustand",
+        "ru": "Добавлен номер трека состояние",
+        "pt": "Adicionado número de faixa estado",
+        "nl": "Vertaling:",
+        "fr": "Ajout du numéro de piste",
+        "it": "Aggiunto numero di traccia stato",
+        "es": "Estado de la pista número",
+        "pl": "Poniższa liczba torów",
+        "zh-cn": "增加跟踪国家数目"
+      },
       "2.2.2": {
         "en": "Prevent js-controller warnings",
         "de": "Js-Controller Warnungen verhindern",
@@ -74,18 +86,6 @@
         "es": "Error corregido con \"SONOS no encontrado\"",
         "pl": "Poprawiony błąd „Nie znaleziono SONOS”",
         "zh-cn": "更正了“找不到 SONOS”的错误"
-      },
-      "2.1.4": {
-        "en": "Catch possible errors by the start and unload",
-        "de": "Erfassen Sie mögliche Fehler beim Starten und Entladen",
-        "ru": "Выявить возможные ошибки при запуске и разгрузке",
-        "pt": "Capture possíveis erros ao iniciar e descarregar",
-        "nl": "Vang mogelijke fouten bij het starten en uitladen",
-        "fr": "Détectez les erreurs possibles au démarrage et au déchargement",
-        "it": "Rileva possibili errori all'inizio e scarica",
-        "es": "Detecta posibles errores desde el inicio y descarga",
-        "pl": "Wyłap ewentualne błędy przy starcie i rozładowaniu",
-        "zh-cn": "通过启动和卸载捕获可能的错误"
       }
     },
     "title": "SONOS",

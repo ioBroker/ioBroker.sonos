@@ -45,7 +45,7 @@ Workaround for text to speech is to use the [SONOS HTTP API](https://github.com/
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
-### **WORK IN PROGRESS**
+### 2.2.3 (2022-07-04)
 * (Rello) Added track number state
 
 ### 2.2.2 (2022-06-12)
