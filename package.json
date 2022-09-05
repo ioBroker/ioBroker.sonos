@@ -30,7 +30,7 @@
     "@iobroker/adapter-dev": "^1.0.1",
     "mocha": "^10.0.0",
     "chai": "^4.3.6",
-    "@iobroker/testing": "^3.0.2"
+    "@iobroker/testing": "^4.1.0"
   },
   "bugs": {
     "url": "https://github.com/ioBroker/ioBroker.sonos/issues"
