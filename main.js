@@ -1821,16 +1821,18 @@ function processSonosEvents(event, data) {
                 const _text = [];
                 const _html = [];
                 var _class = '';
-                adapter.log.debug('data > ' + JSON.stringify(data));
+
                 _html.push(`<table class="sonosQueueTable">`);
                 for (let q = 0; q < data.queue.length; q++) {
-                    _text.push(`${data.queue[q].artist} - ${data.queue[q].title}`);
+                    //if (q === data.trackNo) {_class = ' currentTrack';} else {_class = '';}
 
-                    if (q === data.trackNo) {_class = ' currentTrack';} else {_class = '';}
-                    adapter.log.debug(`aktuelle Tracknummer > ${data.trackNo}`);
+                    adapter.log.debug(adapter.getState({device: 'root', channel: ip, state: 'current_track_number'}));
+
+                    _text.push(`${data.queue[q].artist} - ${data.queue[q].title}`);
                     _html.push(`<tr class="sonosQueueRow${_class}" onclick="vis.setValue('${adapter.namespace}.root.${player._address}.current_track_number', ${q + 1})"><td class="sonosQueueTrackArtist">${data.queue[q].artist}</td><td class="sonosQueueTrackTitle">${data.queue[q].title}</td></tr>`);
                 }
                 _html.push(`</table>`);
+
                 const qtext = _text.join(', ');
                 const qhtml = _html.join('');
                 adapter.setState({device: 'root', channel: ip, state: 'queue'}, {val: qtext, ack: true});
