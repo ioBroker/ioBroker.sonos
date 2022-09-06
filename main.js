@@ -1823,7 +1823,7 @@ function processSonosEvents(event, data) {
                 _html.push(`<table class="sonosQueueTable">`);
                 for (let q = 0; q < data.queue.length; q++) {
                     _text.push(`${data.queue[q].artist} - ${data.queue[q].title}`);
-                    _html.push(`<tr class="sonosQueueRow" onclick="vis.setValue('${adapter.namespace}'.root'.${player._address}.current_track_number', ${q + 1})"><td class="sonosQueueTrackArtist">${data.queue[q].artist}</td><td class="sonosQueueTrackTitle">${data.queue[q].title}</td></tr>`);
+                    _html.push(`<tr class="sonosQueueRow" onclick="vis.setValue('${adapter.namespace}.root.${player._address}.current_track_number', ${q + 1})"><td class="sonosQueueTrackArtist">${data.queue[q].artist}</td><td class="sonosQueueTrackTitle">${data.queue[q].title}</td></tr>`);
                 }
                 _html.push(`</table>`);
                 const qtext = _text.join(', ');
