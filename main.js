@@ -1821,7 +1821,7 @@ function processSonosEvents(event, data) {
                 const _text = [];
                 const _html = [];
                 var _class = '';
-                adapter.log.debug('data > ' JSON.stringify(data));
+                adapter.log.debug('data > ' + JSON.stringify(data));
                 _html.push(`<table class="sonosQueueTable">`);
                 for (let q = 0; q < data.queue.length; q++) {
                     _text.push(`${data.queue[q].artist} - ${data.queue[q].title}`);
