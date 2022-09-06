@@ -588,7 +588,7 @@ async function createChannel(name, ip, room) {
             role:   'media.trackNo',
             desc:   'Current track number',
             name:   'Current track number'
-   	},
+   	    },
         'alive': {             // indicator.reachable -    if player alive (read only)
             type:   'boolean',
             read:   true,
@@ -688,6 +688,14 @@ async function createChannel(name, ip, room) {
             write:  false,
             role:   'state',
             name:   'Play queue'
+        },
+        'queue_html': { // queue html table
+            def:    '',
+            type:   'string',
+            read:   true,
+            write:  false,
+            role:   'state',
+            name:   'Play queue html'
         },
     };
 
@@ -1732,7 +1740,7 @@ function processSonosEvents(event, data) {
         }
 //            }
 //        }
-    }  else if (event === 'volume') {
+    } else if (event === 'volume') {
         // {
         //     uuid:             _this.uuid,
         //     previousVolume:   previousVolume,
@@ -1811,12 +1819,17 @@ function processSonosEvents(event, data) {
             if (channels[ip]) {
                 channels[ip].uuid = data.uuid;
                 const _text = [];
+                const _html = [];
                 for (let q = 0; q < data.queue.length; q++) {
                     _text.push(`${data.queue[q].artist} - ${data.queue[q].title}`);
+                    _html.push(`<tr class="sonosQueueRow" onclick="vis.setValue('${player._address}.current_track_number', ${q + 1})"><td class="sonosQueueTrackArtist">${data.queue[q].artist}</td><td class="sonosQueueTrackTitle">${data.queue[q].title}</td></tr>`);
                 }
                 const qtext = _text.join(', ');
+                const qhtml = _html.join('');
                 adapter.setState({device: 'root', channel: ip, state: 'queue'}, {val: qtext, ack: true});
                 adapter.log.debug(`queue for ${player.baseUrl}: ${qtext}`);
+                adapter.setState({device: 'root', channel: ip, state: 'queue_html'}, {val: qtext, ack: true});
+                adapter.log.debug(`queue for ${player.baseUrl}: ${qhtml}`);
             }
             discovery.getFavorites()
                 .then(favorites => {
