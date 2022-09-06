@@ -1828,7 +1828,7 @@ function processSonosEvents(event, data) {
                 const qhtml = _html.join('');
                 adapter.setState({device: 'root', channel: ip, state: 'queue'}, {val: qtext, ack: true});
                 adapter.log.debug(`queue for ${player.baseUrl}: ${qtext}`);
-                adapter.setState({device: 'root', channel: ip, state: 'queue_html'}, {val: qtext, ack: true});
+                adapter.setState({device: 'root', channel: ip, state: 'queue_html'}, {val: qhtml, ack: true});
                 adapter.log.debug(`queue for ${player.baseUrl}: ${qhtml}`);
             }
             discovery.getFavorites()
