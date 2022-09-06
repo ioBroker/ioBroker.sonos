@@ -1825,8 +1825,8 @@ function processSonosEvents(event, data) {
                 for (let q = 0; q < data.queue.length; q++) {
                     _text.push(`${data.queue[q].artist} - ${data.queue[q].title}`);
 
-                    if (q === takeSonosState(ip, data.current_track_number)) {_class = ' currentTrack';} else {_class = '';}
-                    adapter.log.debug(takeSonosState(ip, data.current_track_number));
+                    if (q === data.trackNo) {_class = ' currentTrack';} else {_class = '';}
+                    adapter.log.debug(`aktuelle Tracknummer > ${data.trackNo}`);
                     _html.push(`<tr class="sonosQueueRow${_class}" onclick="vis.setValue('${adapter.namespace}.root.${player._address}.current_track_number', ${q + 1})"><td class="sonosQueueTrackArtist">${data.queue[q].artist}</td><td class="sonosQueueTrackTitle">${data.queue[q].title}</td></tr>`);
                 }
                 _html.push(`</table>`);
