@@ -1857,6 +1857,9 @@ function processSonosEvents(event, data) {
 async function updateHtmlQueue(player) {
     const playerDp = `root.${player}`;
     let queue = adapter.getStateAsync(`${playerDp}.queue_html`);
+    if(!queue) {
+        return;
+    }
     queue = queue.replace('class="sonosQueueRow currentTrack"', 'class="sonosQueueRow"');
     const trackNumber =  adapter.getStateAsync(`${playerDp}.current_track_number`);
     const regexString =  `<tr\sclass="sonosQueueRow"\sonclick="vis\.setValue\('sonos\.[0-9]\.root\.[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}\.current_track_number', ${trackNumber}\)`;
