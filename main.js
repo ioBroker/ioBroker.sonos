@@ -2045,7 +2045,16 @@ function main() {
 
                 const player = discovery.getPlayerByUUID(data.uuid);
                 adapter.log.info(JSON.stringify(player));
-                
+
+                const ip = player._address;
+                adapter.log.info(ip);
+
+
+
+
+
+
+
                 //modify queue
             });
 
