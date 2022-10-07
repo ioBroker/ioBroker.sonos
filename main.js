@@ -2043,7 +2043,7 @@ function main() {
                //modify queue
                 const player = discovery.getPlayerByUUID(data.uuid);
                 const playerip = player._address;
-                adapter.log.info(ip);
+                adapter.log.info(playerip);
                 updateHtmlQueue(playerip);
 
 
