@@ -1858,12 +1858,12 @@ async function updateHtmlQueue(player) {
     const playerDp = `sonos.0.root.${player}`;
     let queue = await adapter.getStateAsync(`${playerDp}.queue_html`);
     adapter.log.info(`Datenpunkt: ${playerDp}.queue_html`)
-    adapter.log.info(typeof queue);
-    adapter.log.info(`Queue: ${queue}`);
+    adapter.log.info(typeof queue.val);
+    adapter.log.info(`Queue: ${queue.val}`);
     if(!queue) {
         return;
     }
-    queue = queue.replace('class="sonosQueueRow currentTrack"', 'class="sonosQueueRow"');
+    queue = queue.val.replace('class="sonosQueueRow currentTrack"', 'class="sonosQueueRow"');
     const trackNumber = await adapter.getStateAsync(`${playerDp}.current_track_number`);
     const regexString =  `<tr\sclass="sonosQueueRow"\sonclick="vis\.setValue\('sonos\.[0-9]\.root\.[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}\.current_track_number', ${trackNumber}\)`;
     const regex = new RegExp(regexString);
