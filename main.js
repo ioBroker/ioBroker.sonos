@@ -1854,9 +1854,9 @@ function processSonosEvents(event, data) {
     }
 }
 
-function updateHtmlQueue(player) {
+async function updateHtmlQueue(player) {
     const playerDp = `sonos.0.root.${player}`;
-    let queue = adapter.getState(`${playerDp}.queue_html`);
+    let queue = await adapter.getStateAsync(`${playerDp}.queue_html`);
     adapter.log.info(`Datenpunkt: ${playerDp}.queue_html`)
     adapter.log.info(typeof queue);
     adapter.log.info(`Queue: ${queue}`);
@@ -1864,7 +1864,7 @@ function updateHtmlQueue(player) {
         return;
     }
     queue = queue.replace('class="sonosQueueRow currentTrack"', 'class="sonosQueueRow"');
-    const trackNumber =  adapter.getState(`${playerDp}.current_track_number`);
+    const trackNumber = await adapter.getStateAsync(`${playerDp}.current_track_number`);
     const regexString =  `<tr\sclass="sonosQueueRow"\sonclick="vis\.setValue\('sonos\.[0-9]\.root\.[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}\.current_track_number', ${trackNumber}\)`;
     const regex = new RegExp(regexString);
     let match = queue.match(regex);
