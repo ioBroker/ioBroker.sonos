@@ -1858,16 +1858,15 @@ function processSonosEvents(event, data) {
  * @param {string} player Player object ID
  */
 async function updateHtmlQueue(player) {
-    const playerDp = `root.${player}`
-    let queue = adapter.getStateAsync(`${playerDp}.queue_html`);
+    let queue = this.getStateAsync(`${player}.queue_html`);
     queue = queue.replace('class="sonosQueueRow currentTrack"', 'class="sonosQueueRow"');
-    const trackNumber =  adapter.getStateAsync(`${playerDp}.current_track_number`);
+    const trackNumber =  this.getStateAsync(`${player}.current_track_number`);
     const regexString =  `<tr\sclass="sonosQueueRow"\sonclick="vis\.setValue\('sonos\.[0-9]\.root\.[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}\.current_track_number', ${trackNumber}\)`
     const regex = new RegExp(regexString);
     let match = queue.match(regex);
     const newString = match.replace('class="sonosQueueRow"', 'class="sonosQueueRow currentTrack"');
     queue = queue.replace(match, newString);
-    adapter.setStateAsync(`${playerDp}.queue_html`, {val: queue, ack: true});
+    this.setStateAsync(`${player}.queue_html`, {val: queue, ack: true});
 
     //adapter.setState({device: 'root', channel: ip, state: 'queue_html'},   {val: queue, ack: true});
 
@@ -2042,10 +2041,21 @@ function main() {
                 socketServer && socketServer.sockets.emit('transport-state', data);
                 processSonosEvents('transport-state', data);
 
-                //modify queue
+                adapter.log.debug(JSON.stringify(data));
+
                 const player = discovery.getPlayerByUUID(data.uuid);
-                const playerip = player._address;
-                updateHtmlQueue(playerip);
+                adapter.log.info(JSON.stringify(player));
+
+                const ip = player._address;
+                adapter.log.info(ip);
+
+
+
+
+
+
+
+                //modify queue
             });
 
             discovery.on('group-volume', data => {
