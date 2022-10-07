@@ -2043,7 +2043,7 @@ function main() {
 
                 adapter.log.debug(JSON.stringify(data));
 
-                const player = discovery.getPlayerByUUID(sonosUuid);
+                const player = discovery.getPlayerByUUID(data.uuid);
                 adapter.log.info(JSON.stringify(player));
                 
                 //modify queue
