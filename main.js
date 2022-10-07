@@ -2042,7 +2042,10 @@ function main() {
                 processSonosEvents('transport-state', data);
 
                 adapter.log.debug(JSON.stringify(data));
-
+                
+                const player = discovery.getPlayerByUUID(sonosUuid);
+                adapter.log.debug(JSON.stringify(player));
+                
                 //modify queue
             });
 
