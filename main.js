@@ -1866,7 +1866,7 @@ async function updateHtmlQueue(player) {
     adapter.log.info(`TRACK NUMMER ${trackNumber.val}`);
 
     //const regexString =  `<tr class="sonosQueueRow" onclick="vis\.setValue\('sonos\.[0-9]\.root\.[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}\.current_track_number', ${trackNumber.val}\)`;
-    const regexString =  `<tr class="sonosQueueRow" onclick="vis.setValue\\('sonos.[0-9].root.[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}.current_track_number', ${trackNumber}\\)">`;
+    const regexString =  `<tr class="sonosQueueRow" onclick="vis.setValue\\('sonos.[0-9].root.[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}.current_track_number', ${trackNumber.val}\\)">`;
     adapter.log.info(`REGEXSTRING ${regexString}`);
 
     //HIER LIEGT DER FEHLER
