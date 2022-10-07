@@ -1865,12 +1865,15 @@ async function updateHtmlQueue(player) {
     const trackNumber = await adapter.getStateAsync(`${playerDp}.current_track_number`);
     adapter.log.info(`TRACK NUMMER ${trackNumber.val}`);
 
-    const regexString =  `<tr class="sonosQueueRow" onclick="vis\.setValue\('sonos\.[0-9]\.root\.[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}\.current_track_number', ${trackNumber.val}\)`;
+    //const regexString =  `<tr class="sonosQueueRow" onclick="vis\.setValue\('sonos\.[0-9]\.root\.[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}\.current_track_number', ${trackNumber.val}\)`;
+    const regexString =  `<tr class="sonosQueueRow" onclick="vis.setValue\\('sonos.[0-9].root.[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}.current_track_number', ${trackNumber}\\)">`;
     adapter.log.info(`REGEXSTRING ${regexString}`);
 
+    //HIER LIEGT DER FEHLER
     const regex = new RegExp(regexString, 'gm');
     let match = queue.match(regex);
     if(!match) {
+        adapter.log.info(`MATCH leer`);
         return;
     }
     adapter.log.info(`MATCH ${match}`);
