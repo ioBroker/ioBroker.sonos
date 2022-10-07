@@ -1876,7 +1876,7 @@ async function updateHtmlQueue(player) {
     }
     adapter.log.info(`MATCH ${match}`);
 
-    const newString = match.replace('class="sonosQueueRow"', 'class="sonosQueueRow currentTrack"');
+    const newString = match.toString().replace('class="sonosQueueRow"', 'class="sonosQueueRow currentTrack"');
     if(!newString) {
         adapter.log.info(`NEW STRING leer`);
         return;
@@ -1891,10 +1891,6 @@ async function updateHtmlQueue(player) {
     adapter.log.info(`NEUE QUEUE ${queue}`);
 
     adapter.setState(`${playerDp}.queue_html`, {val: queue, ack: true});
-
-    //adapter.setState({device: 'root', channel: ip, state: 'queue_html'},   {val: queue, ack: true});
-
-    //vis\.setValue\('sonos\.[0-9]\.root\.[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}\.current_track_number', ([1-9]{1,4})\)
 }
 
 async function checkNewGroupStates(channel) {
