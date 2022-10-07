@@ -1865,11 +1865,9 @@ async function updateHtmlQueue(player) {
     const trackNumber = await adapter.getStateAsync(`${playerDp}.current_track_number`);
     adapter.log.info(`TRACK NUMMER ${trackNumber.val}`);
 
-    //const regexString =  `<tr class="sonosQueueRow" onclick="vis\.setValue\('sonos\.[0-9]\.root\.[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}\.current_track_number', ${trackNumber.val}\)`;
     const regexString =  `<tr class="sonosQueueRow" onclick="vis.setValue\\('sonos.[0-9].root.[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}.current_track_number', ${trackNumber.val}\\)">`;
     adapter.log.info(`REGEXSTRING ${regexString}`);
 
-    //HIER LIEGT DER FEHLER
     const regex = new RegExp(regexString, 'gm');
     let match = queue.match(regex);
     if(!match) {
@@ -1879,9 +1877,17 @@ async function updateHtmlQueue(player) {
     adapter.log.info(`MATCH ${match}`);
 
     const newString = match.replace('class="sonosQueueRow"', 'class="sonosQueueRow currentTrack"');
+    if(!newString) {
+        adapter.log.info(`NEW STRING leer`);
+        return;
+    }
     adapter.log.info(`NEW STRING ${newString}`);
 
     queue = queue.replace(match, newString);
+    if(!queue) {
+        adapter.log.info(`NEUE QUEUE leer`);
+        return;
+    }
     adapter.log.info(`NEUE QUEUE ${queue}`);
 
     adapter.setState(`${playerDp}.queue_html`, {val: queue, ack: true});
