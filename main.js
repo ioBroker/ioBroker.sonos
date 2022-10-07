@@ -1291,7 +1291,6 @@ function takeSonosState(ip, sonosState) {
     const playMode = sonosState.playMode;
 
     adapter.log.debug(`>  playbackState: ${sonosState.playbackState} - ${sonosState.currentTrack && sonosState.currentTrack.title ? sonosState.currentTrack.title : ''}`);
-    //processSonosEvents('queue', {uuid: player.uuid, queue});
 
     let stableState = !ps.transitioning;
 
@@ -1811,62 +1810,68 @@ function processSonosEvents(event, data) {
             adapter.log.error('Cannot getFavorites: ' + err);
         }
     } else if (event === 'queue') {
-        createQueue(data);
+        const player = discovery.getPlayerByUUID(data.uuid);
+        if (player) {
+            player._address = player._address || getIp(player);
+
+            const ip = player._address;
+
+            if (channels[ip]) {
+                channels[ip].uuid = data.uuid;
+                const _text = [];
+                const _html = [];
+
+                _html.push(`<table class="sonosQueueTable">`);
+                for (let q = 0; q < data.queue.length; q++) {
+                    _text.push(`${data.queue[q].artist} - ${data.queue[q].title}`);
+                    _html.push(`<tr class="sonosQueueRow" onclick="vis.setValue('${adapter.namespace}.root.${player._address}.current_track_number', ${q + 1})"><td class="sonosQueueTrackArtist">${data.queue[q].artist}</td><td class="sonosQueueTrackTitle">${data.queue[q].title}</td></tr>`);
+                }
+                _html.push(`</table>`);
+
+                const qtext = _text.join(', ');
+                const qhtml = _html.join('');
+                adapter.setState({device: 'root', channel: ip, state: 'queue'}, {val: qtext, ack: true});
+                adapter.log.debug(`queue for ${player.baseUrl}: ${qtext}`);
+                adapter.setState({device: 'root', channel: ip, state: 'queue_html'}, {val: qhtml, ack: true});
+                adapter.log.debug(`queue for ${player.baseUrl}: ${qhtml}`);
+            }
+            discovery.getFavorites()
+                .then(favorites => {
+                    // Go through all players
+                    for (let i = 0; i < discovery.players.length; i++) {
+                        const player = discovery.players[i];
+
+                        player._address = player._address || getIp(player);
+
+                        const ip = player._address;
+                        channels[ip] && takeSonosFavorites(ip, favorites);
+                    }
+                })
+                .catch(e => adapter.log.error('Cannot getFavorites: ' + e));
+        }
     } else {
         adapter.log.debug(`${event} ${typeof data === 'object' ? JSON.stringify(data) : data}`);
     }
 }
 
-function createQueue(data) {
+/**
+ * @param {string} player Player object ID
+ */
+async function updateHtmlQueue(player) {
+    let queue = this.getStateAsync(`${player}.queue_html`);
+    queue = queue.replace('class="sonosQueueRow currentTrack"', 'class="sonosQueueRow"');
+    const trackNumber =  this.getStateAsync(`${player}.current_track_number`);
+    const regexString =  `<tr\sclass="sonosQueueRow"\sonclick="vis\.setValue\('sonos\.[0-9]\.root\.[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}\.current_track_number', ${trackNumber}\)`
+    const regex = new RegExp(regexString);
+    let match = queue.match(regex);
+    const newString = match.replace('class="sonosQueueRow"', 'class="sonosQueueRow currentTrack"');
+    queue = queue.replace(match, newString);
+    this.setStateAsync(`${player}.queue_html`, {val: queue, ack: true});
 
-    adapter.log.debug(JSON.stringify(data));
+    //adapter.setState({device: 'root', channel: ip, state: 'queue_html'},   {val: queue, ack: true});
 
-    const player = discovery.getPlayerByUUID(data.uuid);
-    if (player) {
-        player._address = player._address || getIp(player);
-
-        const ip = player._address;
-
-        if (channels[ip]) {
-            channels[ip].uuid = data.uuid;
-            const _text = [];
-            const _html = [];
-            var _class = '';
-
-            _html.push(`<table class="sonosQueueTable">`);
-            for (let q = 0; q < data.queue.length; q++) {
-                //if (q === data.trackNo) {_class = ' currentTrack';} else {_class = '';}
-
-                adapter.log.debug(adapter.getState({device: 'root', channel: ip, state: 'current_track_number'}));
-
-                _text.push(`${data.queue[q].artist} - ${data.queue[q].title}`);
-                _html.push(`<tr class="sonosQueueRow${_class}" onclick="vis.setValue('${adapter.namespace}.root.${player._address}.current_track_number', ${q + 1})"><td class="sonosQueueTrackArtist">${data.queue[q].artist}</td><td class="sonosQueueTrackTitle">${data.queue[q].title}</td></tr>`);
-            }
-            _html.push(`</table>`);
-
-            const qtext = _text.join(', ');
-            const qhtml = _html.join('');
-            adapter.setState({device: 'root', channel: ip, state: 'queue'}, {val: qtext, ack: true});
-            adapter.log.debug(`queue for ${player.baseUrl}: ${qtext}`);
-            adapter.setState({device: 'root', channel: ip, state: 'queue_html'}, {val: qhtml, ack: true});
-            adapter.log.debug(`queue for ${player.baseUrl}: ${qhtml}`);
-        }
-        discovery.getFavorites()
-            .then(favorites => {
-                // Go through all players
-                for (let i = 0; i < discovery.players.length; i++) {
-                    const player = discovery.players[i];
-
-                    player._address = player._address || getIp(player);
-
-                    const ip = player._address;
-                    channels[ip] && takeSonosFavorites(ip, favorites);
-                }
-            })
-            .catch(e => adapter.log.error('Cannot getFavorites: ' + e));
-    }
+    //vis\.setValue\('sonos\.[0-9]\.root\.[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}\.current_track_number', ([1-9]{1,4})\)
 }
-
 
 async function checkNewGroupStates(channel) {
     for (const g in newGroupStates) {
@@ -2035,6 +2040,10 @@ function main() {
             discovery.on('transport-state', data => {
                 socketServer && socketServer.sockets.emit('transport-state', data);
                 processSonosEvents('transport-state', data);
+
+                adapter.log.debug(JSON.stringify(data));
+
+                //modify queue
             });
 
             discovery.on('group-volume', data => {
