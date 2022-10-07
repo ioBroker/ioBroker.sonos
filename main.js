@@ -1857,6 +1857,7 @@ function processSonosEvents(event, data) {
 function updateHtmlQueue(player) {
     const playerDp = `root.${player}`;
     let queue = adapter.getState(`${playerDp}.queue_html`);
+    adapter.log.info(`Datenpunkt: ${playerDp}.queue_html`)
     adapter.log.info(typeof queue);
     adapter.log.info(`Queue: ${queue}`);
     if(!queue) {
