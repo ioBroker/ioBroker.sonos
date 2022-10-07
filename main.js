@@ -1858,8 +1858,6 @@ async function updateHtmlQueue(player) {
     const playerDp = `sonos.0.root.${player}`;
     let queue = await adapter.getStateAsync(`${playerDp}.queue_html`);
     adapter.log.info(`Datenpunkt: ${playerDp}.queue_html`)
-    adapter.log.info(typeof queue.val);
-    adapter.log.info(`Queue: ${queue.val}`);
     if(!queue) {
         return;
     }
