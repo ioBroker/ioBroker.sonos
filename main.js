@@ -1811,13 +1811,16 @@ function processSonosEvents(event, data) {
             adapter.log.error('Cannot getFavorites: ' + err);
         }
     } else if (event === 'queue') {
-        createQueue();
+        createQueue(data);
     } else {
         adapter.log.debug(`${event} ${typeof data === 'object' ? JSON.stringify(data) : data}`);
     }
 }
 
-function createQueue() {
+function createQueue(data) {
+
+    adapter.log.debug(JSON.stringify(data));
+
     const player = discovery.getPlayerByUUID(data.uuid);
     if (player) {
         player._address = player._address || getIp(player);
