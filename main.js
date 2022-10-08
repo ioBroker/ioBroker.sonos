@@ -1861,38 +1861,38 @@ async function updateHtmlQueue(player) {
     const playerDp = `sonos.0.root.${player}`;
     let queue = await adapter.getStateAsync(`${playerDp}.queue_html`);
     if(!queue) {
-        adapter.log.debug(`Update Queue: html-queue is empty`);
+        adapter.log.info(`Update Queue: html-queue is empty`);
         return;
     }
-    adapter.log.debug(`Update Queue: html-queue is ${queue}`);
+    adapter.log.info(`Update Queue: html-queue is ${queue}`);
 
     //Remove old highlighting
     queue = queue.val.replace('class="sonosQueueRow currentTrack"', 'class="sonosQueueRow"');
 
     //Get current track number
     const trackNumber = await adapter.getStateAsync(`${playerDp}.current_track_number`);
-    adapter.log.debug(`Update Queue: current track number is ${trackNumber.val}`);
+    adapter.log.info(`Update Queue: current track number is ${trackNumber.val}`);
 
     //Create RegEx pattern
     const regexPattern =  `<tr class="sonosQueueRow" onclick="vis.setValue\\('sonos.[0-9].root.[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}.current_track_number', ${trackNumber.val}\\)">`;
-    adapter.log.debug(`Update Queue: RegEx pattern is ${regexPattern}`);
+    adapter.log.info(`Update Queue: RegEx pattern is ${regexPattern}`);
 
     //Match current track in queue
     const regex = new RegExp(regexPattern, 'gm');
     let currentTrack = queue.match(regex);
     if(!currentTrack) {
-        adapter.log.debug(`Update Queue: no RegEx match`);
+        adapter.log.info(`Update Queue: no RegEx match`);
         return;
     }
-    adapter.log.debug(`Update Queue: got match ${currentTrack}`);
+    adapter.log.info(`Update Queue: got match ${currentTrack}`);
 
     //Add class to current track
     const currentTrackHighlight = currentTrack.toString().replace('class="sonosQueueRow"', 'class="sonosQueueRow currentTrack"');
-    adapter.log.debug(`Update Queue: new html string for current track is ${currentTrackHighlight}`);
+    adapter.log.info(`Update Queue: new html string for current track is ${currentTrackHighlight}`);
 
     //Replace html for current track in queue
     queue = queue.replace(currentTrack, currentTrackHighlight);
-    adapter.log.debug(`Update Queue: new queue is ${queue}`);
+    adapter.log.info(`Update Queue: new queue is ${queue}`);
 
     //set queue to dp
     adapter.setState(`${playerDp}.queue_html`, {val: queue, ack: true});
