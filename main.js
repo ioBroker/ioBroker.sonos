@@ -1606,15 +1606,10 @@ function takeSonosFavorites(ip, favorites) {
         if (favorites[favorite].title) {
             sFavorites += (sFavorites ? ', ' : '') + favorites[favorite].title;
 			aFavorites.push(favorites[favorite].title);
-            _hFavorites.push(`<tr class="sonosFavoriteRow" onclick="vis.setValue('${adapter.namespace}.root.${ip}.favorites_set', ${favorites[favorite].title})"><td class="sonosFavoriteCover"><img src="${favorites[favorite].albumArtUri}"></td><td class="sonosFavoriteTitle">${favorites[favorite].title}</td></tr>`);
-
-            adapter.log.info(JSON.stringify(_hFavorites));
+            _hFavorites.push(`<tr class="sonosFavoriteRow" onclick="vis.setValue('${adapter.namespace}.root.${ip}.favorites_set', '${favorites[favorite].title}')"><td class="sonosFavoriteCover"><img src="${favorites[favorite].albumArtUri}"></td><td class="sonosFavoriteTitle">${favorites[favorite].title}</td></tr>`);
         }
     });
     _hFavorites.push(`</table>`);
-
-    adapter.log.info(JSON.stringify(_hFavorites));
-
     const hFavorites = _hFavorites.join('');
 
     adapter.setState({device: 'root', channel: ip, state: 'favorites_list'},       {val: sFavorites, ack: true});
