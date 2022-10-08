@@ -1825,7 +1825,7 @@ function processSonosEvents(event, data) {
                 const _text = [];
                 const _html = [];
 
-                adapter.log.info(data);
+                adapter.log.info(JSON.stringify(data));
 
                 _html.push(`<table class="sonosQueueTable">`);
                 for (let q = 0; q < data.queue.length; q++) {
