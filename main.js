@@ -1606,7 +1606,7 @@ function takeSonosFavorites(ip, favorites) {
         if (favorites[favorite].title) {
             sFavorites += (sFavorites ? ', ' : '') + favorites[favorite].title;
 			aFavorites.push(favorites[favorite].title);
-            _hFavorites.push(`<tr class="sonosFavoriteRow" onclick="vis.setValue('${adapter.namespace}.root.${ip}.favorites_set', '${favorites[favorite].title}')"><td class="sonosFavoriteCover"><img src="${favorites[favorite].albumArtUri}"></td><td class="sonosFavoriteTitle">${favorites[favorite].title}</td></tr>`);
+            _hFavorites.push(`<tr class="sonosFavoriteRow" onclick="vis.setValue('${adapter.namespace}.root.${ip}.favorites_set', '${favorites[favorite].title}')"><td class="sonosFavoriteNumber">${favorite + 1}</td><td class="sonosFavoriteCover"><img src="${favorites[favorite].albumArtUri}"></td><td class="sonosFavoriteTitle">${favorites[favorite].title}</td></tr>`);
         }
     });
     _hFavorites.push(`</table>`);
@@ -1845,7 +1845,7 @@ function processSonosEvents(event, data) {
                 _html.push(`<table class="sonosQueueTable">`);
                 for (let q = 0; q < data.queue.length; q++) {
                     _text.push(`${data.queue[q].artist} - ${data.queue[q].title}`);
-                    _html.push(`<tr class="sonosQueueRow" onclick="vis.setValue('${adapter.namespace}.root.${player._address}.current_track_number', ${q + 1})"><td class="sonosQueueTrackCover"><img src="${player.baseUrl}${data.queue[q].albumArtUri}"></td><td class="sonosQueueTrackArtist">${data.queue[q].artist}</td><td class="sonosQueueTrackAlbum">${data.queue[q].album}</td><td class="sonosQueueTrackTitle">${data.queue[q].title}</td></tr>`);
+                    _html.push(`<tr class="sonosQueueRow" onclick="vis.setValue('${adapter.namespace}.root.${player._address}.current_track_number', ${q + 1})"><td class="sonosQueueTrackNumber">${q + 1}</td><td class="sonosQueueTrackCover"><img src="${player.baseUrl}${data.queue[q].albumArtUri}"></td><td class="sonosQueueTrackArtist">${data.queue[q].artist}</td><td class="sonosQueueTrackAlbum">${data.queue[q].album}</td><td class="sonosQueueTrackTitle">${data.queue[q].title}</td></tr>`);
                 }
                 _html.push(`</table>`);
 
