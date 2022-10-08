@@ -1597,19 +1597,25 @@ function readCoverFileToState(fileName, stateName, ip) {
 function takeSonosFavorites(ip, favorites) {
     let sFavorites = '';
 	let aFavorites = [];
+    let hFavorites = [];
+
+    hFavorites.push(`<table class="sonosFavoriteTable">`);
 
 	Object.keys(favorites).forEach(favorite => {
 
         adapter.log.info(JSON.stringify(favorites));
-        
+
         if (favorites[favorite].title) {
             sFavorites += (sFavorites ? ', ' : '') + favorites[favorite].title;
 			aFavorites.push(favorites[favorite].title);
+            hFavorites.push(`<tr class="sonosFavoriteRow" onclick="vis.setValue('${adapter.namespace}.root.${player._address}.favorites_set', ${favorites[favorite].title})"><td class="sonosFavoriteCover"><img src="${favorites[favorite].albumArtUri}"></td><td class="sonosFavoriteTitle">${favorites[favorite].title}</td></tr>`);
         }
     });
+    hFavorites.push(`</table>`);
 
     adapter.setState({device: 'root', channel: ip, state: 'favorites_list'},       {val: sFavorites, ack: true});
     adapter.setState({device: 'root', channel: ip, state: 'favorites_list_array'}, {val: JSON.stringify(aFavorites), ack: true});
+    adapter.setState({device: 'root', channel: ip, state: 'favorites_list_html'},  {val: hFavorites, ack: true});
 }
 
 function getIp(player, noReplace) {
@@ -1874,7 +1880,7 @@ function processSonosEvents(event, data) {
 async function updateHtmlQueue(player, trackNumber) {
 
     //Get current html-queue
-    const playerDp = `sonos.0.root.${player}`;
+    const playerDp = `${adapter.namespace}.root.${player}`;
     let queue = await adapter.getStateAsync(`${playerDp}.queue_html`);
     if(!queue) {
         adapter.log.debug(`Update html-queue for ${player}: html-queue is empty`);
