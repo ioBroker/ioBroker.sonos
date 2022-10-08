@@ -1827,8 +1827,8 @@ function processSonosEvents(event, data) {
 
                 //Daten, die geliefert werden -> albumArtUri
                 adapter.log.info(JSON.stringify(data));
-
                 adapter.log.info(JSON.stringify(player));
+                adapter.log.info(player.baseUrl);
 
                 _html.push(`<table class="sonosQueueTable">`);
                 for (let q = 0; q < data.queue.length; q++) {
