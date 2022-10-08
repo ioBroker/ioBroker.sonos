@@ -1854,42 +1854,47 @@ function processSonosEvents(event, data) {
     }
 }
 
+// Update queue: highlight current track in html-queue
 async function updateHtmlQueue(player) {
+
+    //Get current html-queue
     const playerDp = `sonos.0.root.${player}`;
     let queue = await adapter.getStateAsync(`${playerDp}.queue_html`);
-    adapter.log.info(`Datenpunkt: ${playerDp}.queue_html`)
     if(!queue) {
+        adapter.log.debug(`Update Queue: html-queue is empty`);
         return;
     }
+    adapter.log.debug(`Update Queue: html-queue is ${queue}`);
+
+    //Remove old highlighting
     queue = queue.val.replace('class="sonosQueueRow currentTrack"', 'class="sonosQueueRow"');
+
+    //Get current track number
     const trackNumber = await adapter.getStateAsync(`${playerDp}.current_track_number`);
-    adapter.log.info(`TRACK NUMMER ${trackNumber.val}`);
+    adapter.log.debug(`Update Queue: current track number is ${trackNumber.val}`);
 
-    const regexString =  `<tr class="sonosQueueRow" onclick="vis.setValue\\('sonos.[0-9].root.[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}.current_track_number', ${trackNumber.val}\\)">`;
-    adapter.log.info(`REGEXSTRING ${regexString}`);
+    //Create RegEx pattern
+    const regexPattern =  `<tr class="sonosQueueRow" onclick="vis.setValue\\('sonos.[0-9].root.[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}.current_track_number', ${trackNumber.val}\\)">`;
+    adapter.log.debug(`Update Queue: RegEx pattern is ${regexPattern}`);
 
-    const regex = new RegExp(regexString, 'gm');
-    let match = queue.match(regex);
-    if(!match) {
-        adapter.log.info(`MATCH leer`);
+    //Match current track in queue
+    const regex = new RegExp(regexPattern, 'gm');
+    let currentTrack = queue.match(regex);
+    if(!currentTrack) {
+        adapter.log.debug(`Update Queue: no RegEx match`);
         return;
     }
-    adapter.log.info(`MATCH ${match}`);
+    adapter.log.debug(`Update Queue: got match ${currentTrack}`);
 
-    const newString = match.toString().replace('class="sonosQueueRow"', 'class="sonosQueueRow currentTrack"');
-    if(!newString) {
-        adapter.log.info(`NEW STRING leer`);
-        return;
-    }
-    adapter.log.info(`NEW STRING ${newString}`);
+    //Add class to current track
+    const currentTrackHighlight = currentTrack.toString().replace('class="sonosQueueRow"', 'class="sonosQueueRow currentTrack"');
+    adapter.log.debug(`Update Queue: new html string for current track is ${currentTrackHighlight}`);
 
-    queue = queue.replace(match, newString);
-    if(!queue) {
-        adapter.log.info(`NEUE QUEUE leer`);
-        return;
-    }
-    adapter.log.info(`NEUE QUEUE ${queue}`);
+    //Replace html for current track in queue
+    queue = queue.replace(currentTrack, currentTrackHighlight);
+    adapter.log.debug(`Update Queue: new queue is ${queue}`);
 
+    //set queue to dp
     adapter.setState(`${playerDp}.queue_html`, {val: queue, ack: true});
 }
 
@@ -2061,15 +2066,11 @@ function main() {
                 socketServer && socketServer.sockets.emit('transport-state', data);
                 processSonosEvents('transport-state', data);
 
-
-               //modify queue
-                const player = discovery.getPlayerByUUID(data.uuid);
+                // Update queue: highlight current track
+                const player = discovery.getPlayerByUUID(data.uuid);    //Get player
                 const playerip = player._address;
-                adapter.log.info(playerip);
-                updateHtmlQueue(playerip);
-
-
-
+                adapter.log.debug(`player ${playerip} got new state`);
+                updateHtmlQueue(playerip);                              //Update queue
             });
 
             discovery.on('group-volume', data => {
