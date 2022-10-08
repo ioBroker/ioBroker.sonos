@@ -52,6 +52,7 @@ For long playlists add `overflow:auto;` or `overflow-y:auto;` to basic html widg
 }
 .sonosQueueRow {
     display: table-row;
+    cursor: pointer;
 }
 .sonosQueueRow.currentTrack {
     color: #fff;

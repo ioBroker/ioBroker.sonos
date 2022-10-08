@@ -635,6 +635,15 @@ async function createChannel(name, ip, room) {
             desc:   'Array of favorites song or stations',
             name:   'Favorites Array'
         },
+        'favorites_list_html': {    // favorites html list
+            def:    '',
+            type:   'string',
+            read:   true,
+            write:  false,
+            role:   'state',
+            desc:   'List of favorites song or stations as html table',
+            name:   'Favorites list html'
+        },
         'favorites_set': {     // media.favorites.set -    select favorites from list (write only)
             def:    '',
             type:   'string',
@@ -1590,6 +1599,9 @@ function takeSonosFavorites(ip, favorites) {
 	let aFavorites = [];
 
 	Object.keys(favorites).forEach(favorite => {
+
+        adapter.log.info(JSON.stringify(favorites));
+        
         if (favorites[favorite].title) {
             sFavorites += (sFavorites ? ', ' : '') + favorites[favorite].title;
 			aFavorites.push(favorites[favorite].title);
