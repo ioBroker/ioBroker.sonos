@@ -1874,24 +1874,24 @@ async function updateHtmlQueue(player, trackNumber) {
     queue = queue.val.replace('class="sonosQueueRow currentTrack"', 'class="sonosQueueRow"');
 
     //Get current track number
-    adapter.log.info(`Update html-queue for ${player}: current track number is ${trackNumber}`);
+    adapter.log.debug(`Update html-queue for ${player}: current track number is ${trackNumber}`);
 
     //Create RegEx pattern
     const regexPattern =  `<tr class="sonosQueueRow" onclick="vis.setValue\\('sonos.[0-9].root.[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}.current_track_number', ${trackNumber}\\)">`;
-    adapter.log.info(`Update html-queue for ${player}: RegEx pattern is ${regexPattern}`);
+    adapter.log.debug(`Update html-queue for ${player}: RegEx pattern is ${regexPattern}`);
 
     //Match current track in queue
     const regex = new RegExp(regexPattern, 'gm');
     let currentTrack = queue.match(regex);
     if(!currentTrack) {
-        adapter.log.info(`Update html-queue for ${player}: no RegEx match`);
+        adapter.log.debug(`Update html-queue for ${player}: no RegEx match`);
         return;
     }
-    adapter.log.info(`Update html-queue for ${player}: got match ${currentTrack}`);
+    adapter.log.debug(`Update html-queue for ${player}: got match ${currentTrack}`);
 
     //Add class to current track
     const currentTrackHighlight = currentTrack.toString().replace('class="sonosQueueRow"', 'class="sonosQueueRow currentTrack"');
-    adapter.log.info(`Update html-queue for ${player}: new html string for current track is ${currentTrackHighlight}`);
+    adapter.log.debug(`Update html-queue for ${player}: new html string for current track is ${currentTrackHighlight}`);
 
     //Replace html for current track in queue
     queue = queue.replace(currentTrack, currentTrackHighlight);

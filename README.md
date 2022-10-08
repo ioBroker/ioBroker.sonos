@@ -87,7 +87,7 @@ For long playlists add `overflow:auto;` or `overflow-y:auto;` to basic html widg
 -->
 ## Changelog
 ### WORK IN PROGRESS
-* (Standarduser & Cee Jay) Added new state queue_html with covers
+* (Standarduser & Cee Jey) Added new state queue_html with covers
 
 ### 2.2.3 (2022-07-04)
 * (Rello) Added track number state
