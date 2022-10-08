@@ -32,15 +32,46 @@ Please note: This SONOS adapter has stability issues if using 'text to speech' w
 Workaround for text to speech is to use the [SONOS HTTP API](https://github.com/jishi/node-sonos-http-api).
 
 ## Queue in VIS
-Use state `queue_html` to show current queue with basic html widget in VIS. By click on a row the track will be immedeatly played.
+Use state `queue_html` to show current queue with basic html widget in VIS. By click on a row the track will be immediatly played.
 Format the table with following css classes:
-* **`.sonosQueueTable`**: hole table
-  * **`.sonosQueueRow`**: rows containing track information
-  * **`.currentTrack`**: added to the row containg current playing track
-    * **`.sonosQueueTrackCover`**: Album art of track (grab image with `.sonosQueueTrackCover img`)
-    * **`.sonosQueueTrackArtist`**: Name of artist
-    * **`.sonosQueueTrackAlbum`**: Name of album (use `display:none`if not needed)
-    * **`.sonosQueueTrackTitle`**: Name of title
+* `.sonosQueueTable`: hole table
+* `.sonosQueueRow`: rows containing track information
+* `.currentTrack`: added to the row containg current playing track
+* `.sonosQueueTrackCover`: Album art of track (grab image with `.sonosQueueTrackCover img`)
+* `.sonosQueueTrackArtist`: Name of artist
+* `.sonosQueueTrackAlbum`: Name of album (use `display:none`if not needed)
+* `.sonosQueueTrackTitle`: Name of title
+
+For long playlists add `overflow:auto;` or `overflow-y:auto;` to basic html widget.
+
+### Sample CSS
+```
+.sonosQueueTable {
+    color: #bbb;
+    font-size: 12px;
+}
+.sonosQueueRow {
+    display: table-row;
+}
+.sonosQueueRow.currentTrack {
+    color: #fff;
+    font-weight: bold;
+}
+.sonosQueueTrackCover img {
+    width: 30px;
+    height: 30px;
+    display: table-column;
+}
+.sonosQueueTrackArtist {
+    display: table-row;
+}
+.sonosQueueTrackAlbum {
+    display: none;
+}
+.sonosQueueTrackTitle {
+    display: table-row;
+}
+```
 
 ## To Do
 * Rewrite with https://github.com/svrooij/node-sonos-ts
@@ -55,8 +86,8 @@ Format the table with following css classes:
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
-### 2.2.4 (2022-10-09)
-* (Standarduser & Cee Jay) Added new state queue_html with covers for VIS
+### WORK IN PROGRESS
+* (Standarduser & Cee Jay) Added new state queue_html with covers
 
 ### 2.2.3 (2022-07-04)
 * (Rello) Added track number state
