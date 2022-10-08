@@ -1859,7 +1859,7 @@ function updateHtmlQueue(player) {
 
     //Get current html-queue
     const playerDp = `sonos.0.root.${player}`;
-    let queue = adapter.getState(`${playerDp}.queue_html`);
+    let queue = await adapter.getStateAsync(`${playerDp}.queue_html`);
     if(!queue) {
         adapter.log.info(`Update queue for ${player}: html-queue is empty`);
         return;
@@ -1870,7 +1870,7 @@ function updateHtmlQueue(player) {
     queue = queue.val.replace('class="sonosQueueRow currentTrack"', 'class="sonosQueueRow"');
 
     //Get current track number
-    const trackNumber = adapter.getState(`${playerDp}.current_track_number`);
+    const trackNumber = await adapter.getStateAsync(`${playerDp}.current_track_number`);
     adapter.log.info(`Update queue for ${player}: current track number is ${trackNumber.val}`);
 
     //Create RegEx pattern
