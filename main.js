@@ -1855,7 +1855,7 @@ function processSonosEvents(event, data) {
 }
 
 // Update queue: highlight current track in html-queue
-function updateHtmlQueue(player) {
+async function updateHtmlQueue(player) {
 
     //Get current html-queue
     const playerDp = `sonos.0.root.${player}`;
