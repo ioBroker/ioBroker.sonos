@@ -1597,21 +1597,25 @@ function readCoverFileToState(fileName, stateName, ip) {
 function takeSonosFavorites(ip, favorites) {
     let sFavorites = '';
 	let aFavorites = [];
-    let hFavorites = [];
+    let _hFavorites = [];
 
-    hFavorites.push(`<table class="sonosFavoriteTable">`);
+    _hFavorites.push(`<table class="sonosFavoriteTable">`);
 
 	Object.keys(favorites).forEach(favorite => {
-
-        adapter.log.info(JSON.stringify(favorites));
 
         if (favorites[favorite].title) {
             sFavorites += (sFavorites ? ', ' : '') + favorites[favorite].title;
 			aFavorites.push(favorites[favorite].title);
-            hFavorites.push(`<tr class="sonosFavoriteRow" onclick="vis.setValue('${adapter.namespace}.root.${player._address}.favorites_set', ${favorites[favorite].title})"><td class="sonosFavoriteCover"><img src="${favorites[favorite].albumArtUri}"></td><td class="sonosFavoriteTitle">${favorites[favorite].title}</td></tr>`);
+            _hFavorites.push(`<tr class="sonosFavoriteRow" onclick="vis.setValue('${adapter.namespace}.root.${player._address}.favorites_set', ${favorites[favorite].title})"><td class="sonosFavoriteCover"><img src="${favorites[favorite].albumArtUri}"></td><td class="sonosFavoriteTitle">${favorites[favorite].title}</td></tr>`);
+
+            adapter.log.info(JSON.stringify(_hFavorites));
         }
     });
-    hFavorites.push(`</table>`);
+    _hFavorites.push(`</table>`);
+
+    adapter.log.info(JSON.stringify(_hFavorites));
+    
+    const hFavorites = _hFavorites.join('');
 
     adapter.setState({device: 'root', channel: ip, state: 'favorites_list'},       {val: sFavorites, ack: true});
     adapter.setState({device: 'root', channel: ip, state: 'favorites_list_array'}, {val: JSON.stringify(aFavorites), ack: true});
