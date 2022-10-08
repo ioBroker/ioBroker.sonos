@@ -1864,7 +1864,7 @@ async function updateHtmlQueue(player) {
         adapter.log.info(`Update queue for ${player}: html-queue is empty`);
         return;
     }
-    adapter.log.info(`Update queue for ${player}: html-queue is ${queue}`);
+    adapter.log.info(`Update queue for ${player}: html-queue is ${queue.val}`);
 
     //Remove old highlighting
     queue = queue.val.replace('class="sonosQueueRow currentTrack"', 'class="sonosQueueRow"');
@@ -1888,7 +1888,7 @@ async function updateHtmlQueue(player) {
 
     //Add class to current track
     const currentTrackHighlight = currentTrack.toString().replace('class="sonosQueueRow"', 'class="sonosQueueRow currentTrack"');
-    adapter.log.info(`Update queue ${player}: new html string for current track is ${currentTrackHighlight}`);
+    adapter.log.info(`Update queue for ${player}: new html string for current track is ${currentTrackHighlight}`);
 
     //Replace html for current track in queue
     queue = queue.replace(currentTrack, currentTrackHighlight);
