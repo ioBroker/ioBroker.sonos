@@ -1359,8 +1359,7 @@ function takeSonosState(ip, sonosState) {
 
     // Update queue: highlight current track
     const playerip = player._address;
-    adapter.log.debug(`player ${playerip} got new state`);
-    updateHtmlQueue(playerip);
+    updateHtmlQueue(playerip, sonosState.trackNo);
 
     if (lastCover !== sonosState.currentTrack.albumArtUri) {
         const defaultImg = __dirname + '/img/browse_missing_album_art.png';
@@ -1860,7 +1859,7 @@ function processSonosEvents(event, data) {
 }
 
 // Update queue: highlight current track in html-queue
-async function updateHtmlQueue(player) {
+async function updateHtmlQueue(player, trackNumber) {
 
     //Get current html-queue
     const playerDp = `sonos.0.root.${player}`;
@@ -1875,11 +1874,10 @@ async function updateHtmlQueue(player) {
     queue = queue.val.replace('class="sonosQueueRow currentTrack"', 'class="sonosQueueRow"');
 
     //Get current track number
-    const trackNumber = await adapter.getStateAsync(`${playerDp}.current_track_number`);
-    adapter.log.info(`Update queue for ${player}: current track number is ${trackNumber.val}`);
+    adapter.log.info(`Update queue for ${player}: current track number is ${trackNumber}`);
 
     //Create RegEx pattern
-    const regexPattern =  `<tr class="sonosQueueRow" onclick="vis.setValue\\('sonos.[0-9].root.[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}.current_track_number', ${trackNumber.val}\\)">`;
+    const regexPattern =  `<tr class="sonosQueueRow" onclick="vis.setValue\\('sonos.[0-9].root.[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}.current_track_number', ${trackNumber}\\)">`;
     adapter.log.info(`Update queue for ${player}: RegEx pattern is ${regexPattern}`);
 
     //Match current track in queue
@@ -2072,10 +2070,10 @@ function main() {
                 processSonosEvents('transport-state', data);
 
                 // Update queue: highlight current track
-                const player = discovery.getPlayerByUUID(data.uuid);    //Get player
-                const playerip = player._address;
-                adapter.log.debug(`player ${playerip} got new state`);
-                updateHtmlQueue(playerip);                              //Update queue
+                //const player = discovery.getPlayerByUUID(data.uuid);    //Get player
+                //const playerip = player._address;
+                //adapter.log.debug(`player ${playerip} got new state`);
+                //updateHtmlQueue(playerip);                              //Update queue
             });
 
             discovery.on('group-volume', data => {
