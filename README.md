@@ -31,8 +31,18 @@ Please note: This SONOS adapter has stability issues if using 'text to speech' w
 
 Workaround for text to speech is to use the [SONOS HTTP API](https://github.com/jishi/node-sonos-http-api).
 
+## Queue in VIS
+Use state `queue_html` to show current queue with basic html widget in VIS. By click on a row the track will be immedeatly played.
+Format the table with following css classes:
+* **`.sonosQueueTable`**: hole table
+  * **`.sonosQueueRow`**: rows containing track information
+  * **`.currentTrack`**: added to the row containg current playing track
+    * **`.sonosQueueTrackCover`**: Album art of track (grab image with `.sonosQueueTrackCover img`)
+    * **`.sonosQueueTrackArtist`**: Name of artist
+    * **`.sonosQueueTrackAlbum`**: Name of album (use `display:none`if not needed)
+    * **`.sonosQueueTrackTitle`**: Name of title
+
 ## To Do
-* Show queue with covers
 * Rewrite with https://github.com/svrooij/node-sonos-ts
 
 ## Configuration
@@ -45,6 +55,9 @@ Workaround for text to speech is to use the [SONOS HTTP API](https://github.com/
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
+### 2.2.4 (2022-10-09)
+* (Standarduser & Cee Jay) Added new state queue_html with covers for VIS
+
 ### 2.2.3 (2022-07-04)
 * (Rello) Added track number state
 
