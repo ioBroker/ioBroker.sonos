@@ -1888,7 +1888,7 @@ async function updateHtmlQueue(player, trackNumber) {
     adapter.log.debug(`Update html-queue for ${player}: current html-queue is ${queue.val}`);
 
     //Remove old highlighting
-    queue = queue.val.replace('class="sonosQueueRow currentTrack"', 'class="sonosQueueRow"');
+    queue = queue.val.replace('class="sonosQueueRow currentTrack" id="currentTrack"', 'class="sonosQueueRow"');
 
     //Get current track number
     adapter.log.debug(`Update html-queue for ${player}: current track number is ${trackNumber}`);
@@ -1906,8 +1906,8 @@ async function updateHtmlQueue(player, trackNumber) {
     }
     adapter.log.debug(`Update html-queue for ${player}: got match ${currentTrack}`);
 
-    //Add class to current track
-    const currentTrackHighlight = currentTrack.toString().replace('class="sonosQueueRow"', 'class="sonosQueueRow currentTrack"');
+    //Add id and class to current track
+    const currentTrackHighlight = currentTrack.toString().replace('class="sonosQueueRow"', 'class="sonosQueueRow currentTrack" id="currentTrack"');
     adapter.log.debug(`Update html-queue for ${player}: new html string for current track is ${currentTrackHighlight}`);
 
     //Replace html for current track in queue
