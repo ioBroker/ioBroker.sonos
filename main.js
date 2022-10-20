@@ -1849,6 +1849,12 @@ function processSonosEvents(event, data) {
                 }
                 _html.push(`</table>`);
 
+                // Add script for auto-scroll playlist
+                _html.push(`<script>`);
+                _html.push(`let element = document.getElementById("currentTrack");`);
+                _html.push(`if (element != undefined) element.scrollIntoView(true);`);
+                _html.push(`</script>`);
+
                 const qtext = _text.join(', ');
                 const qhtml = _html.join('');
                 adapter.setState({device: 'root', channel: ip, state: 'queue'}, {val: qtext, ack: true});
