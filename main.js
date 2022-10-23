@@ -1850,12 +1850,12 @@ function processSonosEvents(event, data) {
                 _html.push(`</table>`);
 
                 // Add script for auto-scroll playlist
-                /*
+                
                 _html.push(`<script>`);
                 _html.push(`let element = document.getElementById("currentTrack");`);
                 _html.push(`if (element != undefined) element.scrollIntoView({behavior: "auto", block: "start", inline: "nearest"});`);
                 _html.push(`</script>`);
-                */
+
 
                 const qtext = _text.join(', ');
                 const qhtml = _html.join('');
