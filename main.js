@@ -1862,7 +1862,7 @@ function processSonosEvents(event, data) {
                 _html.push(`
                     <script>
                     let element = document.getElementById("currentTrack");
-                    if (element != undefined) element.scrollIntoView({behavior: "auto", block: "center", inline: "nearest"});
+                    if (element != undefined) element.scrollIntoView({behavior: "auto", block: "nearest", inline: "nearest"});
                     </script>
                     `);
                 
