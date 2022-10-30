@@ -1845,17 +1845,25 @@ function processSonosEvents(event, data) {
                 _html.push(`<table class="sonosQueueTable">`);
                 for (let q = 0; q < data.queue.length; q++) {
                     _text.push(`${data.queue[q].artist} - ${data.queue[q].title}`);
-                    _html.push(`<tr class="sonosQueueRow" onclick="vis.setValue('${adapter.namespace}.root.${player._address}.current_track_number', ${q + 1})"><td class="sonosQueueTrackNumber">${q + 1}</td><td class="sonosQueueTrackCover"><img src="${player.baseUrl}${data.queue[q].albumArtUri}"></td><td class="sonosQueueTrackArtist">${data.queue[q].artist}</td><td class="sonosQueueTrackAlbum">${data.queue[q].album}</td><td class="sonosQueueTrackTitle">${data.queue[q].title}</td></tr>`);
+                    _html.push(`
+                        <tr class="sonosQueueRow" onclick="vis.setValue('${adapter.namespace}.root.${player._address}.current_track_number', ${q + 1})">
+                        <td class="sonosQueueTrackNumber">${q + 1}</td>
+                        <td class="sonosQueueTrackCover"><img src="${player.baseUrl}${data.queue[q].albumArtUri}"></td>
+                        <td class="sonosQueueTrackArtist">${data.queue[q].artist}</td>
+                        <td class="sonosQueueTrackAlbum">${data.queue[q].album}</td>
+                        <td class="sonosQueueTrackTitle">${data.queue[q].title}</td>
+                        </tr>
+                        `);
                 }
                 _html.push(`</table>`);
 
                 // Add script for auto-scroll playlist
-                
-                _html.push(`<script>`);
-                _html.push(`let element = document.getElementById("currentTrack");`);
-                _html.push(`if (element != undefined) element.scrollIntoView({behavior: "auto", block: "start", inline: "nearest"});`);
-                _html.push(`</script>`);
-
+                _html.push(`
+                    <script>
+                    let element = document.getElementById("currentTrack");
+                    if (element != undefined) element.scrollIntoView({behavior: "smooth", block: "center", inline: "nearest"});
+                    </script>
+                    `);
 
                 const qtext = _text.join(', ');
                 const qhtml = _html.join('');
