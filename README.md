@@ -115,6 +115,7 @@ Please note: highlighting current playing favorite is not supported.
 ## Changelog
 ### WORK IN PROGRESS
 * (Standarduser & Cee-Jey) Added new states `favorites_list_html` and `queue_html with covers`
+* (Standarduser) Changed default album art if no cover was found
 
 ### 2.2.3 (2022-07-04)
 * (Rello) Added track number state
