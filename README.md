@@ -31,21 +31,46 @@ Please note: This SONOS adapter has stability issues if using 'text to speech' w
 
 Workaround for text to speech is to use the [SONOS HTTP API](https://github.com/jishi/node-sonos-http-api).
 
-## Queue in VIS
-Use state `queue_html` to show current queue with basic html widget in VIS. By click on a row the track will be immediatly played.
+## Favorites & Queue in VIS
+Use states `favorites_list_html` and `queue_html` to show playlists and current queue with basic html widget in VIS. By click on a row the playlist or track will be played immediatly.
 Format the table with following css classes:
+
+### Favorites
+* `sonosFavoriteTable`: hole favorite table
+* `sonosFavoriteRow`: rows with favorite information
+* `sonosFavoriteNumber`: Number of favorite
+* `sonosFavoriteCover`: Album art of favorite (grab image with `.sonosFavoriteCover img`)
+* `sonosFavoriteTitle`: Name of favorite
+
+### Queue
 * `.sonosQueueTable`: hole table
 * `.sonosQueueRow`: rows containing track information
 * `.currentTrack`: added to the row containg current playing track
+* `.sonosQueueTrackNumber`: Number or track
 * `.sonosQueueTrackCover`: Album art of track (grab image with `.sonosQueueTrackCover img`)
 * `.sonosQueueTrackArtist`: Name of artist
 * `.sonosQueueTrackAlbum`: Name of album (use `display:none`if not needed)
 * `.sonosQueueTrackTitle`: Name of title
 
-For long playlists add `overflow:auto;` or `overflow-y:auto;` to basic html widget.
+For long lists add `overflow:auto;` or `overflow-y:auto;` to basic html widget.
+Please note: highlighting current playing favorite is not supported.
 
 ### Sample CSS
 ```
+.sonosFavoriteTable {
+    color: #bbb;
+    font-size: 12px;
+}
+.sonosFavoriteRow {
+    cursor: pointer;
+}
+.sonosFavoriteNumber {}
+.sonosFavoriteCover img {
+    width: 30px;
+    height: 30px;
+}
+.sonosFavoriteTitle {}
+
 .sonosQueueTable {
     color: #bbb;
     font-size: 12px;
@@ -58,6 +83,7 @@ For long playlists add `overflow:auto;` or `overflow-y:auto;` to basic html widg
     color: #fff;
     font-weight: bold;
 }
+.sonosQueueTrackNumber {}
 .sonosQueueTrackCover img {
     width: 30px;
     height: 30px;
@@ -88,7 +114,7 @@ For long playlists add `overflow:auto;` or `overflow-y:auto;` to basic html widg
 -->
 ## Changelog
 ### WORK IN PROGRESS
-* (Standarduser & Cee Jey) Added new state queue_html with covers
+* (Standarduser & Cee-Jey) Added new states `favorites_list_html` and `queue_html with covers`
 
 ### 2.2.3 (2022-07-04)
 * (Rello) Added track number state
