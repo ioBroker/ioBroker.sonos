@@ -1371,7 +1371,6 @@ function takeSonosState(ip, sonosState) {
     updateHtmlQueue(playerip, sonosState.trackNo);
 
     if (lastCover !== sonosState.currentTrack.albumArtUri) {
-        //const defaultImg = __dirname + '/img/browse_missing_album_art.png';
         const defaultImg = __dirname + '/img/no-cover.png';
         const stateName  = adapter.namespace + '.root.' + ip + '.cover_png';
         let fileName;
