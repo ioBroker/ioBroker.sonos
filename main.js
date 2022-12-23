@@ -588,7 +588,7 @@ async function createChannel(name, ip, room) {
             role:   'media.trackNo',
             desc:   'Current track number',
             name:   'Current track number'
-   	},
+   	    },
         'alive': {             // indicator.reachable -    if player alive (read only)
             type:   'boolean',
             read:   true,
@@ -634,6 +634,15 @@ async function createChannel(name, ip, room) {
             role:   'media.favorites.array',
             desc:   'Array of favorites song or stations',
             name:   'Favorites Array'
+        },
+        'favorites_list_html': {    // favorites html list
+            def:    '',
+            type:   'string',
+            read:   true,
+            write:  false,
+            role:   'state',
+            desc:   'List of favorites song or stations as html table',
+            name:   'Favorites list html'
         },
         'favorites_set': {     // media.favorites.set -    select favorites from list (write only)
             def:    '',
@@ -688,6 +697,14 @@ async function createChannel(name, ip, room) {
             write:  false,
             role:   'state',
             name:   'Play queue'
+        },
+        'queue_html': { // queue html table
+            def:    '',
+            type:   'string',
+            read:   true,
+            write:  false,
+            role:   'state',
+            name:   'Play queue html'
         },
     };
 
@@ -1349,8 +1366,12 @@ function takeSonosState(ip, sonosState) {
     // Track number
     adapter.setState({device: 'root', channel: ip, state: 'current_track_number'},   {val: sonosState.trackNo, ack: true});
 
+    // Update html-queue: highlight current track
+    const playerip = player._address;
+    updateHtmlQueue(playerip, sonosState.trackNo);
+
     if (lastCover !== sonosState.currentTrack.albumArtUri) {
-        const defaultImg = __dirname + '/img/browse_missing_album_art.png';
+        const defaultImg = __dirname + '/img/no-cover.png';
         const stateName  = adapter.namespace + '.root.' + ip + '.cover_png';
         let fileName;
         let md5url;
@@ -1576,16 +1597,24 @@ function readCoverFileToState(fileName, stateName, ip) {
 function takeSonosFavorites(ip, favorites) {
     let sFavorites = '';
 	let aFavorites = [];
+    let _hFavorites = [];
+
+    _hFavorites.push(`<table class="sonosFavoriteTable">`);
 
 	Object.keys(favorites).forEach(favorite => {
+
         if (favorites[favorite].title) {
             sFavorites += (sFavorites ? ', ' : '') + favorites[favorite].title;
 			aFavorites.push(favorites[favorite].title);
+            _hFavorites.push(`<tr class="sonosFavoriteRow" onclick="vis.setValue('${adapter.namespace}.root.${ip}.favorites_set', '${favorites[favorite].title}')"><td class="sonosFavoriteNumber">${Number(favorite) + 1}</td><td class="sonosFavoriteCover"><img src="${favorites[favorite].albumArtUri}"></td><td class="sonosFavoriteTitle">${favorites[favorite].title}</td></tr>`);
         }
     });
+    _hFavorites.push(`</table>`);
+    const hFavorites = _hFavorites.join('');
 
     adapter.setState({device: 'root', channel: ip, state: 'favorites_list'},       {val: sFavorites, ack: true});
     adapter.setState({device: 'root', channel: ip, state: 'favorites_list_array'}, {val: JSON.stringify(aFavorites), ack: true});
+    adapter.setState({device: 'root', channel: ip, state: 'favorites_list_html'},  {val: hFavorites, ack: true});
 }
 
 function getIp(player, noReplace) {
@@ -1732,7 +1761,7 @@ function processSonosEvents(event, data) {
         }
 //            }
 //        }
-    }  else if (event === 'volume') {
+    } else if (event === 'volume') {
         // {
         //     uuid:             _this.uuid,
         //     previousVolume:   previousVolume,
@@ -1811,12 +1840,37 @@ function processSonosEvents(event, data) {
             if (channels[ip]) {
                 channels[ip].uuid = data.uuid;
                 const _text = [];
+                const _html = [];
+
+                _html.push(`<table class="sonosQueueTable">`);
                 for (let q = 0; q < data.queue.length; q++) {
                     _text.push(`${data.queue[q].artist} - ${data.queue[q].title}`);
+                    _html.push(`
+                        <tr class="sonosQueueRow" onclick="vis.setValue('${adapter.namespace}.root.${player._address}.current_track_number', ${q + 1})">
+                        <td class="sonosQueueTrackNumber">${q + 1}</td>
+                        <td class="sonosQueueTrackCover"><img src="${player.baseUrl}${data.queue[q].albumArtUri}"></td>
+                        <td class="sonosQueueTrackArtist">${data.queue[q].artist}</td>
+                        <td class="sonosQueueTrackAlbum">${data.queue[q].album}</td>
+                        <td class="sonosQueueTrackTitle">${data.queue[q].title}</td>
+                        </tr>
+                        `);
                 }
+                _html.push(`</table>`);
+
+                // Add script for auto-scroll playlist
+                _html.push(`
+                    <script>
+                    let element = document.getElementById("currentTrack");
+                    if (element != undefined) element.scrollIntoView({behavior: "auto", block: "start", inline: "nearest"});
+                    </script>
+                    `);
+
                 const qtext = _text.join(', ');
+                const qhtml = _html.join('');
                 adapter.setState({device: 'root', channel: ip, state: 'queue'}, {val: qtext, ack: true});
                 adapter.log.debug(`queue for ${player.baseUrl}: ${qtext}`);
+                adapter.setState({device: 'root', channel: ip, state: 'queue_html'}, {val: qhtml, ack: true});
+                adapter.log.debug(`queue for ${player.baseUrl}: ${qhtml}`);
             }
             discovery.getFavorites()
                 .then(favorites => {
@@ -1835,6 +1889,49 @@ function processSonosEvents(event, data) {
     } else {
         adapter.log.debug(`${event} ${typeof data === 'object' ? JSON.stringify(data) : data}`);
     }
+}
+
+// Update queue: highlight current track in html-queue
+async function updateHtmlQueue(player, trackNumber) {
+
+    //Get current html-queue
+    const playerDp = `${adapter.namespace}.root.${player}`;
+    let queue = await adapter.getStateAsync(`${playerDp}.queue_html`);
+    if(!queue) {
+        adapter.log.debug(`Update html-queue for ${player}: html-queue is empty`);
+        return;
+    }
+    adapter.log.debug(`Update html-queue for ${player}: current html-queue is ${queue.val}`);
+
+    //Remove old highlighting
+    queue = queue.val.replace('class="sonosQueueRow currentTrack" id="currentTrack"', 'class="sonosQueueRow"');
+
+    //Get current track number
+    adapter.log.debug(`Update html-queue for ${player}: current track number is ${trackNumber}`);
+
+    //Create RegEx pattern
+    const regexPattern =  `<tr class="sonosQueueRow" onclick="vis.setValue\\('sonos.[0-9].root.[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}.current_track_number', ${trackNumber}\\)">`;
+    adapter.log.debug(`Update html-queue for ${player}: RegEx pattern is ${regexPattern}`);
+
+    //Match current track in queue
+    const regex = new RegExp(regexPattern, 'gm');
+    let currentTrack = queue.match(regex);
+    if(!currentTrack) {
+        adapter.log.debug(`Update html-queue for ${player}: no RegEx match`);
+        return;
+    }
+    adapter.log.debug(`Update html-queue for ${player}: got match ${currentTrack}`);
+
+    //Add id and class to current track
+    const currentTrackHighlight = currentTrack.toString().replace('class="sonosQueueRow"', 'class="sonosQueueRow currentTrack" id="currentTrack"');
+    adapter.log.debug(`Update html-queue for ${player}: new html string for current track is ${currentTrackHighlight}`);
+
+    //Replace html for current track in queue
+    queue = queue.replace(currentTrack, currentTrackHighlight);
+    adapter.log.debug(`Update html-queue ${player}: new queue is ${queue}`);
+
+    //set queue to dp
+    adapter.setState(`${playerDp}.queue_html`, {val: queue, ack: true});
 }
 
 async function checkNewGroupStates(channel) {
