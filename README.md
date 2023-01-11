@@ -112,7 +112,7 @@ Please note: highlighting current playing favorite is not supported.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
-### WORK IN PROGRESS
+### **WORK IN PROGRESS**
 * (Standarduser & Jey-Cee) Added new states `favorites_list_html` and `queue_html with covers`
 * (Standarduser) Changed default album art if no cover was found
 * (bluefox) Configuration migrated to JSON-Config
