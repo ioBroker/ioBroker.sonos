@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "sonos",
-    "version": "2.2.3",
+    "version": "2.3.0",
     "news": {
+      "2.3.0": {
+        "en": "Added new states `favorites_list_html` and `queue_html with covers`\nChanged default album art if no cover was found\nConfiguration migrated to JSON-Config",
+        "de": "Neue Zustände favorites_list_html und `queue_html mit Covers hinzugefügt `\nVeränderte Standardalbumkunst, wenn kein Cover gefunden wurde\nKonfiguration migriert zu JSON-Config",
+        "ru": "Добавлены новые состояния favorites_list_html и `queue_html with cover »\nИзмененный арт альбом по умолчанию, если не было найдено обложки\nКонфигурация перенесена на JSON-Config",
+        "pt": "Adicionado novos estados favorites_list_html e `queue_html com capas \"\nArte padrão alterada se nenhuma capa foi encontrada\nConfiguração migrada para JSON-Config",
+        "nl": "Vertaling: _\nVeranderde default album kunst als er geen dekmantel is gevonden\nConfiguration gemigreerd tot JSON-Config",
+        "fr": "Ajout de nouveaux états favoris_list_html et `queue_html avec des couvertures `\nChanged default album art if no cover was found\nConfiguration migrée à JSON-Config",
+        "it": "Aggiunto nuovi stati preferiti_list_html e `queue_html con copertine #\nModificata l'arte dell'album di default se non è stata trovata alcuna copertura\nConfigurazione migrata a JSON-Config",
+        "es": "Nuevos estados favoritos_list_html y `queue_html con fundas `\nCambio de arte del disco predeterminado si no se encontró cobertura\nConfiguración migrada a JSON-Config",
+        "pl": "Nowe państwa faworyzują: „_list_html” i „'queue_html”. `\nZmienił domyślny album, jeśli nie znaleziono żadnych okładek\nKonfiguracja przeniosła się do JSON-Config",
+        "uk": "Додано нові держави фаворити_list_html і `queue_html з кришками й\nЗмінений дизайн альбому за замовчуванням, якщо не знайдено\nКонфігурація мігрованих до JSON-Config",
+        "zh-cn": "增加新州优惠名单:名单:html和“queue_html” 目 录\n如果没有发现任何掩护,则改写了手法。\nA. 移徙到联合市场"
+      },
       "2.2.3": {
         "en": "Added track number state",
         "de": "Hinzugefügt Gleisnummer Zustand",
@@ -64,18 +77,6 @@
         "zh-cn": "更正了“找不到 SONOS”的错误"
       },
       "2.1.6": {
-        "en": "Corrected error with \"SONOS not found\"",
-        "de": "Fehler mit \"SONOS nicht gefunden\" behoben",
-        "ru": "Исправлена ошибка \"SONOS не найден\".",
-        "pt": "Erro corrigido com \"SONOS não encontrado\"",
-        "nl": "Fout gecorrigeerd met \"SONOS niet gevonden\"",
-        "fr": "Erreur corrigée avec \"SONOS introuvable\"",
-        "it": "Errore corretto con \"SONOS non trovato\"",
-        "es": "Error corregido con \"SONOS no encontrado\"",
-        "pl": "Poprawiony błąd „Nie znaleziono SONOS”",
-        "zh-cn": "更正了“找不到 SONOS”的错误"
-      },
-      "2.1.5": {
         "en": "Corrected error with \"SONOS not found\"",
         "de": "Fehler mit \"SONOS nicht gefunden\" behoben",
         "ru": "Исправлена ошибка \"SONOS не найден\".",
