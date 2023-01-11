@@ -1,0 +1,21 @@
+{
+  "Devices": "Пристрої",
+  "Fade in (text2speech)": "Збільшення для голосових виводів",
+  "Fade out (text2speech)": "Згасання для голосових виводів",
+  "IP-Address": "IP-адреса",
+  "Main settings": "Основні налаштування",
+  "Name": "Ім'я",
+  "Room": "Кімната",
+  "SONOS devices": "пристрої SONOS",
+  "Search": "Пошук",
+  "Update of elapsed time": "Оновлення часу, що минув",
+  "Web server": "веб-сервер",
+  "in milliseconds": "в мілісекундах",
+  "tooltip_elapsedInterval": "Як часто буде оновлюватися час, що минув для треків у мс. Не робіть його занадто малим, щоб зменшити навантаження на систему.",
+  "tooltip_fadeIn": "Затухання в інтервалі в мс для мовних оголошень. 0 - затухання вимкнено.",
+  "tooltip_fadeOut": "Інтервал згасання в мс для мовних оголошень. 0 - згасання вимкнено.",
+  "tooltip_webserverEnabled": "Показати веб-інтерфейс SONOS",
+  "tooltip_webserverPort": "Порт для веб-інтерфейсу",
+  "update adapter information": "Перегляньте пристрої",
+  "used for TTS": "використовується для TTS"
+}

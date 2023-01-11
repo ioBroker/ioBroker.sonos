@@ -6,17 +6,16 @@
  *      derived from https://github.com/jishi/node-sonos-web-controller by Jimmy Shimizu
  */
 'use strict';
+const fs             = require('fs');
+const http           = require('http');
+const crypto         = require('crypto');
 const adapterName    = require('./package.json').name.split('.').pop();
 const utils          = require('@iobroker/adapter-core'); // Get common adapter utils
-const tools          = require(utils.controllerDir + '/lib/tools.js');
-const aliveIds       = [];
-
-const http           = require('http');
-const fs             = require('fs');
-const crypto         = require('crypto');
+const tools          = fs.existsSync(`${utils.controllerDir}/lib/tools.js`) ? require(`${utils.controllerDir}/lib/tools.js`) : require(`${utils.controllerDir}/build/lib/tools.js`);
 const SonosDiscovery = require('sonos-discovery');
 const TTS            = require('./lib/tts');
 
+const aliveIds       = [];
 let channels         = {};
 let lastCover        = null;
 let socketServer;
@@ -312,8 +311,40 @@ function startAdapter(options) {
                     break;*/
 
                 case 'browse':
-                    browse(res => obj.callback && adapter.sendTo(obj.from, obj.command, res, obj.callback));
-                    wait = true;
+                    if (obj.callback) {
+                        browse(async list => {
+                            // get all rooms
+                            const rooms = await adapter.getObjectViewAsync('system', 'enum', {startkey: 'enum.rooms.', endkey: 'enum.rooms.\u9999'});
+
+                            // merge data together
+                            if (obj.message) {
+                                if (typeof obj.message !== 'object') {
+                                    try {
+                                        obj.message = JSON.parse(obj.message);
+                                    } catch (e) {
+                                        // ignore
+                                        obj.message = {devices: []};
+                                    }
+                                }
+                            } else {
+                                obj.message = {devices: []};
+                            }
+                            const devices = obj.message.devices;
+                            // merge devices
+                            list.forEach(item => {
+                                if (!devices.find(it => it.ip === item.ip)) {
+                                    devices.push({
+                                        name: item.roomName,
+                                        room: enumName2Id(rooms.rows, item.roomName),
+                                        ip: item.ip
+                                    });
+                                }
+                            });
+
+                            adapter.sendTo(obj.from, obj.command, {native: {devices}}, obj.callback);
+                        });
+                        wait = true;
+                    }
                     break;
 
                 /*case 'del':
@@ -330,7 +361,7 @@ function startAdapter(options) {
                     break;
     */
                 default:
-                    adapter.log.warn('Unknown command: ' + obj.command);
+                    adapter.log.warn(`Unknown command: ${obj.command}`);
                     break;
             }
         }
@@ -347,13 +378,51 @@ function startAdapter(options) {
 
 function toFormattedTime(time) {
     let hours = Math.floor(time / 3600);
-    hours = (hours) ? (hours + ':') : '';
+    hours = hours ? `${hours}:` : '';
     let min = Math.floor(time / 60) % 60;
-    if (min < 10) min = '0' + min;
+    if (min < 10) {
+        min = `0${min}`;
+    }
     let sec = time % 60;
-    if (sec < 10) sec = '0' + sec;
+    if (sec < 10) {
+        sec = `0${sec}`;
+    }
 
-    return hours + min + ':' + sec;
+    return `${hours + min}:${sec}`;
+}
+
+function enumName2Id(enums, name) {
+    name = name.toLowerCase();
+    for (let e = 0; e < enums.length; e++) {
+        if (enums[e] && enums[e].value && enums[e].value.common && enums[e].value.common.name) {
+            if (typeof enums[e].value.common.name === 'object') {
+                for (const lang in enums[e].value.common.name) {
+                    if (enums[e].value.common.name.hasOwnProperty(lang) && enums[e].value.common.name[lang].toLowerCase() === name) {
+                        return enums[e].id;
+                    }
+                }
+            } else {
+                if (enums[e].value.common.name && enums[e].value.common.name.toLowerCase() === name) {
+                    return enums[e].id;
+                }
+            }
+        }
+        if (enums[e].value && enums[e].value.name) {
+            if (typeof enums[e].value.name === 'object') {
+                for (const lang in enums[e].value.name) {
+                    if (enums[e].value.name.hasOwnProperty(lang) && enums[e].value.name[lang].toLowerCase() === name) {
+                        return enums[e].id;
+                    }
+                }
+            } else {
+                if (enums[e].value.name.toLowerCase() === name) {
+                    return enums[e].id;
+                }
+            }
+        }
+    }
+
+    return '';
 }
 
 const newGroupStates = {

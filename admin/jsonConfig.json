@@ -1,0 +1,121 @@
+{
+  "type": "tabs",
+  "i18n": true,
+  "items": {
+    "mainTab": {
+      "type": "panel",
+      "label": "Main settings",
+      "items": {
+        "webServer": {
+          "type": "instance",
+          "adapter": "web",
+          "label": "Web server",
+          "help": "used for TTS",
+          "allowDeactivate": true,
+          "long": true,
+          "sm": 12,
+          "md": 6,
+          "lg": 3
+        },
+        "elapsedInterval": {
+          "newLine": true,
+          "type": "number",
+          "min": 500,
+          "max": 60000,
+          "label": "Update of elapsed time",
+          "help": "in milliseconds. ",
+          "sm": 12,
+          "md": 4,
+          "lg": 3
+        },
+        "_tooltip_elapsedInterval": {
+          "type": "staticText",
+          "text": "tooltip_elapsedInterval",
+          "style": {
+            "marginTop": 21
+          }
+        },
+        "fadeIn": {
+          "newLine": true,
+          "type": "number",
+          "min": 0,
+          "max": 10000,
+          "label": "Fade in (text2speech)",
+          "help": "in milliseconds",
+          "sm": 12,
+          "md": 4,
+          "lg": 3
+        },
+        "_tooltip_fadeIn": {
+          "type": "staticText",
+          "text": "tooltip_fadeIn",
+          "style": {
+            "marginTop": 21
+          }
+        },
+        "fadeOut": {
+          "newLine": true,
+          "type": "number",
+          "min": 0,
+          "max": 10000,
+          "label": "Fade out (text2speech)",
+          "help": "in milliseconds",
+          "sm": 12,
+          "md": 4,
+          "lg": 3
+        },
+        "_tooltip_fadeOut": {
+          "type": "staticText",
+          "text": "tooltip_fadeOut",
+          "style": {
+            "marginTop": 21
+          }
+        }
+      }
+    },
+    "devicesTab": {
+      "type": "panel",
+      "label": "SONOS devices",
+      "items": {
+        "_sendto": {
+          "type": "sendTo",
+          "variant": "contained",
+          "command": "browse",
+          "label": "Search",
+          "useNative": true,
+          "jsonData": "{\"devices\":${JSON.stringify(data.devices)}}",
+          "showProcess": true,
+          "icon": "search",
+          "timeout": 10000
+        },
+        "devices": {
+          "newLine": true,
+          "type": "table",
+          "items": [
+            {
+              "type": "text",
+              "attr": "name",
+              "width": "30%",
+              "title": "Name",
+              "filter": true
+            },
+            {
+              "type": "text",
+              "attr": "ip",
+              "width": "30%",
+              "title": "IP-Address",
+              "default": "0.0.0.0"
+            },
+            {
+              "type": "room",
+              "attr": "room",
+              "width": "30%",
+              "title": "Room",
+              "allowDeactivate": true
+            }
+          ]
+        }
+      }
+    }
+  }
+}

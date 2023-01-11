@@ -27,7 +27,7 @@
                 onChange();
             });
         } else {
-            $value.val(value).on('change', function() {
+            $value.val(value).on('change', function () {
                 onChange();
             }).on('keyup', function() {
                 onChange();
@@ -42,14 +42,16 @@
         devices = settings.devices || [];
 
         for (var key in settings) {
-            if (!settings.hasOwnProperty(key)) continue;
+            if (!settings.hasOwnProperty(key)) {
+                continue;
+            }
             setValue(key, settings[key], onChange);
         }
 
         $('#webserverPort').prop('disabled', !$('#webserverEnabled').prop('checked'));
 
         $('#table-button-search').on('click', function () {
-            sendTo(null, 'browse', null, function(list) {
+            sendTo(null, 'browse', null, function (list) {
                 getEnums('rooms', function (err, rooms) {
                     var changed = false;
                     for (var j = 0; j < list.length; j++) {
@@ -139,7 +141,7 @@
                     <select class="value" id="webServer">
                         <option value="" class="translate">disabled</option>
                     </select>
-                    <label for="webServer"><span>Web Instance</span> (<span class="translate" style="padding-left: 20px">Used for TTS</span>)</label>
+                    <label for="webServer"><span>Web Instance</span> (<span class="translate">Used for TTS</span>)</label>
                 </div>
             </div>
             <div class="row">
