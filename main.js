@@ -11,9 +11,9 @@ const http           = require('http');
 const crypto         = require('crypto');
 const adapterName    = require('./package.json').name.split('.').pop();
 const utils          = require('@iobroker/adapter-core'); // Get common adapter utils
-const tools          = fs.existsSync(`${utils.controllerDir}/lib/tools.js`) ? require(`${utils.controllerDir}/lib/tools.js`) : require(`${utils.controllerDir}/build/lib/tools.js`);
 const SonosDiscovery = require('sonos-discovery');
 const TTS            = require('./lib/tts');
+const path           = require('path');
 
 const aliveIds       = [];
 let channels         = {};
@@ -2146,9 +2146,7 @@ function main() {
     adapter.config.fadeOut = parseInt(adapter.config.fadeOut, 10) || 0;
     syncConfig()
         .then(() => {
-            const _path = tools.getConfigFileName().split('/');
-            _path.pop();
-            cacheDir = _path.join('/') + '/sonosCache/';
+            cacheDir = path.join(utils.getAbsoluteDefaultDataDir(), 'sonosCache') + path.sep;
 
             // create directory for cached files
             !fs.existsSync(cacheDir) && fs.mkdirSync(cacheDir);
