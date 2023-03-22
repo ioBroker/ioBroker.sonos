@@ -112,8 +112,7 @@ Please note: highlighting current playing favorite is not supported.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
-
-### __WORK IN PROGRESS__
+### 2.3.1 (2023-03-22)
 * (Apollon77) Prepare for future js-controller versions
 
 ### 2.3.0 (2023-01-11)

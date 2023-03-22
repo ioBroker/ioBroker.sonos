@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "sonos",
-    "version": "2.3.0",
+    "version": "2.3.1",
     "news": {
+      "2.3.1": {
+        "en": "Prepare for future js-controller versions",
+        "de": "Bereiten Sie sich auf zukünftige js-Controller-Versionen",
+        "ru": "Подготовьтесь к будущим версиям js-controller",
+        "pt": "Prepare-se para futuras versões js-controller",
+        "nl": "Bereid je voor op toekomstige Js-controller versie",
+        "fr": "Préparez-vous pour les versions futures de js-controller",
+        "it": "Prepararsi per le future versioni js-controller",
+        "es": "Prepararse para futuras versiones js-controller",
+        "pl": "Prepare for future js-controller version",
+        "uk": "Підготовка до майбутніх версій js-controller",
+        "zh-cn": "今后防污版本的编制"
+      },
       "2.3.0": {
         "en": "Added new states `favorites_list_html` and `queue_html with covers`\nChanged default album art if no cover was found\nConfiguration migrated to JSON-Config",
         "de": "Neue Zustände favorites_list_html und `queue_html mit Covers hinzugefügt `\nVeränderte Standardalbumkunst, wenn kein Cover gefunden wurde\nKonfiguration migriert zu JSON-Config",
@@ -65,18 +78,6 @@
         "zh-cn": "取消在某一成员数量之后调整小组数量的逻辑\n保证不对没有配置的装置规定国家价值\n收集网络错误"
       },
       "2.1.7": {
-        "en": "Corrected error with \"SONOS not found\"",
-        "de": "Fehler mit \"SONOS nicht gefunden\" behoben",
-        "ru": "Исправлена ошибка \"SONOS не найден\".",
-        "pt": "Erro corrigido com \"SONOS não encontrado\"",
-        "nl": "Fout gecorrigeerd met \"SONOS niet gevonden\"",
-        "fr": "Erreur corrigée avec \"SONOS introuvable\"",
-        "it": "Errore corretto con \"SONOS non trovato\"",
-        "es": "Error corregido con \"SONOS no encontrado\"",
-        "pl": "Poprawiony błąd „Nie znaleziono SONOS”",
-        "zh-cn": "更正了“找不到 SONOS”的错误"
-      },
-      "2.1.6": {
         "en": "Corrected error with \"SONOS not found\"",
         "de": "Fehler mit \"SONOS nicht gefunden\" behoben",
         "ru": "Исправлена ошибка \"SONOS не найден\".",

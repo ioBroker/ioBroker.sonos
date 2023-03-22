@@ -1,7 +1,7 @@
 {
   "name": "iobroker.sonos",
   "description": "The adapter lets control SONOS from ioBroker",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "engines": {
     "node": ">=8.0.0"
   },
