@@ -163,5 +163,13 @@
       }
     ]
   },
-  "objects": []
+  "objects": [
+    {
+      "_id": "sonos",
+      "type": "meta",
+      "common": {
+        "name": "Sonos files"
+      }
+    }
+  ]
 }
