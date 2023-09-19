@@ -281,14 +281,21 @@ function startAdapter(options) {
         }
     });
 
-    adapter.on('ready', () =>
+    adapter.on('ready', async () => {
+        try {
+            await clearLegacyBinaryStates();
+        } catch (e) {
+            adapter.log.warn(`Could not clear legacy binary states: ${e.message}`)
+        }
+
         adapter.getObject(adapter.namespace + '.root', (err, obj) => {
             if (!obj || !obj.common || !obj.common.name) {
                 adapter.createDevice('root', {}, () => main());
             } else {
-                main ();
+                main();
             }
-        }));
+        })
+    });
 
 // New message arrived. obj is array with current messages
     adapter.on('message', obj => {
@@ -804,23 +811,6 @@ async function createChannel(name, ip, room) {
         await adapter.createStateAsync('root', id, statesList[j], states[statesList[j]]);
     }
 
-    // Create cover object
-    await adapter.setForeignObjectAsync(`${adapter.namespace}.root.${id}.cover_png`,
-        {
-            _id: `${adapter.namespace}.root.${id}.cover_png`,
-            common: {
-                name:   'Cover URL',
-                type:   'file',
-                read:   true,
-                write:  true,
-                role:   'media.current.cover',
-                desc:   'Cover image of current played song as binary'
-            },
-            native: {},
-            type: 'state'
-        }
-    );
-
     return obj;
 }
 
@@ -834,49 +824,6 @@ function browse(callback) {
     }
 
     callback && callback(result);
-
-    /*
-    const strngtoXmit = new Buffer(["M-SEARCH * HTTP/1.1",
-        "HOST: 239.255.255.250:reservedSSDPport",
-        "MAN: ssdp:discover",
-        "MX: 1",
-        "ST: urn:schemas-upnp-org:device:ZonePlayer:1"].join("\r\n"));
-
-    // Create a new socket
-    const server = dgram.createSocket('udp4');
-    const result = [];
-
-    if (server) {
-        server.on("error", function (err) {
-            console.log("ERROR: " + err);
-            server.close();
-            callback && callback('ERROR - Cannot send request: ' + err);
-        });
-
-        server.bind (53004, "0.0.0.0");
-
-        server.on("message", function (msg, rinfo) {
-            const str = msg.toString();
-            if (str.indexOf ("Sonos") !== -1) {
-                console.log (rinfo.address);
-                result.push({name: rinfo.name, ip: rinfo.address});
-            }
-        });
-
-        setTimeout (function () {
-            server.close();
-            console.log ("Send:" + result);
-            callback && callback(result);
-        }, 2000);
-
-        server.send (strngtoXmit, 0, strngtoXmit.length, 1900, "239.255.255.250", function (err, bytes) {
-            if (err) {
-                console.log("ERROR - Cannot send request: " + err);
-                server.close();
-                callback && callback('ERROR - Cannot send request: ' + err);
-            }
-        });
-    }*/
 }
 
 let currentFileNum = 0;
@@ -1358,14 +1305,14 @@ function _getPs(playbackState) {
 }
 
 // State of sonos device was changed
-function takeSonosState(ip, sonosState) {
+async function takeSonosState(ip, sonosState) {
     adapter.setState({device: 'root', channel: ip, state: 'alive'}, {val: true, ack: true});
 
     if (!discovery) {
         return;
     }
-    const ps       = _getPs(sonosState.playbackState);
-    const player   = discovery.getPlayerByUUID(channels[ip].uuid);
+    const ps = _getPs(sonosState.playbackState);
+    const player = discovery.getPlayerByUUID(channels[ip].uuid);
     const playMode = sonosState.playMode;
 
     adapter.log.debug(`>  playbackState: ${sonosState.playbackState} - ${sonosState.currentTrack && sonosState.currentTrack.title ? sonosState.currentTrack.title : ''}`);
@@ -1375,28 +1322,44 @@ function takeSonosState(ip, sonosState) {
     // If some stable state
     if (!ps.transitioning) {
         adapter.setState({device: 'root', channel: ip, state: 'state_simple'}, {val: ps.playing, ack: true});
-        adapter.setState({device: 'root', channel: ip, state: 'state'},        {val: ps.paused ? 'pause' : (ps.playing ? 'play' : 'stop'), ack: true});
+        adapter.setState({
+            device: 'root',
+            channel: ip,
+            state: 'state'
+        }, {val: ps.paused ? 'pause' : (ps.playing ? 'play' : 'stop'), ack: true});
 
         // if duration is 0 (type is radio):
         // - no changes expected and a state update is not necessary!
         // - division by 0
         if (ps.playing && channels[ip].duration > 0) { // sonosState.currentTrack.type !== 'radio') {
             if (!channels[ip].elapsedTimer) {
-                channels[ip].elapsedTimer = setInterval(ip_ =>{
+                channels[ip].elapsedTimer = setInterval(ip_ => {
                     channels[ip_].elapsed += ((adapter.config.elapsedInterval || 5000) / 1000);
 
                     if (channels[ip_].elapsed > channels[ip_].duration) {
                         channels[ip_].elapsed = channels[ip_].duration;
                     }
 
-                    adapter.setState({device: 'root', channel: ip, state: 'seek'},              {val: Math.round((channels[ip_].elapsed / channels[ip_].duration) * 1000) / 10, ack: true});
-                    adapter.setState({device: 'root', channel: ip, state: 'current_elapsed'},   {val: channels[ip_].elapsed, ack: true});
-                    adapter.setState({device: 'root', channel: ip, state: 'current_elapsed_s'}, {val: toFormattedTime(channels[ip_].elapsed), ack: true});
+                    adapter.setState({
+                        device: 'root',
+                        channel: ip,
+                        state: 'seek'
+                    }, {val: Math.round((channels[ip_].elapsed / channels[ip_].duration) * 1000) / 10, ack: true});
+                    adapter.setState({
+                        device: 'root',
+                        channel: ip,
+                        state: 'current_elapsed'
+                    }, {val: channels[ip_].elapsed, ack: true});
+                    adapter.setState({
+                        device: 'root',
+                        channel: ip,
+                        state: 'current_elapsed_s'
+                    }, {val: toFormattedTime(channels[ip_].elapsed), ack: true});
                 }, adapter.config.elapsedInterval || 5000, ip);
             }
         } else {
             if (channels[ip].elapsedTimer) {
-                clearInterval (channels[ip].elapsedTimer);
+                clearInterval(channels[ip].elapsedTimer);
                 channels[ip].elapsedTimer = null;
             }
         }
@@ -1413,27 +1376,48 @@ function takeSonosState(ip, sonosState) {
     // - Tracks w/o Album name keeps album name from previous track or some random album. Don't know if this is already wrong from SONOS API.
 
     if (sonosState.currentTrack.type === 'radio') {
-        adapter.setState({device: 'root', channel: ip, state: 'current_type'},    {val: 1, ack: true});
-        adapter.setState({device: 'root', channel: ip, state: 'current_station'}, {val: sonosState.currentTrack.stationName || '', ack: true});
-    }
-    else if (sonosState.currentTrack.type === 'line_in') {
-        adapter.setState({device: 'root', channel: ip, state: 'current_type'},    {val: 2, ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'current_type'}, {val: 1, ack: true});
+        adapter.setState({
+            device: 'root',
+            channel: ip,
+            state: 'current_station'
+        }, {val: sonosState.currentTrack.stationName || '', ack: true});
+    } else if (sonosState.currentTrack.type === 'line_in') {
+        adapter.setState({device: 'root', channel: ip, state: 'current_type'}, {val: 2, ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'current_station'}, {val: '', ack: true});
+    } else {
+        adapter.setState({device: 'root', channel: ip, state: 'current_type'}, {val: 0, ack: true});
         adapter.setState({device: 'root', channel: ip, state: 'current_station'}, {val: '', ack: true});
     }
-    else {
-        adapter.setState({device: 'root', channel: ip, state: 'current_type'},    {val: 0, ack: true});
-        adapter.setState({device: 'root', channel: ip, state: 'current_station'}, {val: '', ack: true});
-    }
-    adapter.setState({device: 'root', channel: ip, state: 'current_title'},  {val: sonosState.currentTrack.title  || '', ack: true});
-    adapter.setState({device: 'root', channel: ip, state: 'current_album'},  {val: sonosState.currentTrack.album  || '', ack: true});
-    adapter.setState({device: 'root', channel: ip, state: 'current_artist'}, {val: sonosState.currentTrack.artist || '', ack: true});
+    adapter.setState({device: 'root', channel: ip, state: 'current_title'}, {
+        val: sonosState.currentTrack.title || '',
+        ack: true
+    });
+    adapter.setState({device: 'root', channel: ip, state: 'current_album'}, {
+        val: sonosState.currentTrack.album || '',
+        ack: true
+    });
+    adapter.setState({device: 'root', channel: ip, state: 'current_artist'}, {
+        val: sonosState.currentTrack.artist || '',
+        ack: true
+    });
 
     // elapsed time
-    adapter.setState({device: 'root', channel: ip, state: 'current_duration'},   {val: sonosState.currentTrack.duration, ack: true});
-    adapter.setState({device: 'root', channel: ip, state: 'current_duration_s'}, {val: toFormattedTime(sonosState.currentTrack.duration), ack: true});
+    adapter.setState({device: 'root', channel: ip, state: 'current_duration'}, {
+        val: sonosState.currentTrack.duration,
+        ack: true
+    });
+    adapter.setState({
+        device: 'root',
+        channel: ip,
+        state: 'current_duration_s'
+    }, {val: toFormattedTime(sonosState.currentTrack.duration), ack: true});
 
     // Track number
-    adapter.setState({device: 'root', channel: ip, state: 'current_track_number'},   {val: sonosState.trackNo, ack: true});
+    adapter.setState({device: 'root', channel: ip, state: 'current_track_number'}, {
+        val: sonosState.trackNo,
+        ack: true
+    });
 
     // Update html-queue: highlight current track
     const playerip = player._address;
@@ -1441,12 +1425,11 @@ function takeSonosState(ip, sonosState) {
 
     if (lastCover !== sonosState.currentTrack.albumArtUri) {
         const defaultImg = __dirname + '/img/no-cover.png';
-        const stateName  = adapter.namespace + '.root.' + ip + '.cover_png';
         let fileName;
         let md5url;
 
         if (sonosState.currentTrack.albumArtUri) {
-            md5url   = crypto.createHash('md5').update(sonosState.currentTrack.albumArtUri).digest('hex');
+            md5url = crypto.createHash('md5').update(sonosState.currentTrack.albumArtUri).digest('hex');
             fileName = cacheDir + md5url;
         } else {
             fileName = defaultImg;
@@ -1465,7 +1448,7 @@ function takeSonosState(ip, sonosState) {
                 if (res2.statusCode === 200) {
                     if (!fs.existsSync(fileName)) {
                         const cacheStream = fs.createWriteStream(fileName);
-                        res2.pipe(cacheStream).on('finish', () => readCoverFileToState(fileName, stateName, ip));
+                        res2.pipe(cacheStream).on('finish', () => syncCoverFileToStorage(fileName, ip));
                     } else {
                         adapter.log.debug('Not writing to cache');
                         res2.resume();
@@ -1474,7 +1457,7 @@ function takeSonosState(ip, sonosState) {
                     // no image exists! link it to the default image.
                     fileName = defaultImg;
                     res2.resume();
-                    readCoverFileToState(fileName, stateName, ip);
+                    syncCoverFileToStorage(fileName, ip);
                 }
 
                 res2.on('end', () => adapter.log.debug('Response "end" event'));
@@ -1497,22 +1480,37 @@ function takeSonosState(ip, sonosState) {
                 }
             }
             if (fileData) {
-                adapter.setBinaryState(stateName, fileData, () =>
-                    adapter.setState({device: 'root', channel: ip, state: 'current_cover'}, {val: '/state/' + stateName, ack: true}));
+                await adapter.writeFileAsync(this.name, fileName, fileData);
+                adapter.setState({
+                    device: 'root',
+                    channel: ip,
+                    state: 'current_cover'
+                }, { val: `/files/${this.name}/${fileName}`, ack: true });
             }
         }
 
         lastCover = sonosState.currentTrack.albumArtUri;
     }
 
-    channels[ip].elapsed  = sonosState.elapsedTime;
+    channels[ip].elapsed = sonosState.elapsedTime;
     channels[ip].duration = sonosState.currentTrack.duration;
 
     // only if duration !== 0, see above
     if (channels[ip].duration > 0) { // sonosState.currentTrack.type !== 'radio') {
-        adapter.setState({device: 'root', channel: ip, state: 'current_elapsed'},    {val: sonosState.elapsedTime, ack: true});
-        adapter.setState({device: 'root', channel: ip, state: 'seek'},               {val: Math.round((channels[ip].elapsed / channels[ip].duration) * 1000) / 10, ack: true});
-        adapter.setState({device: 'root', channel: ip, state: 'current_elapsed_s'},  {val: sonosState.elapsedTimeFormatted, ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'current_elapsed'}, {
+            val: sonosState.elapsedTime,
+            ack: true
+        });
+        adapter.setState({
+            device: 'root',
+            channel: ip,
+            state: 'seek'
+        }, {val: Math.round((channels[ip].elapsed / channels[ip].duration) * 1000) / 10, ack: true});
+        adapter.setState({
+            device: 'root',
+            channel: ip,
+            state: 'current_elapsed_s'
+        }, {val: sonosState.elapsedTimeFormatted, ack: true});
     }
 
     adapter.setState({device: 'root', channel: ip, state: 'volume'}, {val: sonosState.volume, ack: true});
@@ -1522,9 +1520,13 @@ function takeSonosState(ip, sonosState) {
     }
 
     if (playMode) {
-        adapter.setState({device: 'root', channel: ip, state: 'shuffle'},    {val: playMode.shuffle, ack: true});
-        adapter.setState({device: 'root', channel: ip, state: 'repeat'},     {val: playMode.repeat === 'all' ? 1 : (playMode.repeat === 'one' ? 2 : 0), ack: true});
-        adapter.setState({device: 'root', channel: ip, state: 'crossfade'},  {val: playMode.crossfade, ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'shuffle'}, {val: playMode.shuffle, ack: true});
+        adapter.setState({
+            device: 'root',
+            channel: ip,
+            state: 'repeat'
+        }, {val: playMode.repeat === 'all' ? 1 : (playMode.repeat === 'one' ? 2 : 0), ack: true});
+        adapter.setState({device: 'root', channel: ip, state: 'crossfade'}, {val: playMode.crossfade, ack: true});
     }
 
     if (player.tts) {
@@ -1534,132 +1536,33 @@ function takeSonosState(ip, sonosState) {
             player.tts.playingStarted();
         }
     }
-
-    // If something queued
-    /*if (!player.tts && player.queuedTts && player.queuedTts.length) {
-        const q = player.queuedTts.shift();
-        const uuid = channels[ip].uuid;
-
-        adapter.log.debug(`Taking next queue entry, tts=${!!player.tts}, playState=${sonosState.playbackState}`);
-
-        // play the file after state analysis finished
-        setImmediate(() => playOnSonos(q.uri, uuid, q.volume));
-    } else if (stableState) {
-        // If paused and TTS played
-        if (player.tts && (ps.paused || ps.stopped) //{
-            //&& (sonosState.currentTrack.uri === player.tts.ourUri)
-    ) {
-
-            // If other files queued
-            if (player.queuedTts && player.queuedTts.length) {
-                const q = player.queuedTts.shift();
-                const uuid = channels[ip].uuid;
-                const tts = player.tts;
-                resetTts(player);
-
-                // remove track
-                if (tts.addedTrack !== undefined) {
-                    adapter.log.debug('player.removeTrackFromQueue, Track=' + tts.addedTrack);
-                    return player.removeTrackFromQueue(tts.addedTrack)
-                        .catch(error => adapter.log.error('Cannot removeTrackFromQueue: ' + error))
-                        .then(() => setImmediate(() => playOnSonos(q.uri, uuid, q.volume)));
-                } else {
-                    return setImmediate(() =>
-                        playOnSonos(q.uri, uuid, q.volume));
-                }
-            }
-
-            // no TTS to play => restore state
-            if (Date.now() - player.tts.time > 1000) { // else: do not restore old state, if queue is not empty
-                const tts = player.tts;
-
-                resetTts(player);
-
-                // Restore state before tts
-                adapter.log.debug(`>> Restore state: volume - ${tts.volume}, mute: ${tts.mute}, uri: ${tts.currentTrack.uri}`);
-
-                if (player._isMuted === undefined) {
-                    player._isMuted = player.groupState.mute;
-                }
-
-                // restore mute state
-                return new Promise(resolve => {
-                    if (player._isMuted !== tts.mute) {
-                        return (tts.mute ? player.mute() : player.unMute())
-                            .then(() => resolve());
-                    } else {
-                        return resolve();
-                    }
-                })
-                    // required for fadeIn
-                    .then(() => player.setVolume(0))
-                    .then(() => {
-                        // remove track
-                        if (tts.addedTrack !== undefined) {
-                            adapter.log.debug('player.removeTrackFromQueue, Track=' + tts.addedTrack);
-                            return player.removeTrackFromQueue(tts.addedTrack);
-                        } else {
-                            return Promise.resolve();
-                        }
-                    })
-                    .then(() => {
-                        // if was radio playing
-                        if (tts.radio) {
-                            if (tts.playbackState !== 'PLAYING') {
-                                resetTts(player);
-                            }
-
-                            return player.setAVTransport(tts.currentTrack.uri, tts.avTransportUriMetadata)
-                                .then(() => {
-                                    resetTts(player);
-                                    return startPlayer(player, tts.volume, false, tts.playbackState === 'PLAYING', 'end TTS (was radio)');
-                                })
-                                .catch(error =>
-                                    adapter.log.error('Cannot setAVTransport: ' + error));
-                        } else {
-                            // if not radio
-                            // Remove added track
-                            // Set old track number
-                            return player.trackSeek(tts.trackNo)
-                                .then(() => {
-                                    resetTts(player);
-                                    // Set elapsed time
-                                    return wait(200)
-                                        .then(() => player.timeSeek(tts.elapsedTime))
-                                        .then(() => wait(200))
-                                        .then(() => startPlayer(player, tts.volume, false, tts.playbackState === 'PLAYING', 'end TTS (was file)'))
-                                        .catch(error => adapter.log.error('Cannot trackSeek: ' + error));
-                                })
-                                .catch(error => {
-                                    adapter.log.error('Cannot seek: ' + error);
-                                    resetTts(player);
-                                });
-                        }
-                    })
-                    .catch(e => adapter.log.error('Cannot restore state: ' + e));
-            }
-        }
-    }*/
 }
 
-function readCoverFileToState(fileName, stateName, ip) {
+/**
+ * Synchronize the cover file to ioBroker storage
+ *
+ * @param fileName path to read and write file
+ * @param ip ip of the player
+ */
+async function syncCoverFileToStorage(fileName, ip) {
     let fileData;
     try {
         fileData = fs.readFileSync(fileName);
     } catch (e) {
-        adapter.log.warn('Cannot read file: ' + e);
+        adapter.log.warn(`Cannot read file: ${e.message}`);
     }
     // If error or null length file, read standard cover file
     if (!fileData) {
         try {
             fileData = fs.readFileSync(defaultImg);
         } catch (e) {
-            adapter.log.warn('Cannot read file: ' + e);
+            adapter.log.warn(`Cannot read file: ${e.message}`);
         }
     }
+
     if (fileData) {
-        adapter.setBinaryState(stateName, fileData, () =>
-            adapter.setState({device: 'root', channel: ip, state: 'current_cover'}, {val: '/state/' + stateName, ack: true}));
+        await adapter.writeFileAsync(this.name, fileName, fileData);
+        adapter.setState({ device: 'root', channel: ip, state: 'current_cover' }, { val: `/files/${this.name}/${fileName}`, ack: true });
     }
 }
 
@@ -2215,55 +2118,19 @@ function main() {
                 processSonosEvents('favorites', data);
             });
 
-            /*function search(term, socket) {
-                adapter.log.debug('search for', term);
-                let playerCycle = 0;
-                const players = [];
-
-                for (const i in discovery.players) {
-                    if (discovery.players.hasOwnProperty(i)) {
-                        players.push(discovery.players[i]);
-                    }
-                }
-
-                function getPlayer() {
-                    return players[playerCycle++ % players.length];
-                }
-
-                const response = {};
-
-                async.parallelLimit([
-                    callback => {
-                        const player = getPlayer();
-                        console.log('fetching from', player.baseUrl);
-                        player.browse('A:ARTIST:' + term, 0, 600, (success, result) => {
-                            console.log(success, result);
-                            response.byArtist = result;
-                            callback(null, 'artist');
-                        });
-                    },
-                    callback => {
-                        const player = getPlayer();
-                        console.log('fetching from', player.baseUrl);
-                        player.browse('A:TRACKS:' + term, 0, 600, (success, result) => {
-                            response.byTrack = result;
-                            callback(null, 'track');
-                        });
-                    },
-                    callback => {
-                        const player = getPlayer();
-                        console.log('fetching from', player.baseUrl);
-                        player.browse('A:ALBUM:' + term, 0, 600, (success, result) => {
-                            response.byAlbum = result;
-                            callback(null, 'album');
-                        });
-                    }
-                ],
-                    players.length, (err, result) => socket.emit('search-result', response));
-            }*/
-
             adapter.subscribeStates('*');
         });
+}
+
+/**
+ * Clear legacy binary states, as we migrated to files
+ */
+async function clearLegacyBinaryStates() {
+    const states = await adapter.getStatesAsync('*.cover_png');
+
+    for (const id of Object.keys(states)) {
+        await adapter.delObjectAsync(id);
+    }
 }
 
 // If started as allInOne mode => return function to create instance
