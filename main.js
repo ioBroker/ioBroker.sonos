@@ -1480,12 +1480,12 @@ async function takeSonosState(ip, sonosState) {
                 }
             }
             if (fileData) {
-                await adapter.writeFileAsync(this.name, fileName, fileData);
+                await adapter.writeFileAsync(adapter.name, fileName, fileData);
                 adapter.setState({
                     device: 'root',
                     channel: ip,
                     state: 'current_cover'
-                }, { val: `/files/${this.name}/${fileName}`, ack: true });
+                }, { val: `/files/${adapter.name}/${fileName}`, ack: true });
             }
         }
 
@@ -1561,8 +1561,8 @@ async function syncCoverFileToStorage(fileName, ip) {
     }
 
     if (fileData) {
-        await adapter.writeFileAsync(this.name, fileName, fileData);
-        adapter.setState({ device: 'root', channel: ip, state: 'current_cover' }, { val: `/files/${this.name}/${fileName}`, ack: true });
+        await adapter.writeFileAsync(adapter.name, fileName, fileData);
+        adapter.setState({ device: 'root', channel: ip, state: 'current_cover' }, { val: `/files/${adapter.name}/${fileName}`, ack: true });
     }
 }
 
