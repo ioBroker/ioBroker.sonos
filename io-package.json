@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "sonos",
-    "version": "2.3.1",
+    "version": "2.3.2",
     "news": {
+      "2.3.2": {
+        "en": "store the cover file in files instead of binary states",
+        "de": "speichern der coverdatei in dateien statt binären zuständen",
+        "ru": "хранить файл обложки в файлах вместо бинарных государств",
+        "pt": "armazenar o arquivo de capa em arquivos em vez de estados binários",
+        "nl": "verberg het dossier in bestanden in plaats van binaire staten",
+        "fr": "stocker le fichier de couverture dans les fichiers au lieu des états binaires",
+        "it": "memorizzare il file di copertura in file invece di stati binari",
+        "es": "almacenar el archivo de portada en archivos en lugar de estados binarios",
+        "pl": "przechowywać pliki w plikach zamiast stanów binarnych",
+        "uk": "зберігати файл кришки у файлах замість бінарних штатів",
+        "zh-cn": "储存档案,而不是超级州。"
+      },
       "2.3.1": {
         "en": "Prepare for future js-controller versions",
         "de": "Bereiten Sie sich auf zukünftige js-Controller-Versionen",
@@ -76,18 +89,6 @@
         "es": "Quitar la lógica que ajusta el volumen del grupo después de un volumen de miembro\nAsegúrese de no establecer valores estatales para dispositivos que no estén configurados\nTrate de atrapar errores de red",
         "pl": "Technologia przesuwająca się napięcie grupy po ustaleniu jednego tomu członkowskiego została określona\nNie ma pewności, że nie ustalają wartości dla urządzeń, które nie są konfigurowane\nPróba uniknięcia błędów sieciowych",
         "zh-cn": "取消在某一成员数量之后调整小组数量的逻辑\n保证不对没有配置的装置规定国家价值\n收集网络错误"
-      },
-      "2.1.7": {
-        "en": "Corrected error with \"SONOS not found\"",
-        "de": "Fehler mit \"SONOS nicht gefunden\" behoben",
-        "ru": "Исправлена ошибка \"SONOS не найден\".",
-        "pt": "Erro corrigido com \"SONOS não encontrado\"",
-        "nl": "Fout gecorrigeerd met \"SONOS niet gevonden\"",
-        "fr": "Erreur corrigée avec \"SONOS introuvable\"",
-        "it": "Errore corretto con \"SONOS non trovato\"",
-        "es": "Error corregido con \"SONOS no encontrado\"",
-        "pl": "Poprawiony błąd „Nie znaleziono SONOS”",
-        "zh-cn": "更正了“找不到 SONOS”的错误"
       }
     },
     "title": "SONOS",
