@@ -1147,54 +1147,8 @@ function removeFromGroup(leavingName, coordinator) {
     } else if (coordinator.coordinator === leavingPlayer) {
         return coordinator.becomeCoordinatorOfStandaloneGroup();
     }
-    //else {
-    //    return  attachTo(leavingPlayer, coordinator)
-    //}
 }
 
-/////////////
-
-//const audioExtensions = ['mp3', 'aiff', 'flac', 'less', 'wav'];
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//const GetPositionInfo = '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body>' +
-//    '<u:GetPositionInfo xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><Channel>Master</Channel></u:GetPositionInfo>';
-//
-//XmlEntities = require(__dirname + '/node_modules/sonos-discovery/node_modules/html-entities/lib/xml-entities').XmlEntities;
-//
-/*
-function getPositionInfo(player, callback) {
-    player.soapAction('/MediaRenderer/AVTransport/Control', '"urn:schemas-upnp-org:service:AVTransport:1#GetPositionInfo"', GetPositionInfo, function(succ, res) {
-        if (succ) {
-            const data = '';
-            res.setEncoding('utf8');
-            res.on('data', function (chunk) {
-                data += chunk.toString();
-            });
-            res.on('end', function () {
-                // Find queued element
-
-                const pos = data.indexOf('<TrackMetaData>');
-                if (pos !== -1) {
-                    data = data.substring(pos + '<TrackMetaData>'.length);
-                    pos = data.indexOf('<');
-                    if (pos !== -1) {
-                        data = data.substring(0, pos);
-                        callback(true, data);
-                    }
-                }
-            });
-        }
-    });
-}
-*/
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/*
-function wait(ms) {
-    return new Promise(resolve => setTimeout(() => resolve(), ms));
-}
-*/
-// Promise
 function playOnSonos(uri, sonosUuid, volume) {
     if (discovery) {
         const player = discovery.getPlayerByUUID(sonosUuid);
@@ -1205,103 +1159,6 @@ function playOnSonos(uri, sonosUuid, volume) {
             player.tts.add(uri, volume);
         }
     }
-
-    /*const now = Date.now();
-    let noFadeOut = false;
-    if (!uri) { // stop actual tts
-        return player.tts ? player.pause()
-            .catch(e => adapter.log.error('Cannot setAVTransport: ' + e))
-            : Promise.resolve();
-    }
-
-    // if queue is empty => start playback
-    if (player.tts && now - player.tts.time < 30000) {
-        adapter.log.debug('Queue on sonos[' + sonosUuid + ']: ' + uri + ', Volume: ' + volume);
-        player.queuedTts = player.queuedTts || [];
-        player.queuedTts.push({uri: uri, volume: volume});
-        return Promise.resolve();
-    }
-
-    adapter.log.debug('Play on sonos[' + sonosUuid + ']: ' + uri + ', Volume: ' + volume);
-
-    if (player.prevTts && now - player.prevTts.ts <= 2000) { // use prev player state also for next tts
-        player.tts = player.prevTts;
-        player.prevTts = null;
-        noFadeOut = true;
-    } else if (!player.tts) {
-        player.tts = JSON.parse(JSON.stringify(player.state)); // only get akt payer state, if no previous
-        player.tts.avTransportUriMetadata = player.avTransportUriMetadata;
-    }
-    adapter.log.debug('player.tts= volume=' + player.tts.volume + ' currentTrack.uri=' + player.tts.currentTrack.uri + ' tts.playbackState=' + player.tts.playbackState);
-    //player.tts.ourUri = uri;
-    player.tts.time = now;
-
-    //const oldVolume = player._volume;
-    //const oldIsMute = player._isMute;
-    //
-    //if (volume === 'null' || volume === 'undefined') volume = 0;
-    //
-    //if (volume && oldVolume != volume) {
-    //    player.setVolume(volume);
-    //}
-    //if (oldIsMute) player.groupMute(false);
-
-    const parts = player.tts.currentTrack.uri ? player.tts.currentTrack.uri.split('.') : ['none'];
-
-    // If not radio
-    if (player.tts.currentTrack.uri &&
-        (player.tts.currentTrack.uri.includes('x-file-cifs:') ||
-         player.tts.currentTrack.uri.includes('x-sonos-spotify:') ||
-         player.tts.currentTrack.uri.includes('x-sonosapi-hls-static:') ||
-         audioExtensions.includes(parts[parts.length - 1]))
-       ) {
-        player.tts.radio = false;
-
-        return player.addURIToQueue(uri)
-            .then(res => {
-                // Find out added track
-                if (!player.tts) {
-                    //adapter.log.warn('Cannot restore sonos state');
-                    return adapter.log.warn('Cannot add track (URI) to Sonos Queue');
-                } else {
-                    player.tts.addedTrack = parseInt(res.firsttracknumberenqueued, 10);
-
-                    let noFadeIn;
-                    return fadeOut(player, noFadeOut)
-                        .then(_noFadeIn => {
-                            noFadeIn = _noFadeIn;
-                            adapter.log.debug('player.seek: ' + player.tts.addedTrack);
-                            return wait(0);
-                        })
-                        .then(() =>
-                            player.tts && player.trackSeek(player.tts.addedTrack))
-                        // Send command PLAY
-                        .then(() =>
-                            startPlayer(player, volume, noFadeIn, player.tts.playbackState !== 'PLAYING', 'start play on sonos (was file)'))
-                        .catch(e => adapter.log.error('Cannot trackSeek: ' + e));
-                }
-            })
-            .catch(e =>
-                adapter.log.error('Cannot addURIToQueue: ' + e));
-    } else {
-        if (player.tts.currentTrack && player.tts.currentTrack.uri) {
-            const parts = player.tts.currentTrack.uri.split(':');
-            adapter.log.debug('Detected RADIO, because of: ' + parts[0]);
-        }
-
-        // Radio
-        player.tts.radio = true;
-        let noFadeIn;
-        return fadeOut(player, noFadeOut)
-            .then(_noFadeIn => {
-                noFadeIn = _noFadeIn;
-                adapter.log.debug('setAVTransport: ' + uri)
-            })
-            .then(() => player.setAVTransport(uri))
-            // Send command PLAY
-            .then(() => startPlayer(player, volume, noFadeIn, true, 'start play on sonos (was radio)'))
-            .catch(e => adapter.log.error('Cannot setAVTransport: ' + e));
-    }*/
 }
 
 async function addChannel(name, ip, room) {
@@ -1313,16 +1170,6 @@ async function addChannel(name, ip, room) {
 
     return createChannel(name, ip, room);
 }
-/*
-function resetTts(player) {
-    //adapter.log.debug('setting tts = null' + (arguments.callee.caller.name !== undefined ? arguments.callee.caller.name : 'no caller'));
-    if (!player.tts) {
-        return;
-    }
-    player.prevTts = player.tts;
-    player.prevTts.ts = Date.now();
-    player.tts = null;
-}*/
 
 function _getPs(playbackState) {
     const ps = {
@@ -1559,6 +1406,7 @@ async function takeSonosState(ip, sonosState) {
             ).on('error', e => adapter.log.warn('Got error: ' + e.message));
         } else {
             adapter.log.debug('Cover exists. Try reading from fs');
+            /** @type {Buffer | null} */
             let fileData = null;
             try {
                 fileData = fs.readFileSync(filePath);
@@ -1574,7 +1422,7 @@ async function takeSonosState(ip, sonosState) {
                 }
             }
             if (fileData) {
-                const storagePath = `coverImage/${ip}`;
+                const storagePath = `coverImage/${ip}.jpg`;
 
                 await adapter.writeFileAsync(adapter.name, storagePath, fileData);
                 adapter.setState(
@@ -1583,7 +1431,7 @@ async function takeSonosState(ip, sonosState) {
                         channel: ip,
                         state: 'current_cover'
                     },
-                    { val: `/${adapter.name}/${storagePath}`, ack: true }
+                    { val: `/${adapter.name}/${storagePath}.jpg`, ack: true }
                 );
             }
         }
@@ -1666,6 +1514,7 @@ async function takeSonosState(ip, sonosState) {
  * @param ip ip of the player
  */
 async function syncCoverFileToStorage(filePath, ip) {
+    /** @type {Buffer | null} */
     let fileData;
     try {
         fileData = fs.readFileSync(filePath);
@@ -1900,18 +1749,6 @@ function processSonosEvents(event, data) {
                 adapter.setState({ device: 'root', channel: ip, state: 'volume' }, { val: data.newVolume, ack: true });
                 player._volume = data.newVolume;
                 adapter.log.debug(`volume: Volume for ${player.baseUrl}: ${data.newVolume}`);
-
-                // removed because of information from https://github.com/ioBroker/ioBroker.sonos/issues/149
-                /*channels[ip].timerVolume = setTimeout(_ip => {
-                    channels[_ip].timerVolume = null;
-
-                    adapter.setState({
-                        device: 'root',
-                        channel: _ip,
-                        state: 'group_volume'
-                    }, {val: player.groupState.volume, ack: true});
-                    adapter.log.debug(`group_volume: groupVolume for ${player.baseUrl}: ${player.groupState.volume}`);
-                }, 2000, ip); */
             }
         }
     } else if (event === 'mute') {
