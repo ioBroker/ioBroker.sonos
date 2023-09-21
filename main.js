@@ -1422,7 +1422,7 @@ async function takeSonosState(ip, sonosState) {
                 }
             }
             if (fileData) {
-                const storagePath = `coverImage/${ip}.jpg`;
+                const storagePath = `coverImage/${ip}.png`;
 
                 await adapter.writeFileAsync(adapter.name, storagePath, fileData);
                 adapter.setState(
@@ -1431,7 +1431,7 @@ async function takeSonosState(ip, sonosState) {
                         channel: ip,
                         state: 'current_cover'
                     },
-                    { val: `/${adapter.name}/${storagePath}.jpg`, ack: true }
+                    { val: `/${adapter.name}/${storagePath}`, ack: true }
                 );
             }
         }
@@ -1531,7 +1531,7 @@ async function syncCoverFileToStorage(filePath, ip) {
     }
 
     if (fileData) {
-        const storagePath = `coverImage/${ip}`;
+        const storagePath = `coverImage/${ip}.png`;
         await adapter.writeFileAsync(adapter.name, storagePath, fileData);
         adapter.setState(
             { device: 'root', channel: ip, state: 'current_cover' },
