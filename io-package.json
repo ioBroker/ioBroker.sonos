@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "sonos",
-    "version": "2.3.2",
+    "version": "2.3.3",
     "news": {
+      "2.3.3": {
+        "en": "fixed cover url",
+        "de": "feste abdeckung url",
+        "ru": "фиксированный url крышки",
+        "pt": "tampa fixa url",
+        "nl": "vertaling:",
+        "fr": "couverture fixe url",
+        "it": "rivestimento fisso",
+        "es": "url de cubierta fija",
+        "pl": "url",
+        "uk": "фіксована кришка виворітна",
+        "zh-cn": "固定的维修费"
+      },
       "2.3.2": {
         "en": "store the cover file in files instead of binary states",
         "de": "speichern der coverdatei in dateien statt binären zuständen",
@@ -77,18 +90,6 @@
         "es": "estado de volumen de grupo",
         "pl": "suma",
         "zh-cn": "fix 组量"
-      },
-      "2.2.0": {
-        "en": "Remove logic that adjusted the group volume after one member volume was set\nMake sure to not set state values for devices that are not configured\nTry to catch network errors",
-        "de": "Entfernen Sie die Logik, die das Gruppenvolumen nach einem Elementvolumen eingestellt wurde\nStellen Sie sicher, dass keine Zustandswerte für Geräte festgelegt werden, die nicht konfiguriert sind\nVersuchen Sie, Netzwerkfehler zu fangen",
-        "ru": "Удалить логику, которая скорректировала объем группы после того, как был установлен объем одного члена\nНе забудьте установить государственные значения для устройств, которые не настроены\nПопробуйте поймать сетевые ошибки",
-        "pt": "Remover a lógica que ajustou o volume do grupo após um volume de membro foi definido\nCertifique-se de não definir valores de estado para dispositivos que não estão configurados\nTente pegar erros de rede",
-        "nl": "Verwijder logica die het groeps volume aanpassen na een leden volume\nZorg ervoor dat je de staatswaarden niet in handen krijgt voor apparaten die niet in beslag genomen worden\nProbeer netwerkfouten te vangen",
-        "fr": "Supprimer la logique qui a ajusté le volume de groupe après un volume de membre a été défini\nAssurez-vous de ne pas définir les valeurs d'état pour les appareils qui ne sont pas configurés\nEssayez de capturer des erreurs réseau",
-        "it": "Rimuovere la logica che ha regolato il volume del gruppo dopo un volume di un membro è stato impostato\nAssicurarsi di non impostare valori di stato per i dispositivi che non sono configurati\nCerca di catturare errori di rete",
-        "es": "Quitar la lógica que ajusta el volumen del grupo después de un volumen de miembro\nAsegúrese de no establecer valores estatales para dispositivos que no estén configurados\nTrate de atrapar errores de red",
-        "pl": "Technologia przesuwająca się napięcie grupy po ustaleniu jednego tomu członkowskiego została określona\nNie ma pewności, że nie ustalają wartości dla urządzeń, które nie są konfigurowane\nPróba uniknięcia błędów sieciowych",
-        "zh-cn": "取消在某一成员数量之后调整小组数量的逻辑\n保证不对没有配置的装置规定国家价值\n收集网络错误"
       }
     },
     "title": "SONOS",

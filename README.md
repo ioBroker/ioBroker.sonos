@@ -112,7 +112,7 @@ Please note: highlighting current playing favorite is not supported.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
-### **WORK IN PROGRESS**
+### 2.3.3 (2023-09-21)
 * (foxriver76) fixed cover url
 
 ### 2.3.2 (2023-09-20)
