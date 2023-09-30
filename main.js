@@ -200,6 +200,25 @@ function startAdapter(options) {
                             );
                         })
                         .catch(error => adapter.log.error('Cannot replaceWithFavorite: ' + error));
+                    } else if (id.state === 'playlist_set') {
+                    promise = player
+                        .replaceWithPlaylist(state.val)
+                        .then(() => player.play())
+                        .then(() => {
+                            adapter.setState(
+                                { device: 'root', channel: id.channel, state: 'current_album' },
+                                { val: state.val, ack: true }
+                            );
+                            adapter.setState(
+                                {
+                                    device: 'root',
+                                    channel: id.channel,
+                                    state: 'current_artist'
+                                },
+                                { val: state.val, ack: true }
+                            );
+                        })
+                        .catch(error => adapter.log.error('Cannot replaceWithPlaylist: ' + error));
                 } else if (id.state === 'tts') {
                     adapter.log.debug(`Play TTS file ${state.val} on ${id.channel}`);
                     text2speech(state.val, id.channel);
@@ -485,6 +504,16 @@ const newGroupStates = {
         write: false,
         role: 'indicator.members',
         desc: 'Group members Channels'
+    },
+    playlist_set: {
+        // media.playlist.set -    select Sonos playlist (write only)
+        def:    '',
+        type:   'string',
+        read:   false,
+        write:  true,
+        role:   'media.playlist.set',
+        desc:   'Set Sonos playlist to play',
+        name:   'Playlist set'
     }
 };
 
