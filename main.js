@@ -20,7 +20,7 @@ let channels = {};
 let lastCover = null;
 let socketServer;
 
-const DEFAULT_IMAGE = __dirname + '/img/no-cover.png';
+const DEFAULT_IMAGE = `${__dirname}/img/no-cover.png`;
 
 let adapter;
 function startAdapter(options) {
@@ -137,7 +137,7 @@ function startAdapter(options) {
                     } else if (parts.length === 1) {
                         seconds = parseInt(parts[0]);
                     } else {
-                        return adapter.log.error('Invalid elapsed time: ' + state.val);
+                        return adapter.log.error(`Invalid elapsed time: ${state.val}`);
                     }
                     promise = player.timeSeek(seconds);
                 } else if (id.state === 'muted') {
@@ -175,11 +175,11 @@ function startAdapter(options) {
                                 promise = player.unMute();
                                 break;
                             default:
-                                adapter.log.warn('Unknown state: ' + state.val);
+                                adapter.log.warn(`Unknown state: ${state.val}`);
                                 break;
                         }
                     } else {
-                        adapter.log.warn('Invalid state: ' + state.val);
+                        adapter.log.warn(`Invalid state: ${state.val}`);
                     }
                 } else if (id.state === 'favorites_set') {
                     promise = player
@@ -199,8 +199,8 @@ function startAdapter(options) {
                                 { val: state.val, ack: true }
                             );
                         })
-                        .catch(error => adapter.log.error('Cannot replaceWithFavorite: ' + error));
-                    } else if (id.state === 'playlist_set') {
+                        .catch(error => adapter.log.error(`Cannot replaceWithFavorite: ${error}`));
+                } else if (id.state === 'playlist_set') {
                     promise = player
                         .replaceWithPlaylist(state.val)
                         .then(() => player.play())
@@ -218,12 +218,12 @@ function startAdapter(options) {
                                 { val: state.val, ack: true }
                             );
                         })
-                        .catch(error => adapter.log.error('Cannot replaceWithPlaylist: ' + error));
+                        .catch(error => adapter.log.error(`Cannot replaceWithPlaylist: ${error}`));
                 } else if (id.state === 'tts') {
                     adapter.log.debug(`Play TTS file ${state.val} on ${id.channel}`);
                     text2speech(state.val, id.channel);
                 } else if (id.state === 'add_to_group') {
-                    promise = addToGroup(state.val, player); //xxxx
+                    promise = addToGroup(state.val, player); // xxxx
                 } else if (id.state === 'remove_from_group') {
                     promise = removeFromGroup(state.val, player);
                 } else if (id.state === 'coordinator') {
@@ -245,7 +245,7 @@ function startAdapter(options) {
                         promise = player.unMuteGroup(); // !! is toBoolean()
                     }
                 } else {
-                    adapter.log.warn('try to control unknown id ' + JSON.stringify(id));
+                    adapter.log.warn(`try to control unknown id ${JSON.stringify(id)}`);
                 }
 
                 promise && promise.then(() => adapter.log.debug('command done')).catch(e => adapter.log.error(e));
@@ -307,7 +307,7 @@ function startAdapter(options) {
             adapter.log.warn(`Could not clear legacy binary states: ${e.message}`);
         }
 
-        adapter.getObject(adapter.namespace + '.root', (err, obj) => {
+        adapter.getObject(`${adapter.namespace}.root`, (err, obj) => {
             if (!obj || !obj.common || !obj.common.name) {
                 adapter.createDevice('root', {}, () => main());
             } else {
@@ -940,7 +940,7 @@ function text2speech(fileName, sonosIp, callback) {
         // Upload this file to objects DB
         try {
             const data = fs.readFileSync(fileName);
-            const id = adapter.namespace + '.TTS.' + dest;
+            const id = `${adapter.namespace}.TTS.${dest}`;
 
             adapter.setForeignObject(
                 id,
@@ -1145,7 +1145,7 @@ function getPlayerByName(name) {
 }
 
 function attachTo(player, coordinator) {
-    return player.setAVTransport('x-rincon:' + coordinator.uuid);
+    return player.setAVTransport(`x-rincon:${coordinator.uuid}`);
 }
 
 function addToGroup(playerNameToAdd, coordinator) {
@@ -1413,7 +1413,7 @@ async function takeSonosState(ip, sonosState) {
                     path: sonosState.currentTrack.albumArtUri
                 },
                 res2 => {
-                    adapter.log.debug('HTTP status code ' + res2.statusCode);
+                    adapter.log.debug(`HTTP status code ${res2.statusCode}`);
 
                     if (res2.statusCode === 200) {
                         if (!fs.existsSync(filePath)) {
@@ -1432,7 +1432,7 @@ async function takeSonosState(ip, sonosState) {
 
                     res2.on('end', () => adapter.log.debug('Response "end" event'));
                 }
-            ).on('error', e => adapter.log.warn('Got error: ' + e.message));
+            ).on('error', e => adapter.log.warn(`Got error: ${e.message}`));
         } else {
             adapter.log.debug('Cover exists. Try reading from fs');
             /** @type {Buffer | null} */
@@ -1440,14 +1440,14 @@ async function takeSonosState(ip, sonosState) {
             try {
                 fileData = fs.readFileSync(filePath);
             } catch (e) {
-                adapter.log.warn('Cannot read file: ' + e);
+                adapter.log.warn(`Cannot read file: ${e}`);
             }
             // If error or null length file, read standard cover file
             if (!fileData) {
                 try {
                     fileData = fs.readFileSync(DEFAULT_IMAGE);
                 } catch (e) {
-                    adapter.log.warn('Cannot read file: ' + e);
+                    adapter.log.warn(`Cannot read file: ${e}`);
                 }
             }
             if (fileData) {
@@ -1747,7 +1747,7 @@ function processSonosEvents(event, data) {
                 //adapter.setState({device: 'root', channel: ip, state: 'muted'},  {val: data.groupState.mute,  ack: true});
                 //player._isMuted = data.groupState.mute;
                 player._isMuted = data.newMute;
-                adapter.log.debug('mute: Mute for ' + player.baseUrl + ': ' + data.newMute);
+                adapter.log.debug(`mute: Mute for ${player.baseUrl}: ${data.newMute}`);
                 adapter.setState(
                     {
                         device: 'root',
@@ -1756,7 +1756,7 @@ function processSonosEvents(event, data) {
                     },
                     { val: player.groupState.mute, ack: true }
                 );
-                adapter.log.debug('group_muted: groupMuted for ' + player.baseUrl + ': ' + player.groupState.mute);
+                adapter.log.debug(`group_muted: groupMuted for ${player.baseUrl}: ${player.groupState.mute}`);
             }
         }
         //            }
@@ -1796,7 +1796,7 @@ function processSonosEvents(event, data) {
                 channels[ip].uuid = data.uuid;
                 adapter.setState({ device: 'root', channel: ip, state: 'muted' }, { val: data.newMute, ack: true });
                 player._isMuted = data.newMute;
-                adapter.log.debug('mute: Mute for ' + player.baseUrl + ': ' + data.newMute);
+                adapter.log.debug(`mute: Mute for ${player.baseUrl}: ${data.newMute}`);
             }
         }
     } else if (event === 'favorites') {
@@ -1816,9 +1816,9 @@ function processSonosEvents(event, data) {
                         channels[ip] && takeSonosFavorites(ip, favorites);
                     }
                 })
-                .catch(e => adapter.log.error('Cannot getFavorites: ' + e));
+                .catch(e => adapter.log.error(`Cannot getFavorites: ${e}`));
         } catch (err) {
-            adapter.log.error('Cannot getFavorites: ' + err);
+            adapter.log.error(`Cannot getFavorites: ${err}`);
         }
     } else if (event === 'queue') {
         const player = discovery.getPlayerByUUID(data.uuid);
@@ -1877,7 +1877,7 @@ function processSonosEvents(event, data) {
                         channels[ip] && takeSonosFavorites(ip, favorites);
                     }
                 })
-                .catch(e => adapter.log.error('Cannot getFavorites: ' + e));
+                .catch(e => adapter.log.error(`Cannot getFavorites: ${e}`));
         }
     } else {
         adapter.log.debug(`${event} ${typeof data === 'object' ? JSON.stringify(data) : data}`);
@@ -1932,13 +1932,13 @@ async function checkNewGroupStates(channel) {
     for (const g in newGroupStates) {
         let obj;
         try {
-            obj = await adapter.getObjectAsync(channel._id + '.' + g);
+            obj = await adapter.getObjectAsync(`${channel._id}.${g}`);
         } catch {
             obj = null;
         }
 
         if (!obj) {
-            const dcs = adapter.idToDCS(channel._id + '.' + g);
+            const dcs = adapter.idToDCS(`${channel._id}.${g}`);
             await adapter.createStateAsync(dcs.device, dcs.channel, dcs.state, newGroupStates[g]);
         }
     }
@@ -1949,7 +1949,7 @@ async function syncConfig() {
 
     const devices = await adapter.getDevicesAsync();
 
-    adapter.log.debug('Initialize known devices: ' + JSON.stringify(devices));
+    adapter.log.debug(`Initialize known devices: ${JSON.stringify(devices)}`);
     if (devices && devices.length) {
         // Go through all devices
         for (let i = 0; i < devices.length; i++) {
@@ -1966,7 +1966,7 @@ async function syncConfig() {
             if (_channels) {
                 adapter.log.debug(`Channels of ${devices[i].common.name}: ${JSON.stringify(_channels)}`);
                 for (let j = 0; j < _channels.length; j++) {
-                    adapter.log.debug('Process channel: ' + _channels[j]._id);
+                    adapter.log.debug(`Process channel: ${_channels[j]._id}`);
                     const ip = _channels[j].native.ip;
                     const id = ip.replace(/[.\s]+/g, '_');
                     const pos = configToAdd.indexOf(ip);
@@ -1996,7 +1996,7 @@ async function syncConfig() {
                                     try {
                                         await adapter.deleteChannelFromEnumAsync('room', 'root', id);
                                     } catch (err) {
-                                        adapter.log.error('Cannot delete channel from enum: ' + err.message);
+                                        adapter.log.error(`Cannot delete channel from enum: ${err.message}`);
                                     }
                                 }
                             }
@@ -2010,8 +2010,8 @@ async function syncConfig() {
                             elapsed: 0,
                             obj: _channels[j]
                         };
-                        await adapter.setStateAsync('root.' + sId + '.alive', false, true);
-                        aliveIds.push('root.' + sId + '.alive');
+                        await adapter.setStateAsync(`root.${sId}.alive`, false, true);
+                        aliveIds.push(`root.${sId}.alive`);
                     } else {
                         configToDelete.push(ip);
                     }
@@ -2028,7 +2028,7 @@ async function syncConfig() {
                         );
                         const _obj = await adapter.getObjectAsync(obj.id);
                         const sId = _obj.native.ip.replace(/[.\s]+/g, '_');
-                        aliveIds.push('root.' + sId + '.alive');
+                        aliveIds.push(`root.${sId}.alive`);
 
                         channels[sId] = {
                             uuid: '',
@@ -2142,7 +2142,7 @@ function main() {
                     socketServer && socketServer.sockets.emit('queue', { uuid: player.uuid, queue });
                     processSonosEvents('queue', { uuid: player.uuid, queue });
                 })
-                .catch(e => adapter.log.error('Cannot loadQueue: ' + e));
+                .catch(e => adapter.log.error(`Cannot loadQueue: ${e}`));
         });
 
         discovery.on('list-change', data => {
