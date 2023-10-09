@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "sonos",
-    "version": "2.3.3",
+    "version": "3.0.0",
     "news": {
+      "3.0.0": {
+        "en": "Added support for the playing Sonos playlists (added new state `playlist_set`)\nThe minimal node.js version is 16",
+        "de": "Unterstützung für das Spielen Sonos Playlists (zusätzliche neue Zustand playlist_set)\nDie minimal node.js Version ist 16",
+        "ru": "Добавлена поддержка плейлистов Sonos (добавлена новая государственная playlist_set)\nМинимальная версия node.js 16",
+        "pt": "Adicionado suporte para o jogo Sonos playlists (adicionado novo estado playlist_set)\nA versão node.js mínima é 16",
+        "nl": "Gevoegd ondersteuning voor de spelende Sonos playlists (aded new State playlistset)\nDe minimale node is 16",
+        "fr": "Ajout du support pour le jeu Sonos playlists (added new state playlist_set)\nLa version minimale node.js est 16",
+        "it": "Aggiunto supporto per la riproduzione di playlist Sonos (aggiunto nuovo stato playlist_set)\nLa versione minimal node.js è 16",
+        "es": "Añadido soporte para las listas de reproducción Sonos (added new state list_set)\nLa versión mínima node.js es 16",
+        "pl": "Dodany wsparcie dla odtwarzania Sonos (zamówionej przez nową listę playlistów stanu)\nWersja minimalna jest 16",
+        "uk": "Додана підтримка ігрових списків Sonos (зробила новий державний список_сет)\nВерсія Mini node.js 16",
+        "zh-cn": "增加对女企业家的支持(新的国名录_set)\n最小的字样为16。"
+      },
       "2.3.3": {
         "en": "fixed cover url",
         "de": "feste abdeckung url",
@@ -78,18 +91,6 @@
         "es": "Prevenir las advertencias js-controller",
         "pl": "Prevent js-controller (ang.)",
         "zh-cn": "预防控制的预警"
-      },
-      "2.2.1": {
-        "en": "fix group volume state",
-        "de": "fixer gruppenvolumenzustand",
-        "ru": "fix группа объем состояние",
-        "pt": "corrigir estado do volume do grupo",
-        "nl": "vertaling:",
-        "fr": "volume fixe",
-        "it": "fix volume gruppo stato",
-        "es": "estado de volumen de grupo",
-        "pl": "suma",
-        "zh-cn": "fix 组量"
       }
     },
     "title": "SONOS",
