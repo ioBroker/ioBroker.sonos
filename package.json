@@ -30,7 +30,7 @@
     "@foxriver76/eslint-config": "^1.0.2",
     "@iobroker/adapter-dev": "^1.2.0",
     "mocha": "^10.2.0",
-    "chai": "^4.3.10",
+    "chai": "^5.0.3",
     "@iobroker/testing": "^4.1.0"
   },
   "bugs": {
