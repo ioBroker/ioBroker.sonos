@@ -148,6 +148,10 @@ function startAdapter(options) {
                     }
                 } else if (id.state === 'volume') {
                     promise = player.setVolume(state.val);
+                } else if (id.state === 'treble') {
+                    promise = player.setTreble(state.val);
+                } else if (id.state === 'bass') {
+                    promise = player.setBass(state.val);
                 } else if (id.state === 'state') {
                     //stop,play,pause,next,previous,mute,unmute
                     if (state.val && typeof state.val === 'string') {
@@ -607,6 +611,28 @@ async function createChannel(name, ip, room) {
             max: 100,
             desc: 'State and control of volume',
             name: 'Player volume'
+        },
+        treble: {
+            // level.treble -           treble level (read, write)
+            type: 'number',
+            read: true,
+            write: true,
+            role: 'level.treble',
+            min: -10,
+            max: 10,
+            desc: 'State and control of treble',
+            name: 'Player treble'
+        },
+        bass: {
+            // level.bass -           bass level (read, write)
+            type: 'number',
+            read: true,
+            write: true,
+            role: 'level.bass',
+            min: -10,
+            max: 10,
+            desc: 'State and control of bass',
+            name: 'Player bass'
         },
         muted: {
             // media.muted -            is muted (read only)
@@ -1780,6 +1806,12 @@ function processSonosEvents(event, data) {
                 adapter.log.debug(`volume: Volume for ${player.baseUrl}: ${data.newVolume}`);
             }
         }
+    } else if (event === 'treble') {
+        // node-sonos-discovery is not emitting any events on treble changes yet, so it is not
+        // possible to get the externally set treble value, yet. 
+    } else if (event === 'bass') {
+        // node-sonos-discovery is not emitting any events on bass changes yet, so it is not
+        // possible to get the externally set bass value, yet. 
     } else if (event === 'mute') {
         // {
         //     uuid:        _this.uuid,
