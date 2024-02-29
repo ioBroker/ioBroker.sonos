@@ -613,9 +613,9 @@ async function createChannel(name, ip, room) {
             name: 'Player volume'
         },
         treble: {
-            // level.treble -           treble level (read, write)
+            // level.treble -           treble level (only write)
             type: 'number',
-            read: true,
+            read: false,
             write: true,
             role: 'level.treble',
             min: -10,
@@ -624,9 +624,9 @@ async function createChannel(name, ip, room) {
             name: 'Player treble'
         },
         bass: {
-            // level.bass -           bass level (read, write)
+            // level.bass -           bass level (only write)
             type: 'number',
-            read: true,
+            read: false,
             write: true,
             role: 'level.bass',
             min: -10,
