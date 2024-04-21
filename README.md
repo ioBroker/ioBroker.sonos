@@ -112,6 +112,11 @@ Please note: highlighting current playing favorite is not supported.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
+
+### WORK IN PROGRESS
+
+(seb2010) Added support to control bass and treble of a player (NO updates of these states on external events!)
+
 ### 3.0.0 (2023-10-09)
 * (udondan) Added support for the playing Sonos playlists (added new state `playlist_set`)
 * (bluefox) The minimal node.js version is 16
