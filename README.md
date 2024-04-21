@@ -113,9 +113,8 @@ Please note: highlighting current playing favorite is not supported.
 -->
 ## Changelog
 
-### WORK IN PROGRESS
-
-(seb2010) Added support to control bass and treble of a player (NO updates of these states on external events!)
+### __WORK IN PROGRESS__
+* (seb2010) Added support for treble and bass information
 
 ### 3.0.0 (2023-10-09)
 * (udondan) Added support for the playing Sonos playlists (added new state `playlist_set`)
@@ -292,7 +291,7 @@ Please note: highlighting current playing favorite is not supported.
 
 The MIT License (MIT)
 
-Copyright (c) 2014-2023, bluefox <dogafox@gmail.com>
+Copyright (c) 2014-2024, bluefox <dogafox@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
