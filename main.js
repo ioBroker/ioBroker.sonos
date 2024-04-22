@@ -918,7 +918,7 @@ function browse(callback) {
 
 let currentFileNum = 0;
 
-function text2speech(fileName, sonosIp, callback) {
+async function text2speech(fileName, sonosIp, callback) {
     // Extract volume
     let volume = null;
 
@@ -966,57 +966,40 @@ function text2speech(fileName, sonosIp, callback) {
         // Upload this file to objects DB
         try {
             const data = fs.readFileSync(fileName);
-            const id = `${adapter.namespace}.TTS.${dest}`;
+            const id = `/TTS/${adapter.namespace}/${dest}`;
 
-            adapter.setForeignObject(
-                id,
-                {
-                    common: {
-                        type: 'file',
-                        name: fileName,
-                        read: true,
-                        write: false
-                    },
-                    native: {},
-                    type: 'state'
-                },
-                () => {
-                    adapter.setBinaryState(id, data, err => {
-                        if (err) {
-                            adapter.log.error(`Cannot upload ${id}: ${err}`);
-                            callback && callback(err);
-                        } else {
-                            adapter.getForeignObject(adapter.config.webServer, (err, obj) => {
-                                if (obj && obj.native && discovery) {
-                                    fileName = `http${obj.native.secure ? 's' : ''}://${discovery.localEndpoint}:${
-                                        obj.native.port
-                                    }/state/${id}`;
-                                    if (sonosIp) {
-                                        sonosIp = sonosIp.replace(/[.\s]+/g, '_');
-                                    }
+            try {
+                await adapter.writeFile(adapter.name, id, data);
+                const obj = await adapter.getForeignObject(adapter.config.webServer);
+                if (obj && obj.native && discovery) {
+                    fileName = `http${obj.native.secure ? 's' : ''}://${discovery.localEndpoint}:${
+                        obj.native.port
+                    }/files/${adapter.name}${id}`;
+                    if (sonosIp) {
+                        sonosIp = sonosIp.replace(/[.\s]+/g, '_');
+                    }
 
-                                    // Play on all players
-                                    for (let i = 0; i < discovery.players.length; i++) {
-                                        if (!discovery.players[i]._address) {
-                                            discovery.players[i]._address = getIp(discovery.players[i]);
-                                        }
-
-                                        const ip = discovery.players[i]._address;
-
-                                        if (sonosIp && ip !== sonosIp) {
-                                            continue;
-                                        }
-
-                                        setTimeout(() => playOnSonos(fileName, discovery.players[i].uuid, volume), 100);
-                                    }
-                                }
-
-                                callback && callback();
-                            });
+                    // Play on all players
+                    for (let i = 0; i < discovery.players.length; i++) {
+                        if (!discovery.players[i]._address) {
+                            discovery.players[i]._address = getIp(discovery.players[i]);
                         }
-                    });
+
+                        const ip = discovery.players[i]._address;
+
+                        if (sonosIp && ip !== sonosIp) {
+                            continue;
+                        }
+
+                        setTimeout(() => playOnSonos(fileName, discovery.players[i].uuid, volume), 100);
+                    }
                 }
-            );
+            } catch (err) {
+                adapter.log.error(`Cannot upload ${id}: ${err}`);
+                return callback && callback(err);
+            }
+
+            callback && callback();
         } catch (e) {
             adapter.log.error(e);
             callback && callback(e);
@@ -1808,10 +1791,10 @@ function processSonosEvents(event, data) {
         }
     } else if (event === 'treble') {
         // node-sonos-discovery is not emitting any events on treble changes yet, so it is not
-        // possible to get the externally set treble value, yet. 
+        // possible to get the externally set treble value, yet.
     } else if (event === 'bass') {
         // node-sonos-discovery is not emitting any events on bass changes yet, so it is not
-        // possible to get the externally set bass value, yet. 
+        // possible to get the externally set bass value, yet.
     } else if (event === 'mute') {
         // {
         //     uuid:        _this.uuid,
@@ -2191,9 +2174,10 @@ function main() {
  * Clear legacy binary states, as we migrated to files
  */
 async function clearLegacyBinaryStates() {
-    const states = await adapter.getStatesAsync('*.cover_png');
+    const coverStates = await adapter.getStatesAsync('*.cover_png');
+    const ttsStates = await adapter.getStatesAsync('TTS.tts*');
 
-    for (const id of Object.keys(states)) {
+    for (const id of [...Object.keys(coverStates), ...Object.keys(ttsStates)]) {
         await adapter.delObjectAsync(id);
     }
 }
