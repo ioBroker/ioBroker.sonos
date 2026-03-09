@@ -113,6 +113,9 @@ Please note: highlighting current playing favorite is not supported.
 -->
 ## Changelog
 
+### **WORK IN PROGRESS**
+- (iobroker-bot) Adapter requires node.js >= 20 now.
+
 ### __WORK IN PROGRESS__
 * (seb2010) Added support for treble and bass information
 * (Apollon77) stores the tts files in files instead of binary states
