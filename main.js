@@ -6,14 +6,14 @@
  *      derived from https://github.com/jishi/node-sonos-web-controller by Jimmy Shimizu
  */
 'use strict';
-const fs = require('fs');
-const http = require('http');
-const crypto = require('crypto');
+const fs = require('node:fs');
+const http = require('node:http');
+const crypto = require('node:crypto');
 const adapterName = require('./package.json').name.split('.').pop();
 const utils = require('@iobroker/adapter-core'); // Get common adapter utils
 const SonosDiscovery = require('sonos-discovery');
 const TTS = require('./lib/tts');
-const path = require('path');
+const path = require('node:path');
 
 const aliveIds = [];
 let channels = {};
