@@ -288,6 +288,8 @@ Please note: highlighting current playing favorite is not supported.
 ### 0.0.2 (2014-11-01)
 * (bluefox) improve configuration edit
 
+[Older changelogs can be found there](CHANGELOG_OLD.md)
+
 ## License
 
 The MIT License (MIT)
