@@ -2025,6 +2025,8 @@ async function syncConfig() {
                             elapsed: 0,
                             obj: _channels[j]
                         };
+                        const _dev = adapter.config.devices.find(d => d.ip === ip);
+                        await createChannel(_dev?.name || ip, ip, _dev?.room);
                         await adapter.setStateAsync(`root.${sId}.alive`, false, true);
                         aliveIds.push(`root.${sId}.alive`);
                     } else {
