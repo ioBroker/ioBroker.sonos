@@ -142,7 +142,7 @@
         "web": ">=1.5.4"
       },
       {
-        "js-controller": ">=2.0.0"
+        "js-controller": ">=6.0.11"
       }
     ],
     "keywords": [
