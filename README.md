@@ -113,11 +113,18 @@ Please note: highlighting current playing favorite is not supported.
 -->
 ## Changelog
 
-
 ### **WORK IN PROGRESS**
 - (ioBroker-Bot) Adapter requires js-controller >= 6.0.11 now.
 
-### __WORK IN PROGRESS__
+### 4.0.0 (2026-08-13)
+* (@GermanBluefox) Fixed TTS: without a volume in the file name, the announcement was played with volume 0
+* (@GermanBluefox) Fixed the immediate stop of TTS: the state before TTS was not restored and TTS stayed blocked
+* (@GermanBluefox) A muted player is unmuted now for the announcement and muted again afterwards
+* (@GermanBluefox) An empty value in the `tts` state stops the running announcement
+* (@GermanBluefox) The adapter was migrated to TypeScript and is now based on classes
+* (@GermanBluefox) The "root" device object is created now by js-controller from io-package.json
+* (biglouis) Missing states of the already existing devices will be created at start
+* (VierlingMt) Fixed the error if `favorites_set` was called with an empty value
 * (seb2010) Added support for treble and bass information
 * (Apollon77) stores the tts files in files instead of binary states
 
@@ -292,11 +299,13 @@ Please note: highlighting current playing favorite is not supported.
 ### 0.0.2 (2014-11-01)
 * (bluefox) improve configuration edit
 
+[Older changelogs can be found there](CHANGELOG_OLD.md)
+
 ## License
 
 The MIT License (MIT)
 
-Copyright (c) 2014-2024, bluefox <dogafox@gmail.com>
+Copyright (c) 2014-2026, bluefox <dogafox@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
