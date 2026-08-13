@@ -129,7 +129,6 @@
     "mode": "daemon",
     "loglevel": "info",
     "messagebox": true,
-    "materialize": true,
     "readme": "https://github.com/ioBroker/ioBroker.sonos/blob/master/README.md",
     "enabled": true,
     "compact": true,
