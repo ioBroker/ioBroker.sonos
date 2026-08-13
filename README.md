@@ -112,8 +112,7 @@ Please note: highlighting current playing favorite is not supported.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
-
-### __WORK IN PROGRESS__
+### 4.0.0 (2026-08-13)
 * (@GermanBluefox) Fixed TTS: without a volume in the file name, the announcement was played with volume 0
 * (@GermanBluefox) Fixed the immediate stop of TTS: the state before TTS was not restored and TTS stayed blocked
 * (@GermanBluefox) A muted player is unmuted now for the announcement and muted again afterwards
