@@ -6,14 +6,14 @@
  *      derived from https://github.com/jishi/node-sonos-web-controller by Jimmy Shimizu
  */
 'use strict';
-const fs = require('fs');
-const http = require('http');
-const crypto = require('crypto');
-const adapterName = require('./package.json').name.split('.').pop();
+const fs = require('node:fs');
+const http = require('node:http');
+const crypto = require('node:crypto');
+const path = require('node:path');
+
 const utils = require('@iobroker/adapter-core'); // Get common adapter utils
 const SonosDiscovery = require('sonos-discovery');
 const TTS = require('./lib/tts');
-const path = require('path');
 
 const aliveIds = [];
 let channels = {};
@@ -25,7 +25,7 @@ const DEFAULT_IMAGE = `${__dirname}/img/no-cover.png`;
 let adapter;
 function startAdapter(options) {
     options = options || {};
-    options.name = adapterName;
+    options.name = 'sonos';
 
     options.error = err => {
         // Identify unhandled errors originating from callbacks in scripts
@@ -186,29 +186,24 @@ function startAdapter(options) {
                         adapter.log.warn(`Invalid state: ${state.val}`);
                     }
                 } else if (id.state === 'favorites_set') {
-                    const fav = (state.val || '').toString().trim();
-					if (!fav) {
-						adapter.log.warn('favorites_set called without valid favorite name – skipped');
-					} else {
-						promise = player
-							.replaceWithFavorite(fav)
-							.then(() => player.play())
-							.then(() => {
-								adapter.setState(
-									{ device: 'root', channel: id.channel, state: 'current_album' },
-									{ val: fav, ack: true }
-								);
-								adapter.setState(
-									{
-										device: 'root',
-										channel: id.channel,
-										state: 'current_artist'
-									},
-									{ val: fav, ack: true }
-								);
-							})
-							.catch(error => adapter.log.error(`Cannot replaceWithFavorite: ${error}`));
-					}
+                    promise = player
+                        .replaceWithFavorite(state.val)
+                        .then(() => player.play())
+                        .then(() => {
+                            adapter.setState(
+                                { device: 'root', channel: id.channel, state: 'current_album' },
+                                { val: state.val, ack: true }
+                            );
+                            adapter.setState(
+                                {
+                                    device: 'root',
+                                    channel: id.channel,
+                                    state: 'current_artist'
+                                },
+                                { val: state.val, ack: true }
+                            );
+                        })
+                        .catch(error => adapter.log.error(`Cannot replaceWithFavorite: ${error}`));
                 } else if (id.state === 'playlist_set') {
                     promise = player
                         .replaceWithPlaylist(state.val)
@@ -2030,8 +2025,6 @@ async function syncConfig() {
                             elapsed: 0,
                             obj: _channels[j]
                         };
-                        const _dev = adapter.config.devices.find(d => d.ip === ip);
-                        await createChannel(_dev?.name || ip, ip, _dev?.room);
                         await adapter.setStateAsync(`root.${sId}.alive`, false, true);
                         aliveIds.push(`root.${sId}.alive`);
                     } else {
