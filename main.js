@@ -186,24 +186,29 @@ function startAdapter(options) {
                         adapter.log.warn(`Invalid state: ${state.val}`);
                     }
                 } else if (id.state === 'favorites_set') {
-                    promise = player
-                        .replaceWithFavorite(state.val)
-                        .then(() => player.play())
-                        .then(() => {
-                            adapter.setState(
-                                { device: 'root', channel: id.channel, state: 'current_album' },
-                                { val: state.val, ack: true }
-                            );
-                            adapter.setState(
-                                {
-                                    device: 'root',
-                                    channel: id.channel,
-                                    state: 'current_artist'
-                                },
-                                { val: state.val, ack: true }
-                            );
-                        })
-                        .catch(error => adapter.log.error(`Cannot replaceWithFavorite: ${error}`));
+                    const fav = (state.val || '').toString().trim();
+					if (!fav) {
+						adapter.log.warn('favorites_set called without valid favorite name – skipped');
+					} else {
+						promise = player
+							.replaceWithFavorite(fav)
+							.then(() => player.play())
+							.then(() => {
+								adapter.setState(
+									{ device: 'root', channel: id.channel, state: 'current_album' },
+									{ val: fav, ack: true }
+								);
+								adapter.setState(
+									{
+										device: 'root',
+										channel: id.channel,
+										state: 'current_artist'
+									},
+									{ val: fav, ack: true }
+								);
+							})
+							.catch(error => adapter.log.error(`Cannot replaceWithFavorite: ${error}`));
+					}
                 } else if (id.state === 'playlist_set') {
                     promise = player
                         .replaceWithPlaylist(state.val)
