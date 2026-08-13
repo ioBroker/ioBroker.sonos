@@ -7,3 +7,7 @@ iob_npm.done
 .DS_Store
 #ignore .commitinfo created by ioBroker release script
 .commitinfo
+
+# compiled typescript
+build/
+*.tsbuildinfo
