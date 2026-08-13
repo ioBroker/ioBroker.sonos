@@ -30,7 +30,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x]
+        node-version: [22.x]
 
     steps:
       - uses: actions/checkout@v5
@@ -43,12 +43,12 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-#      - name: Perform a type check
-#        run: npm run check:ts
-#        env:
-#          CI: true
-      # - name: Lint TypeScript code
-      #   run: npm run lint
+      - name: Perform a type check
+        run: npm run check:ts
+        env:
+          CI: true
+      - name: Lint TypeScript code
+        run: npm run lint
       - name: Test package files
         run: npm run test:package
 
@@ -61,7 +61,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        node-version: [18.x, 20.x]
+        node-version: [22.x, 24.x]
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
@@ -97,7 +97,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18.x]
+        node-version: [22.x]
 
     steps:
       - name: Checkout code
@@ -125,8 +125,8 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-#      - name: Create a clean build
-#        run: npm run build
+      - name: Create a clean build
+        run: npm run build
       - name: Publish package to npm
         run: |
           npm config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}

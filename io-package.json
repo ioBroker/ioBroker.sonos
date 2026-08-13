@@ -177,5 +177,15 @@
         "name": "Sonos files"
       }
     }
+  ],
+  "instanceObjects": [
+    {
+      "_id": "root",
+      "type": "device",
+      "common": {
+        "name": "root"
+      },
+      "native": {}
+    }
   ]
 }

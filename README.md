@@ -114,6 +114,14 @@ Please note: highlighting current playing favorite is not supported.
 ## Changelog
 
 ### __WORK IN PROGRESS__
+* (bluefox) Fixed TTS: without a volume in the file name, the announcement was played with volume 0
+* (bluefox) Fixed the immediate stop of TTS: the state before TTS was not restored and TTS stayed blocked
+* (bluefox) A muted player is unmuted now for the announcement and muted again afterwards
+* (bluefox) An empty value in the `tts` state stops the running announcement
+* (bluefox) The adapter was migrated to TypeScript and is now based on classes
+* (bluefox) The "root" device object is created now by js-controller from io-package.json
+* (biglouis) Missing states of the already existing devices will be created at start
+* (VierlingMt) Fixed the error if `favorites_set` was called with an empty value
 * (seb2010) Added support for treble and bass information
 * (Apollon77) stores the tts files in files instead of binary states
 
