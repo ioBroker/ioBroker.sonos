@@ -1,4 +1,5 @@
 {
+  "@svrooij/sonos (experimental)": "@svrooij/sonos (experimental)",
   "Devices": "Devices",
   "Fade in (text2speech)": "Fade in for voice outputs",
   "Fade out (text2speech)": "Fade out for voice outputs",
@@ -8,9 +9,12 @@
   "Room": "Room",
   "SONOS devices": "SONOS devices",
   "Search": "Search",
+  "Sonos library": "Sonos library",
   "Update of elapsed time": "Update of elapsed time",
   "Web server": "Web server",
+  "backend_help": "Which library talks to the speakers. The new one is being tested - switch back to the default if playback, groups or announcements misbehave.",
   "in milliseconds": "in milliseconds",
+  "sonos-discovery (default)": "sonos-discovery (default)",
   "tooltip_elapsedInterval": "How often will be updated elapsed time for tracks in ms. Do not make it too small to reduce load on system.",
   "tooltip_fadeIn": "Fade in interval in ms for speech announcements. 0 - fade in is disabled.",
   "tooltip_fadeOut": "Fade out interval in ms for speech announcements. 0 - fade out is disabled.",

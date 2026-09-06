@@ -5,29 +5,9 @@
  */
 import * as http from 'node:http';
 
-export interface MediaBrowseItem {
-    id: string;
-    title: string;
-    uri: string;
-    metadata: string;
-    artist: string;
-    album: string;
-    cover: string;
-    folder: boolean;
-    service?: boolean;
-    favorite?: string;
-    playlist?: string;
-}
-
-export interface MediaBrowseResult {
-    id: string;
-    title: string;
-    items: MediaBrowseItem[];
-    serviceName?: string;
-    searchable?: boolean;
-    loginUrl?: string;
-    loginHint?: string;
-}
+// These moved to the backend types: they describe the domain, not this transport.
+export type { MediaBrowseItem, MediaBrowseResult } from './backend/types';
+import type { MediaBrowseItem, MediaBrowseResult } from './backend/types';
 
 const BROWSE_LIMIT = 200;
 

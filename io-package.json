@@ -176,6 +176,7 @@
   },
   "native": {
     "elapsedInterval": 2000,
+    "backend": "discovery",
     "fadeIn": 0,
     "fadeOut": 0,
     "webServer": "",

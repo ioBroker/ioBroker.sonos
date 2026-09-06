@@ -1,4 +1,5 @@
 {
+  "@svrooij/sonos (experimental)": "@svrooij/sonos (experimentell)",
   "Devices": "Geräte",
   "Fade in (text2speech)": "Fade-in für Sprachausgaben",
   "Fade out (text2speech)": "Fade-out für Sprachausgaben",
@@ -8,9 +9,12 @@
   "Room": "Raum",
   "SONOS devices": "SONOS-Geräte",
   "Search": "Suche",
+  "Sonos library": "Sonos-Bibliothek",
   "Update of elapsed time": "Aktualisierung des Lied-Timers",
   "Web server": "Webserver",
+  "backend_help": "Welche Bibliothek mit den Lautsprechern spricht. Die neue wird gerade erprobt - bei Problemen mit Wiedergabe, Gruppen oder Ansagen auf die Voreinstellung zurückschalten.",
   "in milliseconds": "in Millisekunden",
+  "sonos-discovery (default)": "sonos-discovery (Voreinstellung)",
   "tooltip_elapsedInterval": "Wie oft wird die aktuelle Abspielzeit aktualisiert. Zu kleine Werte belasten das System mehr.",
   "tooltip_fadeIn": "Fade-in-Intervall in ms für Sprachausgaben. 0 - Fade-in ist aktiviert.",
   "tooltip_fadeOut": "Fade-out-Intervall in ms für Sprachausgaben. 0 - Fade-out ist deaktiviert.",

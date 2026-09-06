@@ -1,4 +1,5 @@
 {
+  "@svrooij/sonos (experimental)": "@svrooij/sonos（实验）",
   "Devices": "设备",
   "Fade in (text2speech)": "语音输出淡入",
   "Fade out (text2speech)": "语音输出淡出",
@@ -8,9 +9,12 @@
   "Room": "房间",
   "SONOS devices": "SONOS 设备",
   "Search": "搜索",
+  "Sonos library": "索诺斯图书馆",
   "Update of elapsed time": "经过时间的更新",
   "Web server": "网络服务器",
+  "backend_help": "哪个图书馆与演讲者交谈。新功能正在测试中 - 如果播放、分组或公告出现问题，请切换回默认设置。",
   "in milliseconds": "以毫秒为单位",
+  "sonos-discovery (default)": "sonos-discovery（默认）",
   "tooltip_elapsedInterval": "以毫秒为单位更新曲目经过时间的频率。",
   "tooltip_fadeIn": "语音通知的淡入间隔以毫秒为单位。 ",
   "tooltip_fadeOut": "语音公告的淡出间隔（毫秒）。 ",

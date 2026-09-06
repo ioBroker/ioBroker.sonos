@@ -1,4 +1,5 @@
 {
+  "@svrooij/sonos (experimental)": "@svrooij/sonos (eksperymentalny)",
   "Devices": "Pomysłowość",
   "Fade in (text2speech)": "Rozjaśnianie dla wyjść głosowych",
   "Fade out (text2speech)": "Zanikanie wyjść głosowych",
@@ -8,9 +9,12 @@
   "Room": "Pokój",
   "SONOS devices": "Urządzenia SONOS",
   "Search": "Szukaj",
+  "Sonos library": "Biblioteka Sonosa",
   "Update of elapsed time": "Aktualizacja upływającego czasu",
   "Web server": "serwer internetowy",
+  "backend_help": "Która biblioteka rozmawia z prelegentami. Nowy jest w fazie testowania - przywróć domyślny, jeśli odtwarzanie, grupy lub ogłoszenia źle się zachowują.",
   "in milliseconds": "w milisekundach",
+  "sonos-discovery (default)": "sonos-discovery (domyślnie)",
   "tooltip_elapsedInterval": "Jak często będzie aktualizowany upływający czas na utwory w ms. Nie należy go zmniejszać, aby zmniejszyć obciążenie systemu.",
   "tooltip_fadeIn": "Zanikanie w odstępach w ms dla komunikatów głosowych. 0 - zanikanie jest wyłączone.",
   "tooltip_fadeOut": "Interwał zanikania w ms dla komunikatów głosowych. 0 - wyciszenie jest wyłączone.",
