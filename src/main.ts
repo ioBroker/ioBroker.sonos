@@ -26,26 +26,19 @@ import type {
 import { TTS } from './lib/tts';
 import { getChannelStates } from './lib/states';
 import {
-    browseMedia,
     getMediaRoot,
-    hasHomeTheater,
     isDirectPlayUri,
     isLineInStreamUri,
     isTvStreamUri,
     matchesMusicService,
     mediaItem,
-    htAudioInLabel,
-    isHtAudioSilent,
     nowPlayingLabels,
-    parseHtAudioIn,
-    soapGetPositionInfo,
-    soapGetZoneInfo,
     streamContentFromDidl,
     tvAudioFormat,
     tvStreamUri,
 } from './lib/content-directory';
 import type { MediaBrowseItem, MediaBrowseResult } from './lib/content-directory';
-import { SmapiHub, encodeSmapiId, parseSmapiId } from './lib/smapi';
+import { encodeSmapiId, parseSmapiId } from './lib/smapi';
 
 const DEFAULT_IMAGE = `${__dirname}/../img/no-cover.png`;
 const TV_IMAGE = `${__dirname}/../img/tv-cover.png`;
@@ -198,7 +191,6 @@ class Sonos extends utils.Adapter {
     /** All known devices with the IP address (dots replaced by underscores) as key */
     private channels: Record<string, ChannelInfo> = {};
     private backend: SonosBackend | null = null;
-    private smapi: SmapiHub | null = null;
     private lastCover: Record<string, string | null> = {};
     private lastTvFormat: Record<string, string> = {};
     private lastTvFormatFetch: Record<string, number> = {};
@@ -1253,34 +1245,16 @@ class Sonos extends utils.Adapter {
         }
         this.lastTvFormatFetch[player.uuid] = now;
 
-        try {
-            const zoneXml = await soapGetZoneInfo(player.baseUrl);
-            const code = parseHtAudioIn(zoneXml);
-            if (code != null) {
-                if (isHtAudioSilent(code)) {
-                    this.lastTvFormat[player.uuid] = '';
-                    return '';
-                }
-                const fromZone = htAudioInLabel(code);
-                if (fromZone) {
-                    this.lastTvFormat[player.uuid] = fromZone;
-                    return fromZone;
-                }
-            }
-        } catch (err) {
-            this.log.debug(`TV HTAudioIn: ${err}`);
-        }
-
+        // What the track and the transport metadata already say, before asking the speaker
         const fromEvent =
             tvAudioFormat(track.title) || tvAudioFormat(streamContentFromDidl(metadata)) || tvAudioFormat(track.artist);
 
         try {
-            const xml = await soapGetPositionInfo(player.baseUrl);
-            const format = tvAudioFormat(streamContentFromDidl(xml)) || fromEvent;
+            const format = (await player.tvAudioFormat()) || fromEvent;
             this.lastTvFormat[player.uuid] = format || '';
             return format || '';
         } catch (err) {
-            this.log.debug(`TV stream format: ${err}`);
+            this.log.debug(`TV audio format: ${err}`);
             return fromEvent || this.lastTvFormat[player.uuid] || '';
         }
     }
@@ -1509,17 +1483,15 @@ class Sonos extends utils.Adapter {
         return undefined;
     }
 
-    private getSmapi(): SmapiHub {
-        if (!this.smapi) {
-            let dir = path.join(os.tmpdir(), this.namespace);
-            try {
-                dir = utils.getAbsoluteInstanceDataDir(this);
-            } catch {
-                // unit tests / missing controller paths
-            }
-            this.smapi = new SmapiHub(this.log, path.join(dir, 'smapi-tokens.json'));
+    /** Where the music service tokens are kept; both backends use the same file */
+    private getTokenFile(): string {
+        let dir = path.join(os.tmpdir(), this.namespace);
+        try {
+            dir = utils.getAbsoluteInstanceDataDir(this);
+        } catch {
+            // unit tests / missing controller paths
         }
-        return this.smapi;
+        return path.join(dir, 'smapi-tokens.json');
     }
 
     /**
@@ -1552,7 +1524,7 @@ class Sonos extends utils.Adapter {
         };
 
         try {
-            const smapi = await this.getSmapi().browse(player.baseUrl, serviceName, 'root', german);
+            const smapi = await this.backend!.music.browse(serviceName, 'root', german);
             items.push(...smapi.items.filter(matchesQuery));
             loginUrl = smapi.loginUrl;
             loginHint = smapi.loginHint;
@@ -1707,7 +1679,7 @@ class Sonos extends utils.Adapter {
             const tvPlayer = sourcePlayer || player;
             let homeTheater = false;
             try {
-                homeTheater = await hasHomeTheater(tvPlayer.baseUrl);
+                homeTheater = await tvPlayer.hasTvInput();
             } catch (err) {
                 this.log.debug(`Cannot probe HDMI input of ${tvPlayer.roomName}: ${err}`);
             }
@@ -1719,8 +1691,8 @@ class Sonos extends utils.Adapter {
             const name = decodeURIComponent(colon === -1 ? rest : rest.slice(0, colon));
             const term = decodeURIComponent(colon === -1 ? '' : rest.slice(colon + 1));
             try {
-                if (await this.getSmapi().hasSoapCatalog(player.baseUrl, name)) {
-                    const smapi = await this.getSmapi().search(player.baseUrl, name, term, german);
+                if (await this.backend!.music.hasCatalog(name)) {
+                    const smapi = await this.backend!.music.search(name, term, german);
                     result = {
                         id,
                         title: term || name,
@@ -1741,7 +1713,7 @@ class Sonos extends utils.Adapter {
             }
         } else if (id.startsWith('smapi-auth:')) {
             const name = decodeURIComponent(id.slice('smapi-auth:'.length));
-            const ok = await this.getSmapi().completeLogin(player.baseUrl, name);
+            const ok = await this.backend!.music.completeLogin(name);
             if (ok) {
                 result = await this.listServiceLibrary(player, name, german);
                 result.id = encodeSmapiId(name, 'root');
@@ -1767,12 +1739,7 @@ class Sonos extends utils.Adapter {
                 result = { id, title: id, items: [] };
             } else {
                 try {
-                    const smapi = await this.getSmapi().browse(
-                        player.baseUrl,
-                        parsed.serviceName,
-                        parsed.itemId,
-                        german,
-                    );
+                    const smapi = await this.backend!.music.browse(parsed.serviceName, parsed.itemId, german);
                     result = {
                         id,
                         title: parsed.serviceName,
@@ -1798,7 +1765,7 @@ class Sonos extends utils.Adapter {
             result = await this.listServiceLibrary(player, name, german);
         } else {
             try {
-                result = { id, title: id, items: await browseMedia(player.baseUrl, id) };
+                result = { id, title: id, items: await player.browse(id) };
             } catch (err: any) {
                 this.log.warn(`Cannot browse media ${id}: ${err.message || err}`);
                 result = { id, title: id, items: [] };
@@ -1827,7 +1794,7 @@ class Sonos extends utils.Adapter {
             this.log.debug(`TV HDMI already selected on ${ht.roomName}`);
             return;
         }
-        if (!(await hasHomeTheater(ht.baseUrl))) {
+        if (!(await ht.hasTvInput())) {
             this.log.warn(`${ht.roomName} has no HDMI/optical input - TV cannot be selected there`);
             return;
         }
@@ -2448,14 +2415,17 @@ class Sonos extends utils.Adapter {
 
         // Two client libraries are shipped side by side while the new one is being proven out.
         // A tester who hits a problem flips this setting instead of downgrading the adapter.
+        const tokenFile = this.getTokenFile();
+
         if (this.config.backend === 'svrooij') {
             this.log.info('Using the @svrooij/sonos backend (experimental)');
-            this.backend = new SvrooijBackend();
+            this.backend = new SvrooijBackend({ tokenFile, log: this.log });
         } else {
             this.backend = new DiscoveryBackend({
                 log: this.log,
                 cacheDir: this.cacheDir,
                 port: this.config.webserverPort,
+                tokenFile,
             });
         }
 

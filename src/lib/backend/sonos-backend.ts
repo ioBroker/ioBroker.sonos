@@ -1,4 +1,6 @@
 import type {
+    MediaBrowseItem,
+    SmapiResult,
     SonosBackendEvent,
     SonosBackendEventMap,
     SonosDeviceState,
@@ -7,6 +9,21 @@ import type {
     SonosMusicService,
     SonosQueueEntry,
 } from './types';
+
+/**
+ * Catalog access to the music services of the household.
+ *
+ * Services are addressed by name, and which speaker is asked does not matter - the accounts
+ * belong to the household, not to a device.
+ */
+export interface MusicServiceAccess {
+    /** True if the service offers a catalog that can be browsed and searched at all */
+    hasCatalog(serviceName: string): Promise<boolean>;
+    browse(serviceName: string, objectId: string, german: boolean): Promise<SmapiResult>;
+    search(serviceName: string, term: string, german: boolean): Promise<SmapiResult>;
+    /** Finish an account link the user started in the browser; true when a token was stored */
+    completeLogin(serviceName: string): Promise<boolean>;
+}
 
 /**
  * One SONOS speaker.
@@ -93,6 +110,20 @@ export interface SonosDevice {
     // grouping ------------------------------------------------------------
     /** Leave the current group and play on its own */
     leaveGroup(): Promise<void>;
+
+    // browsing ------------------------------------------------------------
+    /** Children of a content directory container, e.g. `R:0`, `A:`, `S:` or `AI:` */
+    browse(objectId: string): Promise<MediaBrowseItem[]>;
+    /**
+     * True if the speaker has an HDMI or optical input. Only soundbars and amps do, and the
+     * answer never changes, so implementations cache it.
+     */
+    hasTvInput(): Promise<boolean>;
+    /**
+     * The audio format the TV input currently receives, e.g. `Dolby Digital 5.1`.
+     * Empty while there is no signal, and for speakers without a TV input.
+     */
+    tvAudioFormat(): Promise<string>;
 }
 
 /**
@@ -107,6 +138,8 @@ export interface SonosBackend {
     readonly musicServices: Record<string, SonosMusicService>;
     /** Address the speakers can reach this adapter at, used for the TTS files */
     readonly localEndpoint: string;
+    /** Catalog access to the music services */
+    readonly music: MusicServiceAccess;
 
     /** Discover the household. Must be awaited before anything else is used. */
     start(): Promise<void>;

@@ -9,24 +9,34 @@
 import * as os from 'node:os';
 
 import type { SonosDevice as SvrDevice } from '@svrooij/sonos';
-import { SonosManager } from '@svrooij/sonos';
+import { MetaDataHelper, SonosManager } from '@svrooij/sonos';
 import { PlayMode } from '@svrooij/sonos/lib/models';
 import type { BrowseResponse, Track } from '@svrooij/sonos/lib/models';
 import type { AVTransportServiceEvent, RenderingControlServiceEvent } from '@svrooij/sonos/lib/services';
 
-import type { SonosBackend, SonosDevice } from './sonos-backend';
+import { htAudioInLabel, isHtAudioSilent, mediaItem, streamContentFromDidl, tvAudioFormat } from '../content-directory';
+import { SmapiHub } from '../smapi';
+
+import type { MusicServiceAccess, SonosBackend, SonosDevice } from './sonos-backend';
 import type {
+    MediaBrowseItem,
     SonosBackendEvent,
     SonosBackendEventMap,
     SonosDeviceState,
     SonosGroupState,
     SonosMediaEntry,
     SonosMusicService,
-    SonosPlayMode,
     SonosQueueEntry,
     SonosTrack,
     SonosZoneGroup,
 } from './types';
+
+/** The small logger surface {@link SmapiHub} needs */
+interface SmapiLog {
+    warn: (message: string) => void;
+    info: (message: string) => void;
+    debug: (message: string) => void;
+}
 
 /** `h:mm:ss` into seconds; the speakers answer with that format everywhere */
 export function toSeconds(time: string | undefined): number {
@@ -131,7 +141,8 @@ function toEntries(result: BrowseResponse): SonosMediaEntry[] {
     }));
 }
 
-class SvrooijDevice implements SonosDevice {
+/** Exported for the tests: the event folding is pure and worth covering directly. */
+export class SvrooijDevice implements SonosDevice {
     public volume = 0;
     public muted = false;
 
@@ -155,6 +166,8 @@ class SvrooijDevice implements SonosDevice {
 
     private lastTransportUri = '';
     private lastTransportMetadata = '';
+    /** The hardware does not change, so the probe is answered once */
+    private homeTheater?: boolean;
 
     constructor(
         public readonly device: SvrDevice,
@@ -206,30 +219,53 @@ class SvrooijDevice implements SonosDevice {
         return this.lastTransportMetadata;
     }
 
-    /** Fold an AVTransport event into the cached state */
+    /**
+     * Fold an AVTransport event into the cached state.
+     *
+     * These events are partial: the speaker sends only what changed. Every field is therefore
+     * kept unless the event actually carries it - overwriting with a default would make the
+     * states flap, for instance back to STOPPED while playback continues.
+     */
     applyTransportEvent(data: AVTransportServiceEvent): void {
-        const mode = fromPlayMode(data.CurrentPlayMode);
-        const playMode: SonosPlayMode = {
-            shuffle: mode.shuffle,
-            repeat: mode.repeat,
-            crossfade: Boolean(data.CurrentCrossfadeMode),
-        };
-
         if (data.AVTransportURI !== undefined) {
             this.lastTransportUri = String(data.AVTransportURI);
         }
-        if (typeof data.AVTransportURIMetaData === 'string') {
-            this.lastTransportMetadata = data.AVTransportURIMetaData;
+        // The library hands this over parsed whenever it can, but TTS has to put the exact
+        // DIDL back after an announcement, so a parsed track is turned back into a string.
+        if (data.AVTransportURIMetaData !== undefined) {
+            this.lastTransportMetadata =
+                typeof data.AVTransportURIMetaData === 'string'
+                    ? data.AVTransportURIMetaData
+                    : MetaDataHelper.TrackToMetaData(data.AVTransportURIMetaData, true);
         }
 
-        this.cached = {
-            ...this.cached,
-            currentTrack: toTrack(data.CurrentTrackMetaData, data.CurrentTrackURI),
-            nextTrack: data.NextTrackMetaData ? toTrack(data.NextTrackMetaData) : this.cached.nextTrack,
-            playMode,
-            playbackState: transportState(data.TransportState) || this.cached.playbackState,
-            trackNo: data.CurrentTrack ?? this.cached.trackNo,
-        };
+        const next: SonosDeviceState = { ...this.cached };
+
+        if (data.CurrentTrackMetaData !== undefined || data.CurrentTrackURI !== undefined) {
+            next.currentTrack = toTrack(data.CurrentTrackMetaData, data.CurrentTrackURI);
+        }
+        if (data.NextTrackMetaData !== undefined) {
+            next.nextTrack = toTrack(data.NextTrackMetaData);
+        }
+        if (data.CurrentPlayMode !== undefined || data.CurrentCrossfadeMode !== undefined) {
+            const mode = fromPlayMode(
+                data.CurrentPlayMode ??
+                    toPlayMode(Boolean(this.cached.playMode?.shuffle), this.cached.playMode?.repeat || 'none'),
+            );
+            next.playMode = {
+                shuffle: mode.shuffle,
+                repeat: mode.repeat,
+                crossfade: data.CurrentCrossfadeMode ?? Boolean(this.cached.playMode?.crossfade),
+            };
+        }
+        if (data.TransportState !== undefined) {
+            next.playbackState = transportState(data.TransportState);
+        }
+        if (data.CurrentTrack !== undefined) {
+            next.trackNo = data.CurrentTrack;
+        }
+
+        this.cached = next;
     }
 
     /** Fold a RenderingControl event into the cached state */
@@ -476,6 +512,80 @@ class SvrooijDevice implements SonosDevice {
     async leaveGroup(): Promise<void> {
         await this.device.AVTransportService.BecomeCoordinatorOfStandaloneGroup();
     }
+
+    // browsing ------------------------------------------------------------
+
+    async browse(objectId: string): Promise<MediaBrowseItem[]> {
+        const result = await this.device.ContentDirectoryService.BrowseParsed({
+            ObjectID: objectId,
+            BrowseFlag: 'BrowseDirectChildren',
+            Filter: '*',
+            StartingIndex: 0,
+            RequestedCount: 200,
+            SortCriteria: '',
+        });
+
+        if (!Array.isArray(result?.Result)) {
+            return [];
+        }
+
+        return result.Result.map(item => {
+            const uri = item.TrackUri || '';
+            const isContainer = String(item.UpnpClass || '')
+                .toLowerCase()
+                .includes('object.container');
+
+            return mediaItem({
+                id: item.ItemId || uri || item.Title || '',
+                title: item.Title || item.ItemId || '',
+                uri,
+                artist: item.Artist || '',
+                album: item.Album || '',
+                cover: item.AlbumArtUri || '',
+                // line-in and the TV input are containers by class but playable, not browsable
+                folder: isContainer && !uri.startsWith('x-rincon-stream:') && !uri.startsWith('x-sonos-htastream:'),
+            });
+        });
+    }
+
+    async hasTvInput(): Promise<boolean> {
+        if (this.homeTheater === undefined) {
+            try {
+                const info = await this.device.GetZoneInfo();
+                // only soundbars and amps report this field at all
+                this.homeTheater = typeof info?.HTAudioIn === 'number';
+            } catch {
+                this.homeTheater = false;
+            }
+        }
+        return this.homeTheater;
+    }
+
+    /** Same two sources as the other backend: the HTAudioIn code, then the stream content */
+    async tvAudioFormat(): Promise<string> {
+        try {
+            const code = (await this.device.GetZoneInfo())?.HTAudioIn;
+            if (typeof code === 'number') {
+                if (isHtAudioSilent(code)) {
+                    return '';
+                }
+                const label = htAudioInLabel(code);
+                if (label) {
+                    return label;
+                }
+            }
+        } catch {
+            // fall through to the position info
+        }
+
+        try {
+            const info = await this.device.AVTransportService.GetPositionInfo();
+            const meta = info?.TrackMetaData;
+            return tvAudioFormat(typeof meta === 'string' ? streamContentFromDidl(meta) : '');
+        } catch {
+            return '';
+        }
+    }
 }
 
 export class SvrooijBackend implements SonosBackend {
@@ -486,6 +596,8 @@ export class SvrooijBackend implements SonosBackend {
     private lastGroups = '';
 
     private endpoint = '';
+    private readonly smapi: SmapiHub;
+    public readonly music: MusicServiceAccess;
 
     /**
      * `SonosManager.Devices` throws while nothing has been discovered yet, and the adapter asks
@@ -500,7 +612,22 @@ export class SvrooijBackend implements SonosBackend {
         }
     }
 
-    constructor(private readonly options: { localEndpoint?: string } = {}) {}
+    /**
+     * `SmapiHub` is this adapter's own SMAPI client and is shared with the other backend.
+     * It stays because it reads the accounts the user already linked in the SONOS app out of
+     * the speaker, which `@svrooij/sonos` documents that it cannot do.
+     */
+    constructor(private readonly options: { localEndpoint?: string; tokenFile: string; log: SmapiLog }) {
+        this.smapi = new SmapiHub(options.log, options.tokenFile);
+
+        const anyBaseUrl = (): string => this.devices[0]?.baseUrl || '';
+        this.music = {
+            hasCatalog: name => this.smapi.hasSoapCatalog(anyBaseUrl(), name),
+            browse: (name, objectId, german) => this.smapi.browse(anyBaseUrl(), name, objectId, german),
+            search: (name, term, german) => this.smapi.search(anyBaseUrl(), name, term, german),
+            completeLogin: name => this.smapi.completeLogin(anyBaseUrl(), name),
+        };
+    }
 
     /** Discover the household and start listening. Must be awaited before anything else. */
     async start(): Promise<void> {

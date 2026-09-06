@@ -155,3 +155,41 @@ export interface SonosBackendEventMap {
     treble: SonosEqEvent;
     bass: SonosEqEvent;
 }
+
+/** One entry of a browsable media list: a container, a track or a music service */
+export interface MediaBrowseItem {
+    id: string;
+    title: string;
+    uri: string;
+    metadata: string;
+    artist: string;
+    album: string;
+    cover: string;
+    folder: boolean;
+    /** True for the entry of a music service itself */
+    service?: boolean;
+    /** Title of the favorite this entry stands for */
+    favorite?: string;
+    /** Title of the playlist this entry stands for */
+    playlist?: string;
+}
+
+/** The answer to one browse request, written to `media_browse_result` */
+export interface MediaBrowseResult {
+    id: string;
+    title: string;
+    items: MediaBrowseItem[];
+    serviceName?: string;
+    searchable?: boolean;
+    /** URL the user has to open once to link a music service account */
+    loginUrl?: string;
+    /** Text shown next to that URL */
+    loginHint?: string;
+}
+
+/** What a music service answered to a browse or search */
+export interface SmapiResult {
+    items: MediaBrowseItem[];
+    loginUrl?: string;
+    loginHint?: string;
+}

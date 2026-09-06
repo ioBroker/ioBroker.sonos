@@ -8,8 +8,22 @@
 import SonosDiscovery from 'sonos-discovery';
 import type { SonosFavorite, SonosPlayer, SonosPlayerState, SonosQueueItem } from 'sonos-discovery';
 
-import type { SonosBackend, SonosDevice } from './sonos-backend';
+import {
+    browseMedia,
+    hasHomeTheater,
+    htAudioInLabel,
+    isHtAudioSilent,
+    parseHtAudioIn,
+    soapGetPositionInfo,
+    soapGetZoneInfo,
+    streamContentFromDidl,
+    tvAudioFormat,
+} from '../content-directory';
+import { SmapiHub } from '../smapi';
+
+import type { MusicServiceAccess, SonosBackend, SonosDevice } from './sonos-backend';
 import type {
+    MediaBrowseItem,
     SonosBackendEvent,
     SonosBackendEventMap,
     SonosDeviceState,
@@ -18,6 +32,13 @@ import type {
     SonosMusicService,
     SonosQueueEntry,
 } from './types';
+
+/** The small logger surface {@link SmapiHub} needs; the adapter's own logger satisfies it */
+interface SmapiLog {
+    warn: (message: string) => void;
+    info: (message: string) => void;
+    debug: (message: string) => void;
+}
 
 /** Event names of the library mapped onto the adapter's own ones */
 const EVENT_NAMES: Record<string, SonosBackendEvent> = {
@@ -239,20 +260,71 @@ class DiscoveryDevice implements SonosDevice {
     async leaveGroup(): Promise<void> {
         await this.player.becomeCoordinatorOfStandaloneGroup();
     }
+
+    // browsing ------------------------------------------------------------
+
+    async browse(objectId: string): Promise<MediaBrowseItem[]> {
+        return await browseMedia(this.baseUrl, objectId);
+    }
+
+    async hasTvInput(): Promise<boolean> {
+        return await hasHomeTheater(this.baseUrl);
+    }
+
+    /**
+     * The speaker knows the format in two places: `HTAudioIn` of GetZoneInfo carries a code,
+     * and the position info carries the `streamContent` the soundbar shows. The first one is
+     * authoritative, the second fills in where the code has no label.
+     */
+    async tvAudioFormat(): Promise<string> {
+        try {
+            const code = parseHtAudioIn(await soapGetZoneInfo(this.baseUrl));
+            if (code != null) {
+                if (isHtAudioSilent(code)) {
+                    return '';
+                }
+                const label = htAudioInLabel(code);
+                if (label) {
+                    return label;
+                }
+            }
+        } catch {
+            // fall through to the position info
+        }
+
+        try {
+            return tvAudioFormat(streamContentFromDidl(await soapGetPositionInfo(this.baseUrl)));
+        } catch {
+            return '';
+        }
+    }
 }
 
 export class DiscoveryBackend implements SonosBackend {
     private readonly discovery: SonosDiscovery;
+    private readonly smapi: SmapiHub;
+    public readonly music: MusicServiceAccess;
     /** One wrapper per player, so that identity and the bookkeeping survive */
     private readonly wrappers = new Map<string, DiscoveryDevice>();
 
-    constructor(options: { cacheDir: string; port?: number; log?: unknown }) {
+    constructor(options: { cacheDir: string; port?: number; log: SmapiLog; tokenFile: string }) {
         this.discovery = new SonosDiscovery({
             household: null,
             log: options.log,
             cacheDir: options.cacheDir,
             port: options.port,
         });
+
+        this.smapi = new SmapiHub(options.log, options.tokenFile);
+
+        // Which speaker is asked does not matter: the accounts belong to the household.
+        const anyBaseUrl = (): string => this.devices[0]?.baseUrl || '';
+        this.music = {
+            hasCatalog: name => this.smapi.hasSoapCatalog(anyBaseUrl(), name),
+            browse: (name, objectId, german) => this.smapi.browse(anyBaseUrl(), name, objectId, german),
+            search: (name, term, german) => this.smapi.search(anyBaseUrl(), name, term, german),
+            completeLogin: name => this.smapi.completeLogin(anyBaseUrl(), name),
+        };
     }
 
     get devices(): SonosDevice[] {

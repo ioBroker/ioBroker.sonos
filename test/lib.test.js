@@ -308,3 +308,86 @@ describe('svrooij backend: track mapping', () => {
         });
     });
 });
+
+const { SvrooijDevice } = require('../build/lib/backend/svrooij-backend');
+
+describe('svrooij backend: partial events', () => {
+    // UPnP LastChange events carry only what changed. Folding one must never reset a field the
+    // event does not mention, otherwise the ioBroker states flap - back to STOPPED while
+    // playback continues, or shuffle off because the event was about something else.
+    const stubDevice = () => ({ Uuid: 'RINCON_1', Host: '192.168.1.50', Port: 1400, Name: 'Kitchen' });
+    const stubBackend = { devices: [], getDeviceByUuid: () => undefined };
+    const device = () => new SvrooijDevice(stubDevice(), stubBackend);
+
+    it('keeps the transport state when a later event does not mention it', () => {
+        const d = device();
+        d.applyTransportEvent({ TransportState: 'PLAYING', CurrentTrack: 2 });
+        d.applyTransportEvent({ CurrentTrack: 3 });
+        expect(d.state.playbackState).to.equal('PLAYING');
+        expect(d.state.trackNo).to.equal(3);
+    });
+
+    it('keeps shuffle and repeat when the event is about something else', () => {
+        const d = device();
+        d.applyTransportEvent({ CurrentPlayMode: 'SHUFFLE_REPEAT_ONE' });
+        expect(d.state.playMode).to.deep.include({ shuffle: true, repeat: 'one' });
+
+        d.applyTransportEvent({ TransportState: 'PAUSED_PLAYBACK' });
+        expect(d.state.playMode).to.deep.include({ shuffle: true, repeat: 'one' });
+        expect(d.state.playbackState).to.equal('PAUSED_PLAYBACK');
+    });
+
+    it('keeps crossfade when only the play mode changed', () => {
+        const d = device();
+        d.applyTransportEvent({ CurrentPlayMode: 'NORMAL', CurrentCrossfadeMode: true });
+        expect(d.state.playMode.crossfade).to.be.true;
+
+        d.applyTransportEvent({ CurrentPlayMode: 'REPEAT_ALL' });
+        expect(d.state.playMode.crossfade).to.be.true;
+        expect(d.state.playMode.repeat).to.equal('all');
+    });
+
+    it('keeps the current track when the event carries no track', () => {
+        const d = device();
+        d.applyTransportEvent({
+            CurrentTrackURI: 'x-file-cifs://nas/a.mp3',
+            CurrentTrackMetaData: { Title: 'Song', Duration: '0:03:25' },
+        });
+        expect(d.state.currentTrack.title).to.equal('Song');
+
+        d.applyTransportEvent({ TransportState: 'PLAYING' });
+        expect(d.state.currentTrack.title).to.equal('Song');
+        expect(d.state.currentTrack.duration).to.equal(205);
+    });
+
+    it('keeps volume and mute when the rendering event is about the equalizer', () => {
+        const d = device();
+        d.applyRenderingEvent({ Volume: { Master: 42 }, Mute: { Master: false } });
+        expect(d.state.volume).to.equal(42);
+        expect(d.volume).to.equal(42);
+
+        d.applyRenderingEvent({ NightMode: true });
+        expect(d.state.volume).to.equal(42);
+        expect(d.state.mute).to.be.false;
+        expect(d.state.equalizer.nightMode).to.be.true;
+    });
+
+    it('reads speech enhancement out of DialogLevel', () => {
+        const d = device();
+        d.applyRenderingEvent({ DialogLevel: '1' });
+        expect(d.state.equalizer.speechEnhancement).to.be.true;
+
+        d.applyRenderingEvent({ DialogLevel: '0' });
+        expect(d.state.equalizer.speechEnhancement).to.be.false;
+    });
+
+    it('turns a parsed transport metadata back into DIDL, which TTS needs to restore radio', () => {
+        const d = device();
+        d.applyTransportEvent({
+            AVTransportURI: 'x-sonosapi-stream:s25111?sid=254',
+            AVTransportURIMetaData: { Title: 'Some Station', UpnpClass: 'object.item.audioItem.audioBroadcast' },
+        });
+        expect(d.transportUri).to.equal('x-sonosapi-stream:s25111?sid=254');
+        expect(d.transportUriMetadata).to.be.a('string').and.to.contain('Some Station');
+    });
+});
