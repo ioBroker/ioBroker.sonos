@@ -4,6 +4,7 @@
     "favorites": "Favoritos",
     "group": "Grupo",
     "instance": "Instancia",
+    "legacy_oid": "Objeto de instancia (frente a 1)",
     "mute": "Silenciar",
     "name": "Nombre",
     "night_mode": "sonido nocturno",

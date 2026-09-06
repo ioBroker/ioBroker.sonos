@@ -42,10 +42,22 @@ export default class Generic<
         return 'sonos_';
     }
 
-    /** `sonos.<instance>` - the `instance` attribute is short, so it holds `0` and not `sonos.0`. */
+    /**
+     * `sonos.<instance>`.
+     *
+     * The `instance` attribute is short, so it holds `0` and not `sonos.0`. Views that were built
+     * with the vis-1 widget store the instance in `oid` instead (`sonos.0`), and this widget
+     * replaces that one under the same template id - so that value has to keep working.
+     */
     getNamespace(): string {
-        const instance = (this.state.rxData as { instance?: string | number }).instance;
-        return `sonos.${parseInt(String(instance ?? 0), 10) || 0}`;
+        const rxData = this.state.rxData as { instance?: string | number; oid?: string };
+
+        if (rxData.instance !== undefined && rxData.instance !== null && rxData.instance !== '') {
+            return `sonos.${parseInt(String(rxData.instance), 10) || 0}`;
+        }
+
+        const legacy = String(rxData.oid || '').match(/^sonos\.(\d+)/);
+        return `sonos.${legacy ? parseInt(legacy[1], 10) : 0}`;
     }
 
     /** `sonos.<instance>.root.<ip>.<name>` */

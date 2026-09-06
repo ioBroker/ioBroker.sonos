@@ -13,36 +13,18 @@ Control and monitor SONOS devices with ioBroker.
 
 ## Widgets
 
-The adapter ships widgets for both visualisation adapters. Both are installed with the adapter;
+The adapter ships one widget for both visualisation adapters. Both are installed with the adapter;
 **vis** and **vis-2** are restarted automatically, and the editor needs a hard reload (Ctrl+F5).
 
-### vis-2
-
-Two React widgets in the widget set **SONOS**:
-
-| Widget | Purpose |
-| --- | --- |
-| **Sonos player** | Rooms, grouping, now playing, transport, volume and the library (favorites, playlists, queue, recent tracks, sources) |
-| **Sonos room** | One speaker as a compact card - cover, title, transport and volume |
-
-Both are bound to an *instance*, not to a single state: pick `sonos.0` in the widget attribute
-**Instance**, and the widget discovers every speaker of that instance on its own. The player widget
-optionally starts on a given room (**Start room**), and each part of it (rooms, groups, volume,
-library) can be switched off.
-
-### vis (1.x)
-
-The widget **Sonos Control** in the widget group **sonos**.
-
-1. From the widget group **sonos**, drag **Sonos Control** onto a view.
-2. Set the object to the instance, for example `sonos.0` - not a single `play` state.
-3. Size the widget around **900 x 520**.
+**Sonos Control** switches rooms, controls playback, forms groups and starts favorites, playlists,
+queue tracks, recent tracks and sources. Bind it to an *instance*, for example `sonos.0` - not to a
+single state such as `play`. The widget discovers every speaker of that instance on its own.
 
 Every discovered speaker appears as a chip at the top. Group membership is toggled with the
 checkboxes. If a room belongs to a group, the now-playing area shows the track of the group, not the
-last local title of that room. The library buttons under the rooms (**Favorites**, **Playlists**,
-**Queue**, **Recent**, **Sources**) open a sheet below the buttons. **Recent** lists the last tracks
-of the selected room.
+last local title of that room. The library buttons (**Favorites**, **Playlists**, **Queue**,
+**Recent**, **Sources**) open a sheet below them. **Recent** lists the last tracks of the selected
+room.
 
 ![Sonos Control - player](img/widget-player.png)
 
@@ -50,7 +32,7 @@ of the selected room.
 
 ![Sonos Control - favorites](img/widget-favorites.png)
 
-*Library buttons open a sheet below the rooms*
+*The library buttons open a sheet below the rooms*
 
 ![Sonos Control - sources](img/widget-sources.png)
 
@@ -59,6 +41,22 @@ of the selected room.
 ![Sonos Control - TV HDMI](img/widget-hdmi.png)
 
 *TV HDMI: title TV, format, mute, night sound and speech enhancement*
+
+### vis-2 and vis 1
+
+There are two implementations of **Sonos Control** under the same template id `tplSonosControl`:
+a React one for vis-2 (`src-widgets`) and the original jQuery one for vis 1 (`widgets/sonos.html`).
+
+Each editor only ever shows one of them. Because the adapter declares `common.visWidgets`, vis-2
+skips `widgets/sonos.html` completely and loads the React widget; vis 1 does not know about React
+widget sets and loads the jQuery one. Views that were built with the vis-1 widget keep their
+`oid` binding when they are opened in vis-2.
+
+vis-2 additionally offers **Sonos room**, one speaker as a compact card with cover, title, transport
+and volume. It has no vis-1 counterpart.
+
+In vis-2 each part of Sonos Control (rooms, groups, volume, library) can be switched off, and the
+widget can start on a given room.
 
 ### Sources
 
@@ -174,7 +172,7 @@ Please note: highlighting current playing favorite is not supported.
 -->
 ## Changelog
 ### **WORK IN PROGRESS**
-* (@GermanBluefox) Added the vis-2 widgets `Sonos player` and `Sonos room`
+* (@GermanBluefox) Added a React implementation of `Sonos Control` for vis-2, plus the new `Sonos room` widget
 * (kosmix1980) vis widget: rooms, groups, favorites, playlists, queue, recent tracks and sources
 * (kosmix1980) Sources: TuneIn, music library, network shares, line-in and SMAPI catalog search
 * (kosmix1980) TV HDMI as a playable source with format, cover, night sound and speech enhancement

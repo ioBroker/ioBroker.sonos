@@ -105,6 +105,8 @@ interface SonosPlayerRxData {
     noCard: boolean;
     widgetTitle: string;
     instance: string;
+    /** Instance object of the vis-1 widget, e.g. `sonos.0` */
+    oid: string;
     defaultRoom: string;
     showRooms: boolean;
     showGroups: boolean;
@@ -144,11 +146,14 @@ export default class SonosPlayer extends Generic<SonosPlayerRxData, SonosPlayerS
 
     static getWidgetInfo(): RxWidgetInfo {
         return {
-            id: 'tplSonos2Player',
+            // Same template id, set and name as the vis-1 widget in widgets/sonos.html.
+            // vis-2 loads both sets and keeps the React implementation, so the palette shows
+            // this widget once, and views built with the vis-1 widget keep working.
+            id: 'tplSonosControl',
             visSet: 'sonos',
             visSetLabel: 'set_label',
             visSetColor: '#e31c23',
-            visName: 'Sonos player',
+            visName: 'Sonos Control',
             visWidgetLabel: 'player',
             visAttrs: [
                 {
@@ -165,6 +170,9 @@ export default class SonosPlayer extends Generic<SonosPlayerRxData, SonosPlayerS
                         { name: 'noCard', type: 'checkbox', label: 'without_card' },
                         { name: 'widgetTitle', label: 'name', hidden: '!!data.noCard' },
                         { name: 'defaultRoom', type: 'text', label: 'default_room', tooltip: 'default_room_tooltip' },
+                        // Kept so that views migrated from the vis-1 widget do not lose their
+                        // binding; `instance` wins as soon as it is set. See Generic.getNamespace().
+                        { name: 'oid', type: 'id', label: 'legacy_oid', hidden: '!!data.instance' },
                     ],
                 },
                 {
@@ -202,7 +210,7 @@ export default class SonosPlayer extends Generic<SonosPlayerRxData, SonosPlayerS
     }
 
     async onRxDataChanged(prevRxData: SonosPlayerRxData): Promise<void> {
-        if (prevRxData.instance !== this.state.rxData.instance) {
+        if (prevRxData.instance !== this.state.rxData.instance || prevRxData.oid !== this.state.rxData.oid) {
             this.setState({ selectedRoom: '', sonos: {}, path: [], tab: '' });
             await this.refreshRooms();
         } else if (prevRxData.defaultRoom !== this.state.rxData.defaultRoom) {

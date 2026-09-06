@@ -4,6 +4,7 @@
     "favorites": "Favorites",
     "group": "Group",
     "instance": "Instance",
+    "legacy_oid": "Instance object (vis 1)",
     "mute": "Mute",
     "name": "Name",
     "night_mode": "Night sound",

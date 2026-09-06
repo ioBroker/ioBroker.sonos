@@ -81,7 +81,7 @@ export default class SonosRoom extends Generic<SonosRoomRxData, SonosRoomState> 
 
     static getWidgetInfo(): RxWidgetInfo {
         return {
-            id: 'tplSonos2Room',
+            id: 'tplSonosRoom',
             visSet: 'sonos',
             visName: 'Sonos room',
             visWidgetLabel: 'room',

@@ -165,7 +165,6 @@
         "name": "vis2SonosWidgets",
         "url": "sonos/customWidgets.js",
         "bundlerType": "module",
-        "color": "#e31c23",
         "components": [
           "SonosPlayer",
           "SonosRoom"
