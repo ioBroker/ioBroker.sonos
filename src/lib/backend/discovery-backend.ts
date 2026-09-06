@@ -276,6 +276,11 @@ export class DiscoveryBackend implements SonosBackend {
         return wrapper;
     }
 
+    /** `sonos-discovery` starts discovering in its constructor, so there is nothing to await. */
+    start(): Promise<void> {
+        return Promise.resolve();
+    }
+
     getDeviceByUuid(uuid: string): SonosDevice | undefined {
         const player = this.discovery.getPlayerByUUID(uuid);
         return player ? this.wrap(player) : undefined;

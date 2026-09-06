@@ -70,6 +70,26 @@
           "style": {
             "marginTop": 21
           }
+        },
+        "backend": {
+          "newLine": true,
+          "type": "select",
+          "label": "Sonos library",
+          "help": "Only change this if you are asked to",
+          "options": [
+            {
+              "label": "sonos-discovery (stable)",
+              "value": "discovery"
+            },
+            {
+              "label": "@svrooij/sonos (new)",
+              "value": "svrooij"
+            }
+          ],
+          "default": "discovery",
+          "sm": 12,
+          "md": 6,
+          "lg": 3
         }
       }
     },

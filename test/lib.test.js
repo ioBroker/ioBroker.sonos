@@ -205,3 +205,106 @@ describe('smapi: object ids', () => {
         expect(parseSmapiId('')).to.be.undefined;
     });
 });
+
+const {
+    fromPlayMode,
+    toFormatted,
+    toPlayMode,
+    toSeconds,
+    toTrack,
+} = require('../build/lib/backend/svrooij-backend');
+
+describe('svrooij backend: play mode', () => {
+    // shuffle and repeat are two independent ioBroker states but one enum in the library,
+    // so the folding has to survive a round trip in both directions
+    const COMBINATIONS = [
+        [false, 'none'],
+        [false, 'all'],
+        [false, 'one'],
+        [true, 'none'],
+        [true, 'all'],
+        [true, 'one'],
+    ];
+
+    it('round-trips every shuffle/repeat combination', () => {
+        COMBINATIONS.forEach(([shuffle, repeat]) => {
+            const folded = toPlayMode(shuffle, repeat);
+            expect(fromPlayMode(folded), `${shuffle}/${repeat} via ${folded}`).to.deep.equal({ shuffle, repeat });
+        });
+    });
+
+    it('maps the library enum to the documented strings', () => {
+        expect(fromPlayMode('NORMAL')).to.deep.equal({ shuffle: false, repeat: 'none' });
+        expect(fromPlayMode('REPEAT_ALL')).to.deep.equal({ shuffle: false, repeat: 'all' });
+        expect(fromPlayMode('REPEAT_ONE')).to.deep.equal({ shuffle: false, repeat: 'one' });
+        expect(fromPlayMode('SHUFFLE')).to.deep.equal({ shuffle: true, repeat: 'all' });
+        expect(fromPlayMode('SHUFFLE_NOREPEAT')).to.deep.equal({ shuffle: true, repeat: 'none' });
+        expect(fromPlayMode('SHUFFLE_REPEAT_ONE')).to.deep.equal({ shuffle: true, repeat: 'one' });
+    });
+
+    it('falls back to no shuffle and no repeat for an unknown mode', () => {
+        expect(fromPlayMode(undefined)).to.deep.equal({ shuffle: false, repeat: 'none' });
+        expect(fromPlayMode('SOMETHING_ELSE')).to.deep.equal({ shuffle: false, repeat: 'none' });
+    });
+});
+
+describe('svrooij backend: time conversion', () => {
+    it('reads the h:mm:ss the speakers answer with', () => {
+        expect(toSeconds('0:00:00')).to.equal(0);
+        expect(toSeconds('0:03:25')).to.equal(205);
+        expect(toSeconds('1:02:03')).to.equal(3723);
+        expect(toSeconds(undefined)).to.equal(0);
+        expect(toSeconds('NOT_IMPLEMENTED')).to.equal(0);
+    });
+
+    it('writes the shape the adapter puts into current_elapsed_s', () => {
+        expect(toFormatted(0)).to.equal('0:00');
+        expect(toFormatted(65)).to.equal('1:05');
+        expect(toFormatted(205)).to.equal('3:25');
+        expect(toFormatted(3723)).to.equal('1:02:03');
+    });
+
+    it('round-trips a duration', () => {
+        [0, 7, 65, 205, 3599, 3723, 7322].forEach(seconds => {
+            expect(toSeconds(toFormatted(seconds)), `${seconds}s`).to.equal(seconds);
+        });
+    });
+});
+
+describe('svrooij backend: track mapping', () => {
+    it('recognises a radio stream by its upnp class', () => {
+        const track = toTrack({
+            Title: 'Some Station',
+            UpnpClass: 'object.item.audioItem.audioBroadcast',
+            TrackUri: 'x-sonosapi-stream:s25111?sid=254',
+        });
+        expect(track.type).to.equal('radio');
+        expect(track.title).to.equal('Some Station');
+    });
+
+    it('recognises the TV input as line_in', () => {
+        expect(toTrack({ TrackUri: 'x-sonos-htastream:RINCON_1:spdif' }).type).to.equal('line_in');
+        expect(toTrack({ TrackUri: 'x-rincon-stream:RINCON_1' }).type).to.equal('line_in');
+    });
+
+    it('treats everything else as a track and converts the duration', () => {
+        const track = toTrack({
+            Title: 'Song',
+            Artist: 'Band',
+            Album: 'Disc',
+            Duration: '0:03:25',
+            TrackUri: 'x-file-cifs://nas/a.mp3',
+        });
+        expect(track.type).to.equal('track');
+        expect(track.duration).to.equal(205);
+        expect(track.artist).to.equal('Band');
+    });
+
+    it('survives a missing or unparsed track', () => {
+        expect(toTrack(undefined)).to.deep.equal({ uri: '', duration: 0 });
+        expect(toTrack('<DIDL-Lite/>', 'x-rincon:RINCON_1')).to.deep.equal({
+            uri: 'x-rincon:RINCON_1',
+            duration: 0,
+        });
+    });
+});

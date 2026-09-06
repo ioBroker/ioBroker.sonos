@@ -108,6 +108,9 @@ export interface SonosBackend {
     /** Address the speakers can reach this adapter at, used for the TTS files */
     readonly localEndpoint: string;
 
+    /** Discover the household. Must be awaited before anything else is used. */
+    start(): Promise<void>;
+
     getDeviceByUuid(uuid: string): SonosDevice | undefined;
     /** Look a device up by its channel name, so the IP address with underscores */
     getDeviceByChannel(channel: string): SonosDevice | undefined;

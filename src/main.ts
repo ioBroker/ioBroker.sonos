@@ -13,6 +13,7 @@ import * as os from 'node:os';
 
 import * as utils from '@iobroker/adapter-core';
 import { DiscoveryBackend } from './lib/backend/discovery-backend';
+import { SvrooijBackend } from './lib/backend/svrooij-backend';
 import type { SonosBackend, SonosDevice } from './lib/backend/sonos-backend';
 import type {
     SonosBackendEvent,
@@ -2445,11 +2446,18 @@ class Sonos extends utils.Adapter {
             fs.mkdirSync(this.cacheDir);
         }
 
-        this.backend = new DiscoveryBackend({
-            log: this.log,
-            cacheDir: this.cacheDir,
-            port: this.config.webserverPort,
-        });
+        // Two client libraries are shipped side by side while the new one is being proven out.
+        // A tester who hits a problem flips this setting instead of downgrading the adapter.
+        if (this.config.backend === 'svrooij') {
+            this.log.info('Using the @svrooij/sonos backend (experimental)');
+            this.backend = new SvrooijBackend();
+        } else {
+            this.backend = new DiscoveryBackend({
+                log: this.log,
+                cacheDir: this.cacheDir,
+                port: this.config.webserverPort,
+            });
+        }
 
         const events: SonosBackendEvent[] = [
             'topology-change',
@@ -2474,6 +2482,12 @@ class Sonos extends utils.Adapter {
             this.queues[data.uuid] = data.queue;
             this.processSonosEvents('queue', data).catch(e => this.log.error(`Cannot loadQueue: ${e}`));
         });
+
+        try {
+            await this.backend.start();
+        } catch (e) {
+            this.log.error(`Cannot start the SONOS backend: ${e}`);
+        }
 
         this.subscribeStates('*');
     }
