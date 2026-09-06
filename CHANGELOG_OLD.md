@@ -1,4 +1,7 @@
 # Older changes
+## 2.3.1 (2023-03-22)
+* (Apollon77) Prepare for future js-controller versions
+
 ## 2.3.0 (2023-01-11)
 * (Standarduser & Jey-Cee) Added new states `favorites_list_html` and `queue_html with covers`
 * (Standarduser) Changed default album art if no cover was found

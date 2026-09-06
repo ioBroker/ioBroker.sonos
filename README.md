@@ -171,7 +171,7 @@ Please note: highlighting current playing favorite is not supported.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
-### **WORK IN PROGRESS**
+### 4.1.0 (2026-09-06)
 * (@GermanBluefox) Added a React implementation of `Sonos Control` for vis-2, plus the new `Sonos room` widget
 * (kosmix1980) vis widget: rooms, groups, favorites, playlists, queue, recent tracks and sources
 * (kosmix1980) Sources: TuneIn, music library, network shares, line-in and SMAPI catalog search
@@ -205,9 +205,6 @@ Please note: highlighting current playing favorite is not supported.
 
 ### 2.3.2 (2023-09-20)
 * (foxriver76) stores the cover file in files instead of binary states
-
-### 2.3.1 (2023-03-22)
-* (Apollon77) Prepare for future js-controller versions
 
 ## License
 
