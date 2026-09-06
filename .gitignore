@@ -2,7 +2,6 @@ node_modules
 .idea
 admin/i18n/flat.txt
 admin/i18n/*/flat.txt
-package-lock.*
 iob_npm.done
 .DS_Store
 #ignore .commitinfo created by ioBroker release script
