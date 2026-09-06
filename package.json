@@ -22,6 +22,9 @@
   "overrides": {
     "sonos-discovery": {
       "html-entities": "1.0.10"
+    },
+    "@svrooij/sonos": {
+      "fast-xml-parser": "3.19.0"
     }
   },
   "dependencies": {

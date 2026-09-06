@@ -25,5 +25,9 @@ updates:
       - dependency-name: '@types/node'
         update-types:
           - 'version-update:semver-major'
+      # @svrooij/sonos depends on exactly 3.19.0 and calls the v3 top-level parse(),
+      # which v4 replaced with the XMLParser class. Raising it breaks that library, so
+      # the update cannot be applied here - see the overrides entry in package.json.
+      - dependency-name: 'fast-xml-parser'
     cooldown:
       default-days: 7
