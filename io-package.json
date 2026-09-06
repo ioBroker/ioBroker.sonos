@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "sonos",
-    "version": "4.1.0",
+    "version": "4.2.0",
     "news": {
+      "4.2.0": {
+        "en": "The client library can be switched in the instance settings\nAdded `@svrooij/sonos` as an experimental alternative to `sonos-discovery`\nThe adapter talks to a backend interface now, so both libraries fill the same states",
+        "de": "Die Client-Bibliothek ist in den Instanzeinstellungen umschaltbar\n`@svrooij /sonos` als Testalternative zu `Sonos-Discovery` hinzugefügt\nDer Adapter kommuniziert jetzt im Backend, sodass beide Bibliotheken denselben Status haben",
+        "ru": "Клиентскую библиотеку можно переключить в настройках экземпляра\nДобавлено «@svrooij /sonos» в качестве экспериментальной альтернативы `sonos-discovery`\nТеперь адаптер взаимодействует с внутренним интерфейсом, поэтому обе библиотеки находятся в одном и том же состоянии",
+        "pt": "A biblioteca cliente pode ser trocada na instância\nAdicionado `@svrooij /sonos` como alternativa ao `sonos-discovery`\nAgora, o adaptador se comunica com um backend e as duas têm o mesmo estado",
+        "nl": "De clientbibliotheek kan worden omgeschakeld in de instantie-instellingen.\n`@svrooij /sonos` toegevoegd als experimenteel alternatief voor `sonos-discovery`\nDe adapter werkt nu met een backend-interface, dus beide bibliotheken hebben dezelfde status",
+        "fr": "La bibliothèque client peut être modifiée dans les paramètres\nAjout de « @svrooij /sonos » comme alternative expérimentale à « sonos-discovery »\nL'adaptateur communique avec un backend, donc les deux librairies ont le même état",
+        "it": "La libreria client può essere cambiata nelle istanze\nAggiunto `@svrooij /sonos` come alternativa a `sonos-discovery`\nL'adattatore ora parla con un backend, quindi entrambe le librerie sono uguali",
+        "es": "La biblioteca cliente se puede cambiar en la configuración de la instancia\nAñadió `@svrooij /sonos` como alternativa experimental a `sonos-discovery`\nEl adaptador ahora habla con una interfaz de fondo, por lo que ambas bibliotecas",
+        "pl": "Biblioteka klienta może być przełączana w ustawieniach instancji\nDodano `@svrooij /sonos` jako eksperymentalną alternatywę dla `sonos-discovery`\nAdapter rozmawia teraz z interfejsem zaplecza, więc obie biblioteki wypełniają te same stany",
+        "uk": "Клієнтську бібліотеку можна перемикати в налаштуваннях екземпляра\nДодано `@svrooij /sonos` як експериментальну альтернативу `sonos-discovery`\nТепер адаптер розмовляє з інтерфейсом бекенду, тому обидві бібліотеки заповнюють однакові стани",
+        "zh-cn": "可以在实例设置中切换客户端库\n添加了 “@svrooij /sonos” 作为 “sonos-discovery” 的实验性替代方案\n适配器现在与后端接口通信，因此两个库的状态相同"
+      },
       "4.1.0": {
         "en": "Added a React implementation of `Sonos Control` for vis-2, plus the new `Sonos room` widget\nvis widget: rooms, groups, favorites, playlists, queue, recent tracks and sources\nSources: TuneIn, music library, network shares, line-in and SMAPI catalog search\nTV HDMI as a playable source with format, cover, night sound and speech enhancement\nAdded `playlist_list` / `playlist_list_array` and per-room `recent_tracks`\nGroup members follow the coordinator's now-playing and transport\nTV is offered only on speakers that have an HDMI/optical input\nMusic services are listed only when the household reports them\nRemoved the YouTube Music catalog search: it used a private, undocumented Google endpoint\nOnly the group coordinator updates the elapsed time of the group now\nSMAPI account tokens are stored with restrictive file permissions",
         "de": "React-Version von `Sonos Control` für Vis-2 hinzugefügt, plus neues `Sonos Room`-Widget\nVis-Widget: Räume, Gruppen, Playlisten, aktuelle Titel und Quellen\nQuellen: TuneIn, Music Library, Network Shares, Line-In und SMAPI-Katalogsuche\nTV HDMI als abspielbare Quelle mit Format, Cover, Nachtton und Sprachoptimierung\n`Playlist_List`/`playlist_array` und `recent_tracks` pro Raum hinzugefügt\nGruppenmitglieder verfolgen das Spiel und den Transport\nTV gibt es nur auf Lautsprechern mit HDMI/optischem Eingang\nMusikdienste sind nur aufgeführt, wenn der Haushalt sie meldet\nYouTube Music-Katalogsuche entfernt: mit privatem Google-Endpunkt\nNur der Gruppenleiter aktualisiert jetzt die Zeit der Gruppe\nSMAPI-Kontotoken werden mit restriktiven Dateirechten gespeichert",
@@ -80,19 +93,6 @@
         "pl": "Prepare for future js-controller version",
         "uk": "Підготовка до майбутніх версій js-controller",
         "zh-cn": "今后防污版本的编制"
-      },
-      "2.3.0": {
-        "en": "Added new states `favorites_list_html` and `queue_html with covers`\nChanged default album art if no cover was found\nConfiguration migrated to JSON-Config",
-        "de": "Neue Zustände favorites_list_html und `queue_html mit Covers hinzugefügt `\nVeränderte Standardalbumkunst, wenn kein Cover gefunden wurde\nKonfiguration migriert zu JSON-Config",
-        "ru": "Добавлены новые состояния favorites_list_html и `queue_html with cover »\nИзмененный арт альбом по умолчанию, если не было найдено обложки\nКонфигурация перенесена на JSON-Config",
-        "pt": "Adicionado novos estados favorites_list_html e `queue_html com capas \"\nArte padrão alterada se nenhuma capa foi encontrada\nConfiguração migrada para JSON-Config",
-        "nl": "Vertaling: _\nVeranderde default album kunst als er geen dekmantel is gevonden\nConfiguration gemigreerd tot JSON-Config",
-        "fr": "Ajout de nouveaux états favoris_list_html et `queue_html avec des couvertures `\nChanged default album art if no cover was found\nConfiguration migrée à JSON-Config",
-        "it": "Aggiunto nuovi stati preferiti_list_html e `queue_html con copertine #\nModificata l'arte dell'album di default se non è stata trovata alcuna copertura\nConfigurazione migrata a JSON-Config",
-        "es": "Nuevos estados favoritos_list_html y `queue_html con fundas `\nCambio de arte del disco predeterminado si no se encontró cobertura\nConfiguración migrada a JSON-Config",
-        "pl": "Nowe państwa faworyzują: „_list_html” i „'queue_html”. `\nZmienił domyślny album, jeśli nie znaleziono żadnych okładek\nKonfiguracja przeniosła się do JSON-Config",
-        "uk": "Додано нові держави фаворити_list_html і `queue_html з кришками й\nЗмінений дизайн альбому за замовчуванням, якщо не знайдено\nКонфігурація мігрованих до JSON-Config",
-        "zh-cn": "增加新州优惠名单:名单:html和“queue_html” 目 录\n如果没有发现任何掩护,则改写了手法。\nA. 移徙到联合市场"
       }
     },
     "titleLang": {

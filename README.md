@@ -193,7 +193,7 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
-### **WORK IN PROGRESS**
+### 4.2.0 (2026-09-06)
 * (@GermanBluefox) The client library can be switched in the instance settings
 * (@GermanBluefox) Added `@svrooij/sonos` as an experimental alternative to `sonos-discovery`
 * (@GermanBluefox) The adapter talks to a backend interface now, so both libraries fill the same states
@@ -229,9 +229,6 @@ adapter to get a working state back.
 
 ### 2.3.3 (2023-09-21)
 * (foxriver76) fixed cover url
-
-### 2.3.2 (2023-09-20)
-* (foxriver76) stores the cover file in files instead of binary states
 
 ## License
 
