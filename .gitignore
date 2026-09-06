@@ -11,3 +11,12 @@ iob_npm.done
 # compiled typescript
 build/
 *.tsbuildinfo
+
+# vis-2 widget sources and build output (built by "npm run build:widgets", shipped via prepublishOnly)
+src-widgets/node_modules/
+src-widgets/build/
+src-widgets/.__mf__temp/
+widgets/sonos/assets/
+widgets/sonos/customWidgets.js
+widgets/sonos/mf-stats.json
+widgets/sonos/img/

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Sonos widgets</title>
+        <script type="text/javascript" src="_socket/info.js"></script>
+        <script>
+            var script = document.createElement('script');
+            window.registerSocketOnLoad = function (cb) {
+                window.socketLoadedHandler = cb;
+            };
+            script.onload = function () {
+                typeof window.socketLoadedHandler === 'function' && window.socketLoadedHandler();
+            };
+            script.src =
+                window.location.protocol + '//' + window.location.hostname + ':8082/lib/js/socket.io.js';
+            document.head.appendChild(script);
+        </script>
+    </head>
+    <body>
+        <div id="root"></div>
+        <script type="module" src="src/index.tsx"></script>
+    </body>
+</html>

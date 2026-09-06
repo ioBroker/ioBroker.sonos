@@ -11,45 +11,66 @@
 
 Control and monitor SONOS devices with ioBroker.
 
-## VIS widget
+## Widgets
 
-The adapter includes a VIS widget **Sonos Control**. One widget can switch rooms, control playback, form groups, and start favorites, playlists and queue tracks.
+The adapter ships widgets for both visualisation adapters. Both are installed with the adapter;
+**vis** and **vis-2** are restarted automatically, and the editor needs a hard reload (Ctrl+F5).
 
-1. Install this adapter and make sure the **vis** adapter is running.
-2. Restart **vis.0** (the adapter already asks vis to restart on install).
-3. Reload the VIS editor with Ctrl+F5.
-4. From the widget group **sonos**, drag **Sonos Control** onto a view.
-5. Set the object to the instance, for example `sonos.0` — not a single `play` state.
-6. Size the widget around **900 × 520**.
+### vis-2
 
-After that, every discovered speaker appears as a chip at the top. Group membership is toggled with the checkboxes. If a room belongs to a group, the now-playing area shows the track of the group, not the last local title of that room. Library buttons under the rooms (**Favorites**, **Playlists**, **Queue**, **Recent**, **Sources**) open a slightly transparent sheet below the buttons. **Recent** lists the last tracks of the selected room. **Sources** browses TuneIn, Spotify, YouTube Music, the music library, network shares, line-in and TV HDMI. Spotify search uses the Sonos catalog. YouTube Music search lists catalog titles and tells the speaker to play them via `sid=284` (the official YTM account on the player). If a title does not start, save it as a favorite in the Sonos app.
+Two React widgets in the widget set **SONOS**:
 
-![Sonos Control – player](img/widget-player.png)
+| Widget | Purpose |
+| --- | --- |
+| **Sonos player** | Rooms, grouping, now playing, transport, volume and the library (favorites, playlists, queue, recent tracks, sources) |
+| **Sonos room** | One speaker as a compact card - cover, title, transport and volume |
+
+Both are bound to an *instance*, not to a single state: pick `sonos.0` in the widget attribute
+**Instance**, and the widget discovers every speaker of that instance on its own. The player widget
+optionally starts on a given room (**Start room**), and each part of it (rooms, groups, volume,
+library) can be switched off.
+
+### vis (1.x)
+
+The widget **Sonos Control** in the widget group **sonos**.
+
+1. From the widget group **sonos**, drag **Sonos Control** onto a view.
+2. Set the object to the instance, for example `sonos.0` - not a single `play` state.
+3. Size the widget around **900 x 520**.
+
+Every discovered speaker appears as a chip at the top. Group membership is toggled with the
+checkboxes. If a room belongs to a group, the now-playing area shows the track of the group, not the
+last local title of that room. The library buttons under the rooms (**Favorites**, **Playlists**,
+**Queue**, **Recent**, **Sources**) open a sheet below the buttons. **Recent** lists the last tracks
+of the selected room.
+
+![Sonos Control - player](img/widget-player.png)
 
 *Rooms, grouping and now-playing*
 
-![Sonos Control – favorites](img/widget-favorites.png)
+![Sonos Control - favorites](img/widget-favorites.png)
 
-*Library buttons open a slightly transparent sheet below the rooms*
+*Library buttons open a sheet below the rooms*
 
-![Sonos Control – sources](img/widget-sources.png)
+![Sonos Control - sources](img/widget-sources.png)
 
-*Sources including TV HDMI, TuneIn, Spotify and YouTube Music*
+*Sources: TuneIn, the music library, network shares, line-in and TV HDMI*
 
-![Sonos Control – TV HDMI](img/widget-hdmi.png)
+![Sonos Control - TV HDMI](img/widget-hdmi.png)
 
 *TV HDMI: title TV, format, mute, night sound and speech enhancement*
 
-To install this fork over the official adapter: in Admin open **Adapters** → GitHub button → `https://github.com/kosmix1980/ioBroker.sonos`, then restart vis and hard-reload the editor.
+### Sources
 
-This branch does not include the compiled `build/` folder (same as official, for an upstream PR). For a GitHub install that starts immediately, use the branch `cursor/vis-sonos-widget-93d4`. ioBroker needs `build/main.js` as start file. After a GitHub install of this branch, if the log shows `cannot find start file`, compile once on the host:
+**Sources** browses TuneIn radio, the music library, network shares and line-in through the
+speaker's content directory. Music services are listed only when the household actually reports
+them, and services with a SMAPI catalog (Spotify for example) can be searched after a one-time
+sign-in. Services without such a catalog only show what is already saved in the Sonos app as a
+favorite or playlist.
 
-```
-cd /opt/iobroker/node_modules/iobroker.sonos
-npm install
-npm run build
-iobroker restart sonos.0
-```
+**TV** appears only on speakers that really have an HDMI or optical input (Arc, Beam, Playbar,
+Playbase, Ray, Amp). On the TV input there is no transport control - play, pause, seek, next and
+previous are not offered; mute, night sound and speech enhancement are.
 
 ## Handling of groups
 * States for handling SONOS groups:
@@ -153,12 +174,17 @@ Please note: highlighting current playing favorite is not supported.
 -->
 ## Changelog
 ### **WORK IN PROGRESS**
-* (kosmix1980) VIS widget: rooms, groups, favorites, playlists, queue, recent tracks and sources
-* (kosmix1980) Sources: TuneIn, library, shares, line-in, Spotify/SMAPI search, YouTube Music catalog (sid=284, no stream proxy)
+* (@GermanBluefox) Added the vis-2 widgets `Sonos player` and `Sonos room`
+* (kosmix1980) vis widget: rooms, groups, favorites, playlists, queue, recent tracks and sources
+* (kosmix1980) Sources: TuneIn, music library, network shares, line-in and SMAPI catalog search
 * (kosmix1980) TV HDMI as a playable source with format, cover, night sound and speech enhancement
-* (kosmix1980) Library buttons open a slightly transparent popup below the buttons
 * (kosmix1980) Added `playlist_list` / `playlist_list_array` and per-room `recent_tracks`
 * (kosmix1980) Group members follow the coordinator's now-playing and transport
+* (@GermanBluefox) TV is offered only on speakers that have an HDMI/optical input
+* (@GermanBluefox) Music services are listed only when the household reports them
+* (@GermanBluefox) Removed the YouTube Music catalog search: it used a private, undocumented Google endpoint
+* (@GermanBluefox) Only the group coordinator updates the elapsed time of the group now
+* (@GermanBluefox) SMAPI account tokens are stored with restrictive file permissions
 
 ### 4.0.3 (2026-08-13)
 * (@GermanBluefox) Fixed TTS: without a volume in the file name, the announcement was played with volume 0
@@ -167,7 +193,7 @@ Please note: highlighting current playing favorite is not supported.
 * (@GermanBluefox) An empty value in the `tts` state stops the running announcement
 * (@GermanBluefox) The adapter was migrated to TypeScript and is now based on classes
 * (@GermanBluefox) The "root" device object is created now by js-controller from io-package.json
-* (biglouis) Missing states of the already existing devices will be created at start
+* (biglouis) Missing states of the already existing devices will be created at the start
 * (VierlingMt) Fixed the error if `favorites_set` was called with an empty value
 * (seb2010) Added support for treble and bass information
 * (Apollon77) stores the tts files in files instead of binary states

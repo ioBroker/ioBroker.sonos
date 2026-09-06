@@ -759,12 +759,12 @@ vis.binds = vis.binds || {};
             return { id: '', title: '', items: [] };
         },
 
+        // Shown only until the adapter answers with media_browse_result. TV and the
+        // music services depend on the speaker model and the household, so they are
+        // never guessed here - the adapter decides which ones exist.
         defaultRootItems: function () {
             return [
-                { id: 'tv', title: vis.binds.sonos.t('tv'), artist: vis.binds.sonos.t('tvHdmi') },
                 { id: 'R:0', title: vis.binds.sonos.t('radio'), folder: true },
-                { id: 'service:Spotify', title: 'Spotify', folder: true, service: true },
-                { id: 'service:YouTube Music', title: 'YouTube Music', folder: true, service: true },
                 { id: 'A:', title: vis.binds.sonos.t('library'), folder: true },
                 { id: 'S:', title: vis.binds.sonos.t('shares'), folder: true },
                 { id: 'AI:', title: vis.binds.sonos.t('lineIn'), folder: true },

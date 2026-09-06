@@ -1,0 +1,36 @@
+{
+    "name": "iobroker.sonos-widgets",
+    "private": true,
+    "version": "4.0.3",
+    "type": "module",
+    "dependencies": {
+        "@iobroker/types-vis-2": "~2.20.1",
+        "@module-federation/vite": "^1.21.3",
+        "@vitejs/plugin-react": "^6.1.1"
+    },
+    "devDependencies": {
+        "@emotion/react": "^11.14.0",
+        "@emotion/styled": "^11.14.1",
+        "@mui/icons-material": "^9.4.0",
+        "@mui/material": "^9.4.0",
+        "@types/react": "^19.2.18",
+        "@types/react-dom": "^19.2.7",
+        "react": "^19.2.8",
+        "react-dom": "^19.2.8",
+        "typescript": "^6.0.3",
+        "vite": "^8.2.2"
+    },
+    "scripts": {
+        "start": "vite --port 4173",
+        "build": "tsc && vite build",
+        "preview": "vite preview",
+        "npm": "npm i -f"
+    },
+    "homepage": ".",
+    "browserslist": [
+        ">0.2%",
+        "not dead",
+        "not ie <= 11",
+        "not op_mini all"
+    ]
+}
