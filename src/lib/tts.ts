@@ -13,7 +13,8 @@
 // 10. check if we have the next text, if yes go to 4, but without fade in/fade out
 // 11. Restore the state stored on step 1
 
-import type { SonosPlayer, SonosPlayerState } from 'sonos-discovery';
+import type { SonosDevice } from './backend/sonos-backend';
+import type { SonosDeviceState } from './backend/types';
 
 const audioExtensions = ['mp3', 'aiff', 'flac', 'less', 'wav'];
 
@@ -35,8 +36,8 @@ interface WaitPlayerStarted {
     timer: NodeJS.Timeout | null;
 }
 
-interface StoredState extends SonosPlayerState {
-    avTransportUriMetadata: unknown;
+interface StoredState extends SonosDeviceState {
+    transportUriMetadata: string;
     time: number;
     /** false if a file is playing, else true or the schema of the stream URI */
     radio: boolean | string;
@@ -44,7 +45,7 @@ interface StoredState extends SonosPlayerState {
 
 export class TTS {
     private readonly adapter: ioBroker.Adapter;
-    private readonly player: SonosPlayer;
+    private readonly player: SonosDevice;
     private readonly fadeInMs: number;
     private readonly fadeOutMs: number;
     private readonly queue: TtsTask[] = [];
@@ -56,7 +57,7 @@ export class TTS {
     private playStopped = 0;
     private playStoppedTimeout: NodeJS.Timeout | null = null;
 
-    constructor(adapter: ioBroker.Adapter, player: SonosPlayer) {
+    constructor(adapter: ioBroker.Adapter, player: SonosDevice) {
         this.adapter = adapter;
         this.player = player;
         this.fadeInMs = parseInt(String(adapter.config.fadeIn), 10) || 0;
@@ -136,9 +137,9 @@ export class TTS {
             // restore mute state. If the player was muted, it was unmuted for the announcement,
             // so mute it again in any case: the mute event of the player could be still on the way
             if (storedState.mute) {
-                await this.player.mute();
+                await this.player.setMute(true);
             } else if (this.isPlayerMuted()) {
-                await this.player.unMute();
+                await this.player.setMute(false);
             }
 
             // required for fadeIn
@@ -149,9 +150,9 @@ export class TTS {
             if (storedState.radio) {
                 // if was radio playing
                 try {
-                    await this.player.setAVTransport(
+                    await this.player.setTransportUri(
                         storedState.currentTrack.uri || '',
-                        storedState.avTransportUriMetadata,
+                        storedState.transportUriMetadata,
                     );
                 } catch (error) {
                     this.adapter.log.error(`Cannot setAVTransport: ${error}`);
@@ -159,10 +160,10 @@ export class TTS {
             } else {
                 // if not radio
                 // Set old track number
-                await this.player.trackSeek(storedState.trackNo);
+                await this.player.seekTrack(storedState.trackNo);
                 await this.wait(200);
                 // Set elapsed time
-                await this.player.timeSeek(storedState.elapsedTime);
+                await this.player.seekTime(storedState.elapsedTime);
                 await this.wait(200);
             }
 
@@ -197,7 +198,7 @@ export class TTS {
 
     private storeState(): void {
         const storedState: StoredState = JSON.parse(JSON.stringify(this.player.state));
-        storedState.avTransportUriMetadata = JSON.parse(JSON.stringify(this.player.avTransportUriMetadata));
+        storedState.transportUriMetadata = JSON.parse(JSON.stringify(this.player.transportUriMetadata));
         storedState.time = Date.now();
         storedState.radio = TTS.isRadio(storedState);
         this.storedState = storedState;
@@ -209,7 +210,7 @@ export class TTS {
         );
     }
 
-    private static isRadio(state: SonosPlayerState): boolean | string {
+    private static isRadio(state: SonosDeviceState): boolean | string {
         const extension =
             state.currentTrack && state.currentTrack.uri ? state.currentTrack.uri.split('.').pop() || '' : 'none';
 
@@ -268,14 +269,12 @@ export class TTS {
         if (this.storedState?.radio) {
             wasPlaying = false;
             this.lastAddedTrack = null;
-            await this.player.setAVTransport(task.uri);
+            await this.player.setTransportUri(task.uri);
         } else {
             wasPlaying = this.storedState?.playbackState === 'PLAYING';
 
-            const res = await this.player.addURIToQueue(task.uri);
-            // Find out added track
-            this.lastAddedTrack = parseInt(String(res.firsttracknumberenqueued), 10);
-            await this.player.trackSeek(this.lastAddedTrack);
+            this.lastAddedTrack = await this.player.addToQueue(task.uri);
+            await this.player.seekTrack(this.lastAddedTrack);
         }
 
         // remember start of playing
@@ -328,7 +327,7 @@ export class TTS {
         if (this.lastAddedTrack !== null) {
             // remove track
             try {
-                await this.player.removeTrackFromQueue(this.lastAddedTrack);
+                await this.player.removeFromQueue(this.lastAddedTrack);
             } catch (error) {
                 this.adapter.log.error(`Cannot removeTrackFromQueue: ${error}`);
             }
@@ -367,12 +366,10 @@ export class TTS {
         }
 
         if (this.storedState?.radio) {
-            await this.player.setAVTransport(task.uri);
+            await this.player.setTransportUri(task.uri);
         } else {
-            const res = await this.player.addURIToQueue(task.uri);
-            // Find out added track
-            this.lastAddedTrack = parseInt(String(res.firsttracknumberenqueued), 10);
-            await this.player.trackSeek(this.lastAddedTrack);
+            this.lastAddedTrack = await this.player.addToQueue(task.uri);
+            await this.player.seekTrack(this.lastAddedTrack);
         }
 
         await this.player.setVolume(this.getVolume(task.volume));
@@ -381,11 +378,11 @@ export class TTS {
 
     /**
      * Read the current mute state of the player.
-     * "state.mute" is maintained by sonos-discovery, "_isMuted" only by this adapter,
-     * so it is undefined till the first mute event arrives.
+     * "state.mute" comes from the speaker, "muted" is the adapter's own bookkeeping and stays
+     * at its default until the first mute event arrives.
      */
     private isPlayerMuted(): boolean {
-        return this.player.state?.mute ?? this.player._isMuted ?? false;
+        return this.player.state?.mute ?? this.player.muted ?? false;
     }
 
     private wait(ms: number): Promise<void> {
@@ -412,7 +409,7 @@ export class TTS {
             return requested;
         }
 
-        const stored = this.storedState?.volume ?? this.player.state?.volume ?? this.player._volume;
+        const stored = this.storedState?.volume ?? this.player.state?.volume ?? this.player.volume;
 
         if (typeof stored === 'number' && !isNaN(stored)) {
             return stored;
@@ -463,13 +460,13 @@ export class TTS {
             await this.player.setVolume(0);
             if (muted) {
                 // the announcement must be audible
-                await this.player.unMute();
+                await this.player.setMute(false);
             }
             return;
         }
 
         if (options === undefined) {
-            const actual = parseInt(String(this.player._volume), 10);
+            const actual = parseInt(String(this.player.volume), 10);
 
             options = {
                 actual,
