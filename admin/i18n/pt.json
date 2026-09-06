@@ -1,4 +1,5 @@
 {
+  "@svrooij/sonos (experimental)": "@svrooij/sonos (experimental)",
   "Devices": "Devices",
   "Fade in (text2speech)": "Fade in para saídas de voz",
   "Fade out (text2speech)": "Desvanecimento para saídas de voz",
@@ -8,9 +9,12 @@
   "Room": "Quarto",
   "SONOS devices": "Dispositivos SONOS",
   "Search": "Pesquisa",
+  "Sonos library": "Biblioteca Sonos",
   "Update of elapsed time": "Atualização do tempo decorrido",
   "Web server": "servidor web",
+  "backend_help": "Qual biblioteca fala com os palestrantes. O novo está sendo testado – volte ao padrão se a reprodução, os grupos ou os anúncios apresentarem mau comportamento.",
   "in milliseconds": "em milissegundos",
+  "sonos-discovery (default)": "sonos-discovery (padrão)",
   "tooltip_elapsedInterval": "Com que frequência será atualizado o tempo decorrido para as faixas em ms. Não o faça muito pequeno para reduzir a carga no sistema.",
   "tooltip_fadeIn": "Diminuir o intervalo em ms para anúncios de fala. 0 - fade in está desativado.",
   "tooltip_fadeOut": "Fade out interval in ms para anúncios de fala. 0 - fade out está desativado.",

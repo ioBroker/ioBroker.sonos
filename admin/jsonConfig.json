@@ -75,14 +75,14 @@
           "newLine": true,
           "type": "select",
           "label": "Sonos library",
-          "help": "Only change this if you are asked to",
+          "help": "backend_help",
           "options": [
             {
-              "label": "sonos-discovery (stable)",
+              "label": "sonos-discovery (default)",
               "value": "discovery"
             },
             {
-              "label": "@svrooij/sonos (new)",
+              "label": "@svrooij/sonos (experimental)",
               "value": "svrooij"
             }
           ],

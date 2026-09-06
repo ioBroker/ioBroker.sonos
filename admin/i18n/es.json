@@ -1,4 +1,5 @@
 {
+  "@svrooij/sonos (experimental)": "@svrooij/sonos (experimental)",
   "Devices": "Dispositivos",
   "Fade in (text2speech)": "Fundido para salidas de voz",
   "Fade out (text2speech)": "Fundido para salidas de voz",
@@ -8,9 +9,12 @@
   "Room": "Habitación",
   "SONOS devices": "Dispositivos SONOS",
   "Search": "Buscar",
+  "Sonos library": "Biblioteca Sonos",
   "Update of elapsed time": "Actualización del tiempo transcurrido",
   "Web server": "Servidor web",
+  "backend_help": "Qué biblioteca habla con los oradores. El nuevo está en prueba: vuelva al valor predeterminado si la reproducción, los grupos o los anuncios no funcionan correctamente.",
   "in milliseconds": "en milisegundos",
+  "sonos-discovery (default)": "sonos-discovery (predeterminado)",
   "tooltip_elapsedInterval": "Con qué frecuencia se actualizará el tiempo transcurrido para las pistas en ms. No lo haga demasiado pequeño para reducir la carga en el sistema.",
   "tooltip_fadeIn": "Fundido en intervalo en ms para anuncios de voz. 0 - fade in está deshabilitado.",
   "tooltip_fadeOut": "Intervalo de fundido en ms para anuncios de voz. 0 - el fundido de salida está desactivado.",

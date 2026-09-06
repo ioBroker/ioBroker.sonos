@@ -165,12 +165,39 @@ Please note: highlighting current playing favorite is not supported.
 ## Configuration
 - Web server - [optional] If web server enabled or not
 - Update of elapsed time(ms) - Interval in ms how often to update elapsed timer when the title is playing. (Default 2000)
+- Sonos library - which client library talks to the speakers, see below
+
+### Sonos library
+
+The adapter ships two client libraries and the setting picks one. Nothing else changes:
+the states, their names and their values are the same either way.
+
+| Setting | Library | Status |
+| --- | --- | --- |
+| `sonos-discovery (default)` | `sonos-discovery` | What the adapter has always used |
+| `@svrooij/sonos (experimental)` | `@svrooij/sonos` | Maintained replacement, being tested |
+
+`sonos-discovery` has not seen a release since 2022 and one of its dependencies broke the
+adapter on start, so the replacement is being prepared. It is offered here so that it can be
+tried on real households - there is no SONOS hardware in the CI, and the parts that only real
+speakers exercise cannot be covered by tests.
+
+If you try it, the interesting cases are grouping speakers and dissolving the group again,
+announcements over running playback, starting a favorite or a playlist, the TV input on a
+soundbar, and searching a music service. **Switch back to the default if anything misbehaves**
+and please report what you saw - the setting exists so that nobody has to downgrade the
+adapter to get a working state back.
 
 <!--
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
+### **WORK IN PROGRESS**
+* (@GermanBluefox) The client library can be switched in the instance settings
+* (@GermanBluefox) Added `@svrooij/sonos` as an experimental alternative to `sonos-discovery`
+* (@GermanBluefox) The adapter talks to a backend interface now, so both libraries fill the same states
+
 ### 4.1.0 (2026-09-06)
 * (@GermanBluefox) Added a React implementation of `Sonos Control` for vis-2, plus the new `Sonos room` widget
 * (kosmix1980) vis widget: rooms, groups, favorites, playlists, queue, recent tracks and sources
