@@ -247,7 +247,16 @@ export default class SonosPlayer extends Generic<SonosPlayerRxData, SonosPlayerS
     }
 
     private onSonosState = (id: string, state: ioBroker.State | null | undefined): void => {
-        this.setState(prev => ({ sonos: { ...prev.sonos, [id]: state ? state.val : null } }));
+        this.setState(
+            prev => ({ sonos: { ...prev.sonos, [id]: state ? state.val : null } }),
+            () => {
+                // The coordinator is only known once its state arrived, and the library of a group
+                // slave is written to the coordinator's channel - so the subscription has to follow.
+                if (id === this.getRoomStateId(this.state.selectedRoom, 'coordinator')) {
+                    this.resubscribe();
+                }
+            },
+        );
     };
 
     private unsubscribeAll(): void {
