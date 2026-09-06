@@ -9,6 +9,7 @@ import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as crypto from 'node:crypto';
 import * as path from 'node:path';
+import * as os from 'node:os';
 
 import * as utils from '@iobroker/adapter-core';
 import SonosDiscovery from 'sonos-discovery';
@@ -19,6 +20,7 @@ import { getChannelStates } from './lib/states';
 import {
     browseMedia,
     getMediaRoot,
+    hasHomeTheater,
     isDirectPlayUri,
     isLineInStreamUri,
     isTvStreamUri,
@@ -36,7 +38,6 @@ import {
 } from './lib/content-directory';
 import type { MediaBrowseItem, MediaBrowseResult } from './lib/content-directory';
 import { SmapiHub, encodeSmapiId, parseSmapiId } from './lib/smapi';
-import { isYoutubeMusicName, searchYoutubeMusic } from './lib/ytmusic';
 
 const DEFAULT_IMAGE = `${__dirname}/../img/no-cover.png`;
 const TV_IMAGE = `${__dirname}/../img/tv-cover.png`;
@@ -83,6 +84,11 @@ interface RecentTrack {
 }
 
 const RECENT_TRACKS_MAX = 25;
+
+/** How often the HDMI audio format is re-read while the TV input is playing */
+const TV_FORMAT_POLL_MS = 5000;
+/** Debounce for {@link Sonos.resolveTvFormat}, so an event burst does not hit the speaker repeatedly */
+const TV_FORMAT_CACHE_MS = 2000;
 
 /** Grouping URI used when a player is a slave (`x-rincon:RINCON_...`) */
 function isGroupingUri(uri: string | undefined): boolean {
@@ -213,6 +219,8 @@ class Sonos extends utils.Adapter {
     private lastCover: Record<string, string | null> = {};
     private lastTvFormat: Record<string, string> = {};
     private lastTvFormatFetch: Record<string, number> = {};
+    /** Last value written to `current_artist` while on the TV input, keyed by channel */
+    private lastTvFormatWritten: Record<string, string> = {};
     private readonly lastHistoryKey: Record<string, string> = {};
     private cacheDir = '';
     private currentFileNum = 0;
@@ -343,13 +351,13 @@ class Sonos extends utils.Adapter {
         const onTv = isTvStreamUri(transportUri(media)) || isTvStreamUri(transportUri(player));
 
         if (onTv && TV_NO_TRANSPORT.has(id.state)) {
-            this.log.debug(`Ignore ${id.state} on ${id.channel}: TV HDMI has no transport control`);
+            this.log.warn(`Ignored "${id.state}" on ${id.channel}: the TV input has no transport control`);
             return;
         }
         if (onTv && id.state === 'state') {
             const action = String(value || '').toLowerCase();
             if (['play', 'pause', 'stop', 'next', 'previous'].includes(action)) {
-                this.log.debug(`Ignore state=${action} on ${id.channel}: TV HDMI has no transport control`);
+                this.log.warn(`Ignored state="${action}" on ${id.channel}: the TV input has no transport control`);
                 return;
             }
         }
@@ -539,7 +547,7 @@ class Sonos extends utils.Adapter {
                 promise = this.startAvTransport(media, uri);
             }
         } else if (id.state === 'media_browse') {
-            promise = this.handleMediaBrowse(media, mediaIp, String(value || ''));
+            promise = this.handleMediaBrowse(media, mediaIp, String(value || ''), player);
         } else if (id.state === 'media_play') {
             promise = this.handleMediaPlay(media, String(value || ''), player);
         } else {
@@ -1016,16 +1024,17 @@ class Sonos extends utils.Adapter {
             // if duration is 0 (type is radio):
             // - no changes expected and a state update is not necessary!
             // - division by 0
-            if (ps.playing && this.channels[ip].duration > 0) {
+            // A slave gets its elapsed time from the coordinator's tick, so only the
+            // coordinator (or a standalone player) needs a timer.
+            if (ps.playing && this.channels[ip].duration > 0 && !this.isGroupSlave(ip)) {
                 if (!this.channels[ip].elapsedTimer) {
                     this.channels[ip].elapsedTimer = setInterval(
                         () => this.updateElapsed(ip),
                         this.config.elapsedInterval || 5000,
                     );
                 }
-            } else if (this.channels[ip].elapsedTimer) {
-                clearInterval(this.channels[ip].elapsedTimer);
-                this.channels[ip].elapsedTimer = null;
+            } else {
+                this.stopElapsedTimer(ip);
             }
         }
 
@@ -1050,6 +1059,7 @@ class Sonos extends utils.Adapter {
             this.stopTvFormatWatch(ip);
             delete this.lastTvFormat[player.uuid];
             delete this.lastTvFormatFetch[player.uuid];
+            delete this.lastTvFormatWritten[ip];
         }
 
         await this.setState({ device: 'root', channel: ip, state: 'current_type' }, { val: playing.type, ack: true });
@@ -1209,7 +1219,7 @@ class Sonos extends utils.Adapter {
         }
         channel.tvFormatTimer = setInterval(() => {
             void this.refreshTvFormat(ip);
-        }, 2000);
+        }, TV_FORMAT_POLL_MS);
     }
 
     private stopTvFormatWatch(ip: string): void {
@@ -1231,10 +1241,10 @@ class Sonos extends utils.Adapter {
 
         const meta = typeof player.avTransportUriMetadata === 'string' ? player.avTransportUriMetadata : '';
         const format = await this.resolveTvFormat(player, player.state?.currentTrack || {}, meta);
-        const current = await this.getStateAsync(`root.${ip}.current_artist`);
-        if (String(current?.val || '') === format) {
+        if (this.lastTvFormatWritten[ip] === format) {
             return;
         }
+        this.lastTvFormatWritten[ip] = format;
 
         await this.setState({ device: 'root', channel: ip, state: 'current_artist' }, { val: format, ack: true });
         for (const memberIp of this.getGroupMemberIps(ip)) {
@@ -1255,7 +1265,7 @@ class Sonos extends utils.Adapter {
     ): Promise<string> {
         const now = Date.now();
         if (
-            (this.lastTvFormatFetch[player.uuid] || 0) + 1500 > now &&
+            (this.lastTvFormatFetch[player.uuid] || 0) + TV_FORMAT_CACHE_MS > now &&
             Object.prototype.hasOwnProperty.call(this.lastTvFormat, player.uuid)
         ) {
             return this.lastTvFormat[player.uuid];
@@ -1515,15 +1525,12 @@ class Sonos extends utils.Adapter {
         if (name.toLowerCase() === 'spotify') {
             return { id: 9, type: 2311 };
         }
-        if (name.toLowerCase().includes('youtube')) {
-            return { id: 284, type: 72711 };
-        }
         return undefined;
     }
 
     private getSmapi(): SmapiHub {
         if (!this.smapi) {
-            let dir = path.join('/tmp', this.namespace);
+            let dir = path.join(os.tmpdir(), this.namespace);
             try {
                 dir = utils.getAbsoluteInstanceDataDir(this);
             } catch {
@@ -1535,9 +1542,9 @@ class Sonos extends utils.Adapter {
     }
 
     /**
-     * Spotify catalog via SMAPI; YouTube Music and similar via saved Sonos
-     * favorites, playlists and recently played tracks (Google does not expose
-     * that catalog to third-party controllers).
+     * Service catalog via SMAPI where the service offers one. Everything else is
+     * listed from what the household already knows: saved Sonos favorites,
+     * playlists and the recently played tracks of that room.
      */
     private async listServiceLibrary(
         player: SonosPlayer,
@@ -1694,7 +1701,12 @@ class Sonos extends utils.Adapter {
         return [];
     }
 
-    private async handleMediaBrowse(player: SonosPlayer, ip: string, objectId: string): Promise<void> {
+    private async handleMediaBrowse(
+        player: SonosPlayer,
+        ip: string,
+        objectId: string,
+        sourcePlayer?: SonosPlayer,
+    ): Promise<void> {
         const id = objectId.trim() || 'root';
         const german = this.isGermanUi();
         const labels = {
@@ -1709,7 +1721,16 @@ class Sonos extends utils.Adapter {
         let result: MediaBrowseResult;
 
         if (id === 'root') {
-            result = getMediaRoot(this.discovery?.availableServices, labels, player.uuid);
+            // The TV entry belongs to the room the user selected, not to the group
+            // coordinator, and only soundbars/amps have that input at all.
+            const tvPlayer = sourcePlayer || player;
+            let homeTheater = false;
+            try {
+                homeTheater = await hasHomeTheater(tvPlayer.baseUrl);
+            } catch (err) {
+                this.log.debug(`Cannot probe HDMI input of ${tvPlayer.roomName}: ${err}`);
+            }
+            result = getMediaRoot(this.discovery?.availableServices, labels, tvPlayer.uuid, { homeTheater });
             result.title = german ? 'Quellen' : 'Sources';
         } else if (id.startsWith('smapi-search:')) {
             const rest = id.slice('smapi-search:'.length);
@@ -1727,35 +1748,6 @@ class Sonos extends utils.Adapter {
                         searchable: true,
                         loginUrl: smapi.loginUrl,
                         loginHint: smapi.loginHint,
-                    };
-                } else if (isYoutubeMusicName(name)) {
-                    const sn = await this.getSmapi().accountSerial(player.baseUrl, 284);
-                    let catalog: MediaBrowseItem[] = [];
-                    let hint: string | undefined;
-                    try {
-                        const ytm = await searchYoutubeMusic(term, sn, german);
-                        catalog = ytm.items;
-                        hint = ytm.hint;
-                    } catch (err) {
-                        this.log.warn(`YouTube Music search: ${err}`);
-                    }
-                    const local = await this.listServiceLibrary(player, name, german, term);
-                    const localItems = (local.items || []).filter(item => item.favorite || item.playlist || item.uri);
-                    const items = [...catalog, ...localItems];
-                    result = {
-                        id,
-                        title: term || name,
-                        items: items.length
-                            ? items
-                            : [
-                                  mediaItem({
-                                      id: '',
-                                      title: german ? `Keine Treffer für „${term}“.` : `No matches for “${term}”.`,
-                                  }),
-                              ],
-                        serviceName: name,
-                        searchable: true,
-                        loginHint: hint || local.loginHint,
                     };
                 } else {
                     result = await this.listServiceLibrary(player, name, german, term);
@@ -1854,6 +1846,10 @@ class Sonos extends utils.Adapter {
             this.log.debug(`TV HDMI already selected on ${ht.roomName}`);
             return;
         }
+        if (!(await hasHomeTheater(ht.baseUrl))) {
+            this.log.warn(`${ht.roomName} has no HDMI/optical input - TV cannot be selected there`);
+            return;
+        }
         if (isGroupMember(ht)) {
             await ht.becomeCoordinatorOfStandaloneGroup();
         }
@@ -1945,11 +1941,34 @@ class Sonos extends utils.Adapter {
         return ips.length ? ips : [coordinatorIp];
     }
 
+    /** True if the player belongs to a group and is not the coordinator of it */
+    private isGroupSlave(ip: string): boolean {
+        const channel = this.channels[ip];
+        const player = channel?.player || (channel?.uuid ? this.discovery?.getPlayerByUUID(channel.uuid) : undefined);
+        return Boolean(player && isGroupMember(player));
+    }
+
+    private stopElapsedTimer(ip: string): void {
+        const channel = this.channels[ip];
+        if (channel?.elapsedTimer) {
+            clearInterval(channel.elapsedTimer);
+            channel.elapsedTimer = null;
+        }
+    }
+
     /** Update the elapsed time while playing */
     private updateElapsed(ip: string): void {
         const channel = this.channels[ip];
 
         if (!channel || channel.duration <= 0) {
+            return;
+        }
+
+        // Slaves are fed by the coordinator's tick below. Without this every member of
+        // a group would run its own timer and write to all members, so the number of
+        // state writes per interval would grow with the square of the group size.
+        if (this.isGroupSlave(ip)) {
+            this.stopElapsedTimer(ip);
             return;
         }
 

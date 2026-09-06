@@ -141,14 +141,6 @@ const FALLBACK_SERVICES: MusicServiceInfo[] = [
         secureUri: 'https://spotify-v5.ws.sonos.com/smapi',
         auth: 'AppLink',
     },
-    {
-        name: 'YouTube Music',
-        id: 284,
-        type: 72711,
-        uri: 'https://music.googleapis.com/v1:sendRequest',
-        secureUri: 'https://music.googleapis.com/v1:sendRequest',
-        auth: 'AppLink',
-    },
 ];
 
 const SEARCH_IDS = [
@@ -503,14 +495,24 @@ export class SmapiHub {
         }
     }
 
+    /**
+     * These are third-party music service credentials, so the file must not be
+     * world-readable. `mode` only applies while creating, so an existing file gets
+     * an explicit chmod as well (a no-op on Windows).
+     */
     private saveTokens(): void {
         try {
-            fs.mkdirSync(path.dirname(this.tokenFile), { recursive: true });
+            fs.mkdirSync(path.dirname(this.tokenFile), { recursive: true, mode: 0o700 });
             const data: Record<string, SmapiToken> = {};
             this.tokens.forEach((value, key) => {
                 data[key] = value;
             });
-            fs.writeFileSync(this.tokenFile, JSON.stringify(data, null, 2));
+            fs.writeFileSync(this.tokenFile, JSON.stringify(data, null, 2), { mode: 0o600 });
+            try {
+                fs.chmodSync(this.tokenFile, 0o600);
+            } catch {
+                // Windows and some network shares do not support POSIX modes
+            }
         } catch (err) {
             this.log.warn(`Cannot save SMAPI tokens: ${err}`);
         }
@@ -584,7 +586,7 @@ export class SmapiHub {
         );
     }
 
-    /** Spotify-style SOAP SMAPI. YouTube Music uses a private Google endpoint instead. */
+    /** True for services that speak the SOAP SMAPI protocol and therefore have a browsable catalog. */
     async hasSoapCatalog(baseUrl: string, serviceName: string): Promise<boolean> {
         const service = await this.findService(baseUrl, serviceName);
         return Boolean(service && isSoapSmapi(service));
@@ -843,8 +845,8 @@ export class SmapiHub {
             return {
                 items: [],
                 loginHint: german
-                    ? `${service.name}: Suche im Widget nutzt YouTube Music. Play geht über den Speaker — wenn nichts startet, den Titel in der Sonos-App als Favorit speichern.`
-                    : `${service.name}: Widget search uses YouTube Music. Play goes through the speaker — if nothing starts, save the title as a favorite in the Sonos app.`,
+                    ? `${service.name} bietet keinen Katalog für Fremdsteuerungen. In der Sonos-App suchen und als Favorit oder Playlist speichern - die tauchen hier auf.`
+                    : `${service.name} exposes no catalog to third-party controllers. Search in the Sonos app and save a favorite or playlist - those show up here.`,
             };
         }
         const loginHint = german

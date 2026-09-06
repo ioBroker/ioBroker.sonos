@@ -346,6 +346,27 @@ export function htAudioInLabel(code: number): string {
     return HT_AUDIO_IN[code] || '';
 }
 
+/** Cache for {@link hasHomeTheater}; the hardware behind a base URL does not change at runtime. */
+const homeTheaterCache = new Map<string, boolean>();
+
+/**
+ * True if the speaker has a TV input (Arc, Beam, Playbar, Playbase, Ray, Amp).
+ * `GetZoneInfo` only carries `HTAudioIn` on those models, so its presence is the probe.
+ *
+ * @param baseUrl `http://<ip>:1400` of the player
+ */
+export async function hasHomeTheater(baseUrl: string): Promise<boolean> {
+    const key = baseUrl.replace(/\/$/, '');
+    const cached = homeTheaterCache.get(key);
+    if (cached !== undefined) {
+        return cached;
+    }
+
+    const found = parseHtAudioIn(await soapGetZoneInfo(baseUrl)) != null;
+    homeTheaterCache.set(key, found);
+    return found;
+}
+
 export function parseHtAudioIn(xml: string): number | null {
     const match = String(xml || '').match(/<HTAudioIn>(\d+)<\/HTAudioIn>/i);
     return match ? parseInt(match[1], 10) : null;
@@ -497,19 +518,27 @@ export function getMediaRoot(
     services: Record<string, unknown> | undefined,
     labels: { radio: string; library: string; shares: string; lineIn: string; tv: string; tvHdmi: string },
     playerUuid?: string,
+    options?: { homeTheater?: boolean },
 ): MediaBrowseResult {
     const available = Object.keys(services || {});
     const used = new Set<string>();
-    const items: MediaBrowseItem[] = [
-        mediaItem({
-            id: 'tv',
-            title: labels.tv,
-            artist: labels.tvHdmi,
-            uri: playerUuid ? tvStreamUri(playerUuid) : '',
-            folder: false,
-        }),
-        mediaItem({ id: 'R:0', title: labels.radio, folder: true }),
-    ];
+    const items: MediaBrowseItem[] = [];
+
+    // Only soundbars/amps have an HDMI or optical input. Offering "TV" on a Play:1
+    // would produce an x-sonos-htastream URI the speaker rejects.
+    if (options?.homeTheater && playerUuid) {
+        items.push(
+            mediaItem({
+                id: 'tv',
+                title: labels.tv,
+                artist: labels.tvHdmi,
+                uri: tvStreamUri(playerUuid),
+                folder: false,
+            }),
+        );
+    }
+
+    items.push(mediaItem({ id: 'R:0', title: labels.radio, folder: true }));
 
     const addService = (name: string): void => {
         const key = name.toLowerCase();
@@ -520,8 +549,7 @@ export function getMediaRoot(
         items.push(mediaItem({ id: `service:${name}`, title: name, folder: true, service: true }));
     };
 
-    addService('Spotify');
-    addService('YouTube Music');
+    // Popular services first, but only the ones the household actually reports.
     FEATURED_SERVICES.forEach(name => {
         const match = available.find(item => item.toLowerCase() === name.toLowerCase());
         if (match) {

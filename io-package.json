@@ -91,7 +91,8 @@
         "it": "Aggiunto numero di traccia stato",
         "es": "Estado de la pista número",
         "pl": "Poniższa liczba torów",
-        "zh-cn": "增加跟踪国家数目"
+        "zh-cn": "增加跟踪国家数目",
+        "uk": "Додано стан номера треку"
       }
     },
     "titleLang": {
@@ -104,7 +105,8 @@
       "it": "Sonos",
       "es": "Sonos",
       "pl": "Sonos",
-      "zh-cn": "Sonos"
+      "zh-cn": "Sonos",
+      "uk": "Sonos"
     },
     "desc": {
       "en": "This adapter allows to monitor and control SONOS players from ioBroker",
@@ -116,7 +118,8 @@
       "it": "Questo adattatore consente di monitorare e controllare i lettori SONOS da ioBroker",
       "es": "Este adaptador permite monitorear y controlar los reproductores SONOS desde ioBroker",
       "pl": "Ten adapter pozwala monitorować i kontrolować odtwarzacze SONOS z ioBroker",
-      "zh-cn": "此适配器允许从ioBroker监视和控制SONOS播放器"
+      "zh-cn": "此适配器允许从ioBroker监视和控制SONOS播放器",
+      "uk": "Цей адаптер дозволяє контролювати та контролювати плеєри SONOS з ioBroker"
     },
     "authors": [
       "bluefox <dogafox@gmail.com>"
@@ -156,6 +159,18 @@
       "vis",
       "vis-2"
     ],
+    "visWidgets": {
+      "vis2SonosWidgets": {
+        "i18n": "component",
+        "name": "vis2SonosWidgets",
+        "url": "sonos/customWidgets.js",
+        "bundlerType": "module",
+        "components": [
+          "SonosPlayer",
+          "SonosRoom"
+        ]
+      }
+    },
     "extIcon": "https://raw.githubusercontent.com/ioBroker/ioBroker.sonos/master/admin/sonos.png",
     "type": "multimedia"
   },
