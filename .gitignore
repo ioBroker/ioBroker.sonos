@@ -18,4 +18,5 @@ src-widgets/.__mf__temp/
 widgets/sonos/assets/
 widgets/sonos/customWidgets.js
 widgets/sonos/mf-stats.json
+widgets/sonos/mf-manifest.json
 widgets/sonos/img/

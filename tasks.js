@@ -19,10 +19,9 @@ const SRC_WIDGETS = `${__dirname}/src-widgets`;
  */
 function copyWidgets() {
     deleteFoldersRecursive(`${__dirname}/widgets/sonos/assets`);
-    copyFiles(
-        ['src-widgets/build/**/*', '!src-widgets/build/index.html', '!src-widgets/build/mf-manifest.json'],
-        'widgets/sonos/',
-    );
+    // mf-manifest.json is kept: vis-2 reads it to decide whether the set was built against a
+    // compatible React, and asks for it before mf-stats.json (see visWidgetSetCompatibility.ts).
+    copyFiles(['src-widgets/build/**/*', '!src-widgets/build/index.html'], 'widgets/sonos/');
 }
 
 async function installIfNeeded(dir) {
