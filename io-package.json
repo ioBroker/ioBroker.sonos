@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "sonos",
-    "version": "4.2.0",
+    "version": "4.2.1",
     "news": {
+      "4.2.1": {
+        "en": "Added two widgets for the ioBroker.devices dashboard: SONOS player and SONOS rooms\nAdded a \"Control\" tab to the instance settings, which plays and groups the speakers directly in admin",
+        "de": "Zwei Widgets für das ioBroker.Devices-Dashboard hinzugefügt: SONOS Player und SONOS Rooms\nDen Instanzeinstellungen wurde ein „Control“ -Tab hinzugefügt, der die Sprecher direkt im Admin",
+        "ru": "Добавлены два виджета для панели управления IOBroker.Devices: проигрыватель SONOS и комнаты SONOS\nВ настройки инстанса добавлена вкладка «Управление», которая воспроизводит и группирует динамики непосредственно в админке",
+        "pt": "Adicionou dois widgets ao painel IOBroker.devices: SONOS player e SONOS rooms\nAdicionou a aba “Controle” às configurações da instância, que toca e agrupa os locutores no admin",
+        "nl": "Twee widgets toegevoegd voor het dashboard van IOBroker.devices: SONOS-speler en SONOS-kamers\nEr is een tabblad „Control” toegevoegd aan de instantie-instellingen, waarmee de luidsprekers rechtstreeks in de admin worden afgespeeld en gegroepeerd",
+        "fr": "Ajout de deux widgets au tableau de bord IOBroker.Devices : lecteur SONOS et salles SONOS\nAjout d'un onglet « Control » dans les paramètres de l'instance, qui diffuse et regroupe les enceintes",
+        "it": "Aggiunti due widget per IOBroker.devices: SONOS player e SONOS rooms\nAggiunta la scheda «Controllo», che riproduce e raggruppa gli altoparlanti in admin",
+        "es": "Se han añadido dos widgets para el ioBroker. Panel de dispositivos: reproductor SONOS y salas SONOS\nSe ha añadido una pestaña de «Control» a los ajustes de la instancia, que reproduce y agrupa los altavoces en admin",
+        "pl": "Dodano dwa widżety do pulpitu iobroker.Devices: odtwarzacz SONOS i pokoje SONOS\nDodano kartę „Sterowanie” do ustawień instancji, która odtwarza i grupuje głośniki bezpośrednio w administratorze",
+        "uk": "Додано два віджети для інформаційної панелі IObroker.Devices: програвач SONOS та кімнати SONOS\nДодана вкладка «Управління» до налаштувань екземпляра, яка відтворює та групує динаміки безпосередньо в адміністраторі",
+        "zh-cn": "为 iobroker.devices 仪表板添加了两个小工具：SONOS 播放器和 SONOS 房间\n在实例设置中添加了 “控制” 选项卡，可直接在管理员中对扬声器进行播放和分组"
+      },
       "4.2.0": {
         "en": "The client library can be switched in the instance settings\nAdded `@svrooij/sonos` as an experimental alternative to `sonos-discovery`\nThe adapter talks to a backend interface now, so both libraries fill the same states",
         "de": "Die Client-Bibliothek ist in den Instanzeinstellungen umschaltbar\n`@svrooij /sonos` als Testalternative zu `Sonos-Discovery` hinzugefügt\nDer Adapter kommuniziert jetzt im Backend, sodass beide Bibliotheken denselben Status haben",
@@ -80,19 +93,6 @@
         "pl": "przechowywać pliki w plikach zamiast stanów binarnych",
         "uk": "зберігати файл кришки у файлах замість бінарних штатів",
         "zh-cn": "储存档案,而不是超级州。"
-      },
-      "2.3.1": {
-        "en": "Prepare for future js-controller versions",
-        "de": "Bereiten Sie sich auf zukünftige js-Controller-Versionen",
-        "ru": "Подготовьтесь к будущим версиям js-controller",
-        "pt": "Prepare-se para futuras versões js-controller",
-        "nl": "Bereid je voor op toekomstige Js-controller versie",
-        "fr": "Préparez-vous pour les versions futures de js-controller",
-        "it": "Prepararsi per le future versioni js-controller",
-        "es": "Prepararse para futuras versiones js-controller",
-        "pl": "Prepare for future js-controller version",
-        "uk": "Підготовка до майбутніх версій js-controller",
-        "zh-cn": "今后防污版本的编制"
       }
     },
     "titleLang": {

@@ -1,4 +1,7 @@
 # Older changes
+## 2.3.3 (2023-09-21)
+* (foxriver76) fixed cover url
+
 ## 2.3.2 (2023-09-20)
 * (foxriver76) stores the cover file in files instead of binary states
 

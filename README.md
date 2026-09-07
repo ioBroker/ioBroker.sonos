@@ -256,7 +256,7 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
-### **WORK IN PROGRESS**
+### 4.2.1 (2026-09-07)
 * (@GermanBluefox) Added two widgets for the ioBroker.devices dashboard: SONOS player and SONOS rooms
 * (@GermanBluefox) Added a "Control" tab to the instance settings, which plays and groups the speakers directly in admin
 
@@ -293,9 +293,6 @@ adapter to get a working state back.
 ### 3.0.0 (2023-10-09)
 * (udondan) Added support for the playing Sonos playlists (added new state `playlist_set`)
 * (bluefox) The minimal node.js version is 16
-
-### 2.3.3 (2023-09-21)
-* (foxriver76) fixed cover url
 
 ## License
 
