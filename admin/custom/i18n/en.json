@@ -1,0 +1,23 @@
+{
+    "sonos_ctrl_speakers": "Speakers",
+    "sonos_ctrl_refresh": "Read the speakers again",
+    "sonos_ctrl_nothing_playing": "Nothing is playing",
+    "sonos_ctrl_offline": "Not reachable",
+    "sonos_ctrl_mute": "Mute",
+    "sonos_ctrl_night_mode": "Night sound",
+    "sonos_ctrl_speech_enhancement": "Speech enhancement",
+    "sonos_ctrl_shuffle": "Shuffle",
+    "sonos_ctrl_repeat": "Repeat",
+    "sonos_ctrl_group": "Group",
+    "sonos_ctrl_favorites": "Favorites",
+    "sonos_ctrl_playlists": "Playlists",
+    "sonos_ctrl_queue": "Queue",
+    "sonos_ctrl_recent": "Recent",
+    "sonos_ctrl_sources": "Sources",
+    "sonos_ctrl_search": "Filter",
+    "sonos_ctrl_search_service": "Filter, Enter searches the service",
+    "sonos_ctrl_nothing_found": "Nothing found",
+    "sonos_ctrl_follows": "follows",
+    "sonos_ctrl_instance_not_running": "The instance is not running - start it to control the speakers.",
+    "sonos_ctrl_no_players": "No SONOS speakers found. Add them on the \"SONOS devices\" tab and save."
+}

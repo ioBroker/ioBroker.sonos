@@ -1,5 +1,6 @@
 {
   "@svrooij/sonos (experimental)": "@svrooij/sonos（实验）",
+  "Control": "控制",
   "Devices": "设备",
   "Fade in (text2speech)": "语音输出淡入",
   "Fade out (text2speech)": "语音输出淡出",

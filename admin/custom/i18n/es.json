@@ -1,0 +1,23 @@
+{
+    "sonos_ctrl_speakers": "Altavoces",
+    "sonos_ctrl_refresh": "Volver a leer los altavoces",
+    "sonos_ctrl_nothing_playing": "No se reproduce nada",
+    "sonos_ctrl_offline": "No accesible",
+    "sonos_ctrl_mute": "Silenciar",
+    "sonos_ctrl_night_mode": "Modo noche",
+    "sonos_ctrl_speech_enhancement": "Mejora de voz",
+    "sonos_ctrl_shuffle": "Aleatorio",
+    "sonos_ctrl_repeat": "Repetir",
+    "sonos_ctrl_group": "Grupo",
+    "sonos_ctrl_favorites": "Favoritos",
+    "sonos_ctrl_playlists": "Listas de reproducción",
+    "sonos_ctrl_queue": "Cola",
+    "sonos_ctrl_recent": "Recientes",
+    "sonos_ctrl_sources": "Fuentes",
+    "sonos_ctrl_search": "Filtro",
+    "sonos_ctrl_search_service": "Filtro, Intro busca en el servicio",
+    "sonos_ctrl_nothing_found": "No se ha encontrado nada",
+    "sonos_ctrl_follows": "sigue a",
+    "sonos_ctrl_instance_not_running": "La instancia no se está ejecutando: iníciela para controlar los altavoces.",
+    "sonos_ctrl_no_players": "No se han encontrado altavoces SONOS. Añádalos en la pestaña \"SONOS devices\" y guarde."
+}

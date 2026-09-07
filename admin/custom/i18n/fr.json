@@ -1,0 +1,23 @@
+{
+    "sonos_ctrl_speakers": "Enceintes",
+    "sonos_ctrl_refresh": "Relire les enceintes",
+    "sonos_ctrl_nothing_playing": "Rien ne joue",
+    "sonos_ctrl_offline": "Injoignable",
+    "sonos_ctrl_mute": "Muet",
+    "sonos_ctrl_night_mode": "Mode nuit",
+    "sonos_ctrl_speech_enhancement": "Amélioration de la voix",
+    "sonos_ctrl_shuffle": "Aléatoire",
+    "sonos_ctrl_repeat": "Répéter",
+    "sonos_ctrl_group": "Groupe",
+    "sonos_ctrl_favorites": "Favoris",
+    "sonos_ctrl_playlists": "Listes de lecture",
+    "sonos_ctrl_queue": "File d'attente",
+    "sonos_ctrl_recent": "Récents",
+    "sonos_ctrl_sources": "Sources",
+    "sonos_ctrl_search": "Filtre",
+    "sonos_ctrl_search_service": "Filtre, Entrée recherche dans le service",
+    "sonos_ctrl_nothing_found": "Rien trouvé",
+    "sonos_ctrl_follows": "suit",
+    "sonos_ctrl_instance_not_running": "L'instance n'est pas démarrée - démarrez-la pour piloter les enceintes.",
+    "sonos_ctrl_no_players": "Aucune enceinte SONOS trouvée. Ajoutez-les dans l'onglet \"SONOS devices\" et enregistrez."
+}

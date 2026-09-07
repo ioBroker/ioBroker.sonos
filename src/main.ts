@@ -554,6 +554,17 @@ class Sonos extends utils.Adapter {
                 }
                 break;
 
+            case 'sonos:getRooms':
+                if (obj.callback) {
+                    // Used by the ioBroker.devices widgets to fill their room picker. The shape
+                    // `{ value, label }` is what the json-config `selectSendTo` control expects.
+                    // `value` is the channel name (the IP with underscores), because every state
+                    // of a player lives under `sonos.<instance>.root.<value>`.
+                    this.sendTo(obj.from, obj.command, this.getRoomList(), obj.callback);
+                    wait = true;
+                }
+                break;
+
             default:
                 this.log.warn(`Unknown command: ${obj.command}`);
                 break;
@@ -562,6 +573,23 @@ class Sonos extends utils.Adapter {
         if (!wait && obj.callback) {
             this.sendTo(obj.from, obj.command, obj.message, obj.callback);
         }
+    }
+
+    /**
+     * The configured players as `{ value, label }` pairs.
+     *
+     * `value` is the channel name - the IP address with the dots replaced by underscores, which
+     * is how the adapter names the channels under `root`. `label` is the configured name, falling
+     * back to the IP address, exactly like the `common.name` of the channel object.
+     */
+    private getRoomList(): { value: string; label: string }[] {
+        return (this.config.devices || [])
+            .filter(device => device.ip)
+            .map(device => ({
+                value: device.ip.replace(/[.\s]+/g, '_'),
+                label: device.name?.trim() || device.ip,
+            }))
+            .sort((a, b) => a.label.localeCompare(b.label));
     }
 
     /** Merge the devices, found by the discovery, into the configured devices and answer the message */

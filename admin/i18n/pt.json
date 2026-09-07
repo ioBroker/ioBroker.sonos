@@ -1,5 +1,6 @@
 {
   "@svrooij/sonos (experimental)": "@svrooij/sonos (experimental)",
+  "Control": "Controlo",
   "Devices": "Devices",
   "Fade in (text2speech)": "Fade in para saídas de voz",
   "Fade out (text2speech)": "Desvanecimento para saídas de voz",

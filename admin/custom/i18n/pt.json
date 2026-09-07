@@ -1,0 +1,23 @@
+{
+    "sonos_ctrl_speakers": "Colunas",
+    "sonos_ctrl_refresh": "Ler as colunas novamente",
+    "sonos_ctrl_nothing_playing": "Nada a tocar",
+    "sonos_ctrl_offline": "Inacessível",
+    "sonos_ctrl_mute": "Silenciar",
+    "sonos_ctrl_night_mode": "Modo noturno",
+    "sonos_ctrl_speech_enhancement": "Melhoria de voz",
+    "sonos_ctrl_shuffle": "Aleatório",
+    "sonos_ctrl_repeat": "Repetir",
+    "sonos_ctrl_group": "Grupo",
+    "sonos_ctrl_favorites": "Favoritos",
+    "sonos_ctrl_playlists": "Listas de reprodução",
+    "sonos_ctrl_queue": "Fila",
+    "sonos_ctrl_recent": "Recentes",
+    "sonos_ctrl_sources": "Fontes",
+    "sonos_ctrl_search": "Filtro",
+    "sonos_ctrl_search_service": "Filtro, Enter pesquisa no serviço",
+    "sonos_ctrl_nothing_found": "Nada encontrado",
+    "sonos_ctrl_follows": "segue",
+    "sonos_ctrl_instance_not_running": "A instância não está a correr - inicie-a para controlar as colunas.",
+    "sonos_ctrl_no_players": "Nenhuma coluna SONOS encontrada. Adicione-as no separador \"SONOS devices\" e guarde."
+}

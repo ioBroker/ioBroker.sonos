@@ -61,6 +61,9 @@
     "build": "npm run build:ts && npm run build:widgets",
     "build:ts": "tsc -p tsconfig.build.json",
     "build:widgets": "node tasks.js",
+    "build:admin": "node tasks.js --admin",
+    "build:devices": "node tasks.js --devices",
+    "build:all": "npm run build:ts && node tasks.js --all",
     "watch": "tsc -p tsconfig.build.json --watch",
     "check:ts": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint -c eslint.config.mjs src",
@@ -73,13 +76,14 @@
     "test:unit": "mocha test/unit --exit",
     "pretest:integration": "npm run build:ts",
     "test:integration": "mocha test/integration --exit",
-    "update-packages": "npx -y npm-check-updates -u && npm install && cd src-widgets && npx -y npm-check-updates -u && npm install",
+    "update-packages": "npx -y npm-check-updates -u && npm install && cd src-widgets && npx -y npm-check-updates -u && npm install && cd ../src-admin && npx -y npm-check-updates -u && npm install && cd ../src-devices && npx -y npm-check-updates -u && npm install",
     "release": "release-script",
     "release-patch": "release-script patch --yes",
     "release-minor": "release-script minor --yes",
     "release-major": "release-script major --yes",
     "translate": "translate-adapter",
-    "npm": "npm i && cd src-widgets && npm i"
+    "npm": "npm i && cd src-widgets && npm i",
+    "npm:all": "npm i && cd src-widgets && npm i && cd ../src-admin && npm i && cd ../src-devices && npm i"
   },
   "license": "MIT"
 }

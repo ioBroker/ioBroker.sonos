@@ -1,5 +1,6 @@
 {
   "@svrooij/sonos (experimental)": "@svrooij/sonos (экспериментально)",
+  "Control": "Управление",
   "Devices": "Устройства",
   "Fade in (text2speech)": "Нарастание громкости речи",
   "Fade out (text2speech)": "Затухание громкости речи ",

@@ -1,5 +1,6 @@
 {
   "@svrooij/sonos (experimental)": "@svrooij/sonos (experimenteel)",
+  "Control": "Bediening",
   "Devices": "Apparaten",
   "Fade in (text2speech)": "Fade in voor spraakuitgangen ",
   "Fade out (text2speech)": "Uitfaden voor stemuitgangen",

@@ -1,0 +1,23 @@
+{
+    "sonos_ctrl_speakers": "Luidsprekers",
+    "sonos_ctrl_refresh": "Luidsprekers opnieuw inlezen",
+    "sonos_ctrl_nothing_playing": "Er speelt niets",
+    "sonos_ctrl_offline": "Niet bereikbaar",
+    "sonos_ctrl_mute": "Dempen",
+    "sonos_ctrl_night_mode": "Nachtmodus",
+    "sonos_ctrl_speech_enhancement": "Spraakverbetering",
+    "sonos_ctrl_shuffle": "Shuffle",
+    "sonos_ctrl_repeat": "Herhalen",
+    "sonos_ctrl_group": "Groep",
+    "sonos_ctrl_favorites": "Favorieten",
+    "sonos_ctrl_playlists": "Afspeellijsten",
+    "sonos_ctrl_queue": "Wachtrij",
+    "sonos_ctrl_recent": "Recent",
+    "sonos_ctrl_sources": "Bronnen",
+    "sonos_ctrl_search": "Filter",
+    "sonos_ctrl_search_service": "Filter, Enter zoekt in de dienst",
+    "sonos_ctrl_nothing_found": "Niets gevonden",
+    "sonos_ctrl_follows": "volgt",
+    "sonos_ctrl_instance_not_running": "De instantie draait niet - start hem om de luidsprekers te bedienen.",
+    "sonos_ctrl_no_players": "Geen SONOS-luidsprekers gevonden. Voeg ze toe op het tabblad \"SONOS devices\" en sla op."
+}

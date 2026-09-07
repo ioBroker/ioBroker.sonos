@@ -1,0 +1,23 @@
+{
+    "sonos_ctrl_speakers": "Колонки",
+    "sonos_ctrl_refresh": "Перечитать колонки",
+    "sonos_ctrl_nothing_playing": "Ничего не играет",
+    "sonos_ctrl_offline": "Недоступна",
+    "sonos_ctrl_mute": "Без звука",
+    "sonos_ctrl_night_mode": "Ночной режим",
+    "sonos_ctrl_speech_enhancement": "Улучшение речи",
+    "sonos_ctrl_shuffle": "Перемешать",
+    "sonos_ctrl_repeat": "Повтор",
+    "sonos_ctrl_group": "Группа",
+    "sonos_ctrl_favorites": "Избранное",
+    "sonos_ctrl_playlists": "Плейлисты",
+    "sonos_ctrl_queue": "Очередь",
+    "sonos_ctrl_recent": "Недавние",
+    "sonos_ctrl_sources": "Источники",
+    "sonos_ctrl_search": "Фильтр",
+    "sonos_ctrl_search_service": "Фильтр, Enter ищет в сервисе",
+    "sonos_ctrl_nothing_found": "Ничего не найдено",
+    "sonos_ctrl_follows": "следует за",
+    "sonos_ctrl_instance_not_running": "Экземпляр не запущен - запустите его, чтобы управлять колонками.",
+    "sonos_ctrl_no_players": "Колонки SONOS не найдены. Добавьте их на вкладке \"SONOS devices\" и сохраните."
+}

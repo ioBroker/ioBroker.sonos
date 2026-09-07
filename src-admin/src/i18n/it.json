@@ -1,0 +1,23 @@
+{
+    "sonos_ctrl_speakers": "Altoparlanti",
+    "sonos_ctrl_refresh": "Rileggi gli altoparlanti",
+    "sonos_ctrl_nothing_playing": "Non è in riproduzione nulla",
+    "sonos_ctrl_offline": "Non raggiungibile",
+    "sonos_ctrl_mute": "Muto",
+    "sonos_ctrl_night_mode": "Modalità notte",
+    "sonos_ctrl_speech_enhancement": "Miglioramento del parlato",
+    "sonos_ctrl_shuffle": "Casuale",
+    "sonos_ctrl_repeat": "Ripeti",
+    "sonos_ctrl_group": "Gruppo",
+    "sonos_ctrl_favorites": "Preferiti",
+    "sonos_ctrl_playlists": "Playlist",
+    "sonos_ctrl_queue": "Coda",
+    "sonos_ctrl_recent": "Recenti",
+    "sonos_ctrl_sources": "Sorgenti",
+    "sonos_ctrl_search": "Filtro",
+    "sonos_ctrl_search_service": "Filtro, Invio cerca nel servizio",
+    "sonos_ctrl_nothing_found": "Nessun risultato",
+    "sonos_ctrl_follows": "segue",
+    "sonos_ctrl_instance_not_running": "L'istanza non è in esecuzione - avviala per controllare gli altoparlanti.",
+    "sonos_ctrl_no_players": "Nessun altoparlante SONOS trovato. Aggiungili nella scheda \"SONOS devices\" e salva."
+}

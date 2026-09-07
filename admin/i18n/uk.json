@@ -1,5 +1,6 @@
 {
   "@svrooij/sonos (experimental)": "@svrooij/sonos (експериментальний)",
+  "Control": "Керування",
   "Devices": "Пристрої",
   "Fade in (text2speech)": "Збільшення для голосових виводів",
   "Fade out (text2speech)": "Згасання для голосових виводів",

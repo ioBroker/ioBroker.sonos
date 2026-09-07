@@ -1,5 +1,6 @@
 {
   "@svrooij/sonos (experimental)": "@svrooij/sonos (sperimentale)",
+  "Control": "Controllo",
   "Devices": "Dispositivi",
   "Fade in (text2speech)": "Dissolvenza per uscite vocali",
   "Fade out (text2speech)": "Dissolvenza in uscita per le uscite vocali",

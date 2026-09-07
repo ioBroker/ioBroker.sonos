@@ -1,0 +1,23 @@
+{
+    "sonos_ctrl_speakers": "Lautsprecher",
+    "sonos_ctrl_refresh": "Lautsprecher neu einlesen",
+    "sonos_ctrl_nothing_playing": "Es läuft nichts",
+    "sonos_ctrl_offline": "Nicht erreichbar",
+    "sonos_ctrl_mute": "Stumm",
+    "sonos_ctrl_night_mode": "Nachtmodus",
+    "sonos_ctrl_speech_enhancement": "Sprachverbesserung",
+    "sonos_ctrl_shuffle": "Zufall",
+    "sonos_ctrl_repeat": "Wiederholung",
+    "sonos_ctrl_group": "Gruppe",
+    "sonos_ctrl_favorites": "Favoriten",
+    "sonos_ctrl_playlists": "Wiedergabelisten",
+    "sonos_ctrl_queue": "Warteschlange",
+    "sonos_ctrl_recent": "Zuletzt gespielt",
+    "sonos_ctrl_sources": "Quellen",
+    "sonos_ctrl_search": "Filter",
+    "sonos_ctrl_search_service": "Filter, Enter sucht im Dienst",
+    "sonos_ctrl_nothing_found": "Nichts gefunden",
+    "sonos_ctrl_follows": "folgt",
+    "sonos_ctrl_instance_not_running": "Die Instanz läuft nicht - starte sie, um die Lautsprecher zu steuern.",
+    "sonos_ctrl_no_players": "Keine SONOS-Lautsprecher gefunden. Auf dem Reiter \"SONOS-Geräte\" hinzufügen und speichern."
+}

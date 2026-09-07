@@ -1,7 +1,6 @@
-// @ts-expect-error no types
 import react from '@vitejs/plugin-react';
 import { federation } from '@module-federation/vite';
-import { moduleFederationShared } from '@iobroker/types-vis-2/modulefederation.vis.config';
+import { moduleFederationShared } from '@iobroker/types-vis-2/modulefederation.vis.config.js';
 import { readFileSync } from 'node:fs';
 
 // The shared modules come from @iobroker/types-vis-2, so they stay in sync with what the vis-2 host
@@ -42,7 +41,7 @@ const config = {
     resolve: {
         tsconfigPaths: true,
         // the fallback copies inside the widget bundle must be unique too
-        dedupe: ['react', 'react-dom', '@emotion/react', '@mui/material'],
+        dedupe: ['react', 'react-dom', '@emotion/react', '@mui/material','moment', '@mui/private-theming'],
     },
     build: {
         // module federation emits top level await, which needs Chrome 89 or newer

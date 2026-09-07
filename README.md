@@ -70,6 +70,43 @@ favorite or playlist.
 Playbase, Ray, Amp). On the TV input there is no transport control - play, pause, seek, next and
 previous are not offered; mute, night sound and speech enhancement are.
 
+## Widgets for ioBroker.devices
+
+Besides the vis widgets the adapter delivers two widgets for the dashboard of the
+**ioBroker.devices** adapter. They are added there with **+ → SONOS player** / **SONOS rooms**, and
+every widget is configured with its own settings dialog - no state has to be picked by hand.
+
+**SONOS player** is one speaker. The settings ask for the instance and the speaker; the list of
+speakers comes from the adapter itself, so it always matches the devices on the *SONOS devices* tab.
+
+| Size | What is shown |
+| --- | --- |
+| 1x1 | The cover as background, the room, the title and play/pause |
+| 2x0.5 | A strip: cover thumbnail, title, previous/play/next, mute |
+| 2x1, 2x2 | The whole player: cover, title, transport, shuffle, repeat, progress and volume |
+
+Cover, progress, volume and the shuffle/repeat buttons can be switched off individually. On a
+speaker that plays its TV input the transport buttons are hidden, because the HDMI input cannot be
+controlled - only mute stays.
+
+**SONOS rooms** is the whole household in one widget: how many speakers are playing, what each of
+them plays, and their volume. The small sizes show the counter and open the list in a dialog; 2x1
+and 2x2 show the list directly.
+
+It also forms groups: the link button of a speaker marks it as the group master, and the link
+button of every other speaker then adds it to that group or removes it again. Clicking the master a
+second time leaves the mode.
+
+## Control tab in admin
+
+The instance settings have a third tab, **Control**. It is the same player as in vis, but inside
+admin: pick a speaker on the left, and control it on the right - transport, progress, volume,
+grouping, and the library with favorites, playlists, queue, recently played and sources.
+
+This is meant for checking that a freshly added speaker really answers, without leaving the adapter
+configuration. The tab talks to the running instance, so it stays empty while the instance is
+stopped.
+
 ## Handling of groups
 * States for handling SONOS groups:
    * **`coordinator`**: set/get the coordinator, so the SONOS device which is the master and coordinating the group. It requires the IP address (channel name) of the SONOS device to be the coordinator, but with underscore `_` instead of dot `.`, so use for example `192_168_0_100` for IP address `192.168.0.100`. If the device does not belong to any group, then the value is equal to the own channel name (IP).
@@ -159,6 +196,32 @@ Please note: highlighting current playing favorite is not supported.
 }
 ```
 
+## Development
+
+Three front-ends live next to the adapter, each built with vite and module federation:
+
+| Sources | Build output | Loaded by |
+| --- | --- | --- |
+| `src-widgets/` | `widgets/sonos/` | vis-2 |
+| `src-admin/` | `admin/custom/` | the **Control** tab of the instance settings |
+| `src-devices/` | `admin/dm-widgets/` | the dashboard of ioBroker.devices |
+
+```bash
+npm run npm:all        # install the adapter and all three front-ends
+npm run build          # adapter + vis-2 widgets - what CI and npm publish run
+npm run build:admin    # the Control tab component  -> admin/custom
+npm run build:devices  # the ioBroker.devices widgets -> admin/dm-widgets
+npm run build:all      # everything
+```
+
+`admin/custom/` and `admin/dm-widgets/` are committed, because a cold module federation build
+pre-builds the whole shared GUI stack and takes several minutes - rebuild them with the scripts
+above whenever something below `src-admin/` or `src-devices/` changed, and commit the result.
+
+`src-devices` has a dev harness: `cd src-devices && npm start` opens the widgets on
+`http://localhost:3000` against a real ioBroker admin on `localhost:8081`, so they can be developed
+without rebuilding into ioBroker.devices every time.
+
 ## To Do
 * Rewrite with https://github.com/svrooij/node-sonos-ts
 
@@ -193,6 +256,10 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
+### **WORK IN PROGRESS**
+* (@GermanBluefox) Added two widgets for the ioBroker.devices dashboard: SONOS player and SONOS rooms
+* (@GermanBluefox) Added a "Control" tab to the instance settings, which plays and groups the speakers directly in admin
+
 ### 4.2.0 (2026-09-06)
 * (@GermanBluefox) The client library can be switched in the instance settings
 * (@GermanBluefox) Added `@svrooij/sonos` as an experimental alternative to `sonos-discovery`

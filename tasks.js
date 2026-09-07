@@ -1,7 +1,17 @@
 /*!
  * Build tasks of ioBroker.sonos
  *
- * Builds the vis-2 widget set in `src-widgets` and copies the bundle into `widgets/sonos/`.
+ * Three independent front-ends live next to the adapter, each built with vite + module federation:
+ *
+ *   src-widgets/  -> widgets/sonos/       the vis-2 widget set (loaded by vis-2)
+ *   src-admin/    -> admin/custom/        the JsonConfig `custom` component of the "Control" tab
+ *   src-devices/  -> admin/dm-widgets/    the widgets ioBroker.devices shows in its dashboard
+ *
+ * `npm run build` builds the adapter and the vis-2 widgets - that is what CI and `npm publish`
+ * run. The two admin bundles take several minutes each because module federation pre-builds the
+ * whole shared GUI stack, so their result is committed instead: run `npm run build:admin` or
+ * `npm run build:devices` yourself whenever something under `src-admin/` or `src-devices/`
+ * changed, and commit the output.
  */
 'use strict';
 
@@ -10,6 +20,10 @@ const { deleteFoldersRecursive, npmInstall, buildReact, copyFiles } = require('@
 
 /** Directory of the vis-2 widget sources */
 const SRC_WIDGETS = `${__dirname}/src-widgets`;
+/** Directory of the JsonConfig custom component */
+const SRC_ADMIN = `${__dirname}/src-admin`;
+/** Directory of the ioBroker.devices widgets */
+const SRC_DEVICES = `${__dirname}/src-devices`;
 
 /**
  * Copies the built vis-2 widgets into `widgets/sonos/`.
@@ -22,6 +36,28 @@ function copyWidgets() {
     // mf-manifest.json is kept: vis-2 reads it to decide whether the set was built against a
     // compatible React, and asks for it before mf-stats.json (see visWidgetSetCompatibility.ts).
     copyFiles(['src-widgets/build/**/*', '!src-widgets/build/index.html'], 'widgets/sonos/');
+}
+
+/**
+ * Copies the built JsonConfig component into `admin/custom/`.
+ *
+ * `mf-manifest.json` is copied on purpose: admin fetches it next to the remote entry to decide
+ * from the shared modules which GUI API generation the component was built against, and refuses
+ * to start a component built for an older one.
+ */
+function copyAdmin() {
+    copyFiles(['src-admin/build/**/*', '!src-admin/build/index.html'], 'admin/custom/');
+    copyFiles(['src-admin/src/i18n/*.json'], 'admin/custom/i18n');
+}
+
+/**
+ * Copies the built ioBroker.devices widgets into `admin/dm-widgets/`, from where the devices
+ * adapter loads them - see `common.deviceWidgets` in io-package.json.
+ */
+function copyDevices() {
+    copyFiles(['src-devices/build/**/*', '!src-devices/build/index.html'], 'admin/dm-widgets/');
+    copyFiles(['src-devices/img/**/*'], 'admin/dm-widgets');
+    copyFiles(['src-devices/src/i18n/*.json'], 'admin/dm-widgets/i18n');
 }
 
 async function installIfNeeded(dir) {
@@ -37,9 +73,39 @@ async function buildWidgets() {
     copyWidgets();
 }
 
+async function buildAdmin() {
+    deleteFoldersRecursive(`${__dirname}/admin/custom`);
+    deleteFoldersRecursive(`${SRC_ADMIN}/build`);
+    await installIfNeeded(SRC_ADMIN);
+    await buildReact(SRC_ADMIN, { rootDir: SRC_ADMIN, vite: true });
+    copyAdmin();
+}
+
+async function buildDevices() {
+    deleteFoldersRecursive(`${__dirname}/admin/dm-widgets`);
+    deleteFoldersRecursive(`${SRC_DEVICES}/build`);
+    await installIfNeeded(SRC_DEVICES);
+    await buildReact(SRC_DEVICES, { rootDir: SRC_DEVICES, vite: true });
+    copyDevices();
+}
+
 async function main() {
     if (process.argv.includes('--copy-files')) {
         copyWidgets();
+        return;
+    }
+    if (process.argv.includes('--admin')) {
+        await buildAdmin();
+        return;
+    }
+    if (process.argv.includes('--devices')) {
+        await buildDevices();
+        return;
+    }
+    if (process.argv.includes('--all')) {
+        await buildWidgets();
+        await buildAdmin();
+        await buildDevices();
         return;
     }
     await buildWidgets();

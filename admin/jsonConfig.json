@@ -136,6 +136,20 @@
           ]
         }
       }
+    },
+    "controlTab": {
+      "type": "panel",
+      "label": "Control",
+      "items": {
+        "_control": {
+          "type": "custom",
+          "i18n": true,
+          "url": "custom/customComponents.js",
+          "name": "ConfigCustomSonosSet/Components/SonosControlComponent",
+          "guiApi": 2,
+          "sm": 12
+        }
+      }
     }
   }
 }

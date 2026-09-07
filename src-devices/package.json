@@ -1,0 +1,43 @@
+{
+    "name": "iobroker-devices-component-sonos",
+    "private": true,
+    "version": "4.2.0",
+    "scripts": {
+        "start": "vite",
+        "build": "vite build",
+        "check-ts": "tsc --noEmit"
+    },
+    "devDependencies": {
+        "@emotion/react": "^11.14.0",
+        "@emotion/styled": "^11.14.1",
+        "@iobroker/dm-utils": "^3.2.0",
+        "@iobroker/dm-widgets": "^2.0.0",
+        "@iobroker/gui-components": "^10.2.3",
+        "@iobroker/json-config": "^9.1.2",
+        "@module-federation/runtime": "^2.9.0",
+        "@module-federation/vite": "^1.21.3",
+        "@mui/icons-material": "^9.4.0",
+        "@mui/material": "^9.4.0",
+        "@originjs/vite-plugin-federation": "^1.4.1",
+        "@types/react": "^19.2.18",
+        "@types/react-dom": "^19.2.7",
+        "@vitejs/plugin-react": "^6.1.1",
+        "moment": "^2.30.1",
+        "react": "^19.2.8",
+        "react-dom": "^19.2.8",
+        "vite": "^8.2.2",
+        "vite-plugin-commonjs": "^0.10.4"
+    },
+    "browserslist": {
+        "production": [
+            ">0.2%",
+            "not dead",
+            "not op_mini all"
+        ],
+        "development": [
+            "last 1 chrome version",
+            "last 1 firefox version",
+            "last 1 safari version"
+        ]
+    }
+}

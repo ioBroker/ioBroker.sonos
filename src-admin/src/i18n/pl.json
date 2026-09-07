@@ -1,0 +1,23 @@
+{
+    "sonos_ctrl_speakers": "Głośniki",
+    "sonos_ctrl_refresh": "Wczytaj głośniki ponownie",
+    "sonos_ctrl_nothing_playing": "Nic nie jest odtwarzane",
+    "sonos_ctrl_offline": "Nieosiągalny",
+    "sonos_ctrl_mute": "Wycisz",
+    "sonos_ctrl_night_mode": "Tryb nocny",
+    "sonos_ctrl_speech_enhancement": "Poprawa mowy",
+    "sonos_ctrl_shuffle": "Losowo",
+    "sonos_ctrl_repeat": "Powtarzaj",
+    "sonos_ctrl_group": "Grupa",
+    "sonos_ctrl_favorites": "Ulubione",
+    "sonos_ctrl_playlists": "Playlisty",
+    "sonos_ctrl_queue": "Kolejka",
+    "sonos_ctrl_recent": "Ostatnie",
+    "sonos_ctrl_sources": "Źródła",
+    "sonos_ctrl_search": "Filtr",
+    "sonos_ctrl_search_service": "Filtr, Enter szuka w usłudze",
+    "sonos_ctrl_nothing_found": "Nic nie znaleziono",
+    "sonos_ctrl_follows": "podąża za",
+    "sonos_ctrl_instance_not_running": "Instancja nie jest uruchomiona - uruchom ją, aby sterować głośnikami.",
+    "sonos_ctrl_no_players": "Nie znaleziono głośników SONOS. Dodaj je na karcie \"SONOS devices\" i zapisz."
+}

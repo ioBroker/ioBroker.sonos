@@ -1,0 +1,23 @@
+{
+    "sonos_ctrl_speakers": "扬声器",
+    "sonos_ctrl_refresh": "重新读取扬声器",
+    "sonos_ctrl_nothing_playing": "没有正在播放的内容",
+    "sonos_ctrl_offline": "无法访问",
+    "sonos_ctrl_mute": "静音",
+    "sonos_ctrl_night_mode": "夜间模式",
+    "sonos_ctrl_speech_enhancement": "人声增强",
+    "sonos_ctrl_shuffle": "随机播放",
+    "sonos_ctrl_repeat": "重复",
+    "sonos_ctrl_group": "群组",
+    "sonos_ctrl_favorites": "收藏",
+    "sonos_ctrl_playlists": "播放列表",
+    "sonos_ctrl_queue": "队列",
+    "sonos_ctrl_recent": "最近播放",
+    "sonos_ctrl_sources": "来源",
+    "sonos_ctrl_search": "筛选",
+    "sonos_ctrl_search_service": "筛选，按 Enter 在服务中搜索",
+    "sonos_ctrl_nothing_found": "未找到任何内容",
+    "sonos_ctrl_follows": "跟随",
+    "sonos_ctrl_instance_not_running": "实例未运行 - 请启动它以控制扬声器。",
+    "sonos_ctrl_no_players": "未找到 SONOS 扬声器。请在“SONOS devices”选项卡中添加并保存。"
+}

@@ -20,3 +20,13 @@ widgets/sonos/customWidgets.js
 widgets/sonos/mf-stats.json
 widgets/sonos/mf-manifest.json
 widgets/sonos/img/
+
+# JsonConfig custom component and ioBroker.devices widgets: the sources are built with vite and
+# the result is committed (admin/custom/, admin/dm-widgets/), because the module federation build
+# takes minutes - see tasks.js
+src-admin/node_modules/
+src-admin/build/
+src-admin/.__mf__temp/
+src-devices/node_modules/
+src-devices/build/
+src-devices/.__mf__temp/

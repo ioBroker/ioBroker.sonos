@@ -171,6 +171,46 @@
         ]
       }
     },
+    "deviceWidgets": {
+      "components": [
+        {
+          "name": "SonosPlayerComponent",
+          "label": "SONOS player",
+          "description": {
+            "en": "Player of one SONOS speaker",
+            "de": "Player eines SONOS-Lautsprechers",
+            "ru": "Плеер одной колонки SONOS",
+            "pt": "Leitor de uma coluna SONOS",
+            "nl": "Speler van één SONOS-luidspreker",
+            "fr": "Lecteur d’une enceinte SONOS",
+            "it": "Lettore di un altoparlante SONOS",
+            "es": "Reproductor de un altavoz SONOS",
+            "pl": "Odtwarzacz jednego głośnika SONOS",
+            "uk": "Плеєр однієї колонки SONOS",
+            "zh-cn": "单个 SONOS 扬声器的播放器"
+          },
+          "icon": "player.png"
+        },
+        {
+          "name": "SonosRoomsComponent",
+          "label": "SONOS rooms",
+          "description": {
+            "en": "Overview and grouping of all SONOS speakers",
+            "de": "Übersicht und Gruppierung aller SONOS-Lautsprecher",
+            "ru": "Обзор и группировка всех колонок SONOS",
+            "pt": "Visão geral e agrupamento de todas as colunas SONOS",
+            "nl": "Overzicht en groeperen van alle SONOS-luidsprekers",
+            "fr": "Vue d’ensemble et groupement de toutes les enceintes SONOS",
+            "it": "Panoramica e raggruppamento di tutti gli altoparlanti SONOS",
+            "es": "Visión general y agrupación de todos los altavoces SONOS",
+            "pl": "Przegląd i grupowanie wszystkich głośników SONOS",
+            "uk": "Огляд та групування всіх колонок SONOS",
+            "zh-cn": "所有 SONOS 扬声器的概览与分组"
+          },
+          "icon": "rooms.png"
+        }
+      ]
+    },
     "extIcon": "https://raw.githubusercontent.com/ioBroker/ioBroker.sonos/master/admin/sonos.png",
     "type": "multimedia"
   },

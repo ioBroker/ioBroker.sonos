@@ -1,5 +1,6 @@
 {
   "@svrooij/sonos (experimental)": "@svrooij/sonos (experimental)",
+  "Control": "Control",
   "Devices": "Devices",
   "Fade in (text2speech)": "Fade in for voice outputs",
   "Fade out (text2speech)": "Fade out for voice outputs",
