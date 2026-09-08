@@ -256,7 +256,7 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
-### **WORK IN PROGRESS**
+### 4.2.2 (2026-09-08)
 * (@GermanBluefox) Added two widgets for the `ioBroker.devices` dashboard: SONOS player and SONOS rooms
 * (@GermanBluefox) Added a "Control" tab to the instance settings, which plays and groups the speakers directly in admin
 
