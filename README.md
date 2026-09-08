@@ -114,6 +114,33 @@ This is meant for checking that a freshly added speaker really answers, without 
 configuration. The tab talks to the running instance, so it stays empty while the instance is
 stopped.
 
+## Control page in the browser
+
+The adapter ships a control page for the **web** adapter. It is reachable at
+
+```
+http://<ioBroker>:8082/sonos/
+```
+
+and offers the same as the vis widget: the room chips, what is playing with its cover, transport,
+progress, volume, the grouping checkboxes and the source selection with favorites, playlists,
+queue, recently played and the browsable sources of the speaker.
+
+No web extension is involved. `iobroker upload sonos` puts the `www/` folder of the adapter into
+its ioBroker file storage, and the web adapter serves it from there - its catch-all route reads the
+first path segment of the URL as the adapter name. That is the same mechanism the adapter already
+uses to hand a TTS file to a speaker.
+
+The page talks to ioBroker through the socket of the web instance that serves it, so it inherits
+that instance's authentication and its user rights. The socket client is not bundled: the page asks
+the web adapter for `socket.io.js` and gets whatever that instance uses - socket.io or
+`@iobroker/ws`.
+
+`?instance=sonos.1` pins the page to one instance, `?room=Kitchen` opens it on a given speaker.
+Otherwise the first instance is used and the last speaker is remembered in the browser.
+
+In admin the page also appears as a tile on the overview, next to the tiles of the other adapters.
+
 ## Handling of groups
 * States for handling SONOS groups:
    * **`coordinator`**: set/get the coordinator, so the SONOS device which is the master and coordinating the group. It requires the IP address (channel name) of the SONOS device to be the coordinator, but with underscore `_` instead of dot `.`, so use for example `192_168_0_100` for IP address `192.168.0.100`. If the device does not belong to any group, then the value is equal to the own channel name (IP).
@@ -210,18 +237,21 @@ Please note: highlighting current playing favorite is not supported.
 
 ## Development
 
-Three front-ends live next to the adapter, each built with vite and module federation:
+Four front-ends live next to the adapter, all built with vite - the first three additionally with
+module federation:
 
 | Sources | Build output | Loaded by |
 | --- | --- | --- |
 | `src-widgets/` | `widgets/sonos/` | vis-2 |
 | `src-admin/` | `admin/custom/` | the **Control** tab of the instance settings |
 | `src-devices/` | `admin/dm-widgets/` | the dashboard of ioBroker.devices |
+| `src-web/` | `www/` | the **web** adapter, at `/sonos/` |
 
 ```bash
-npm run npm:all        # install the adapter and all three front-ends
-npm run build          # adapter + vis-2 widgets - what CI and npm publish run
-npm run build:admin    # the Control tab component  -> admin/custom
+npm run npm:all        # install the adapter and all four front-ends
+npm run build          # adapter + vis-2 widgets + web page - what CI and npm publish run
+npm run build:web      # the control page          -> www/
+npm run build:admin    # the Control tab component -> admin/custom
 npm run build:devices  # the ioBroker.devices widgets -> admin/dm-widgets
 npm run build:all      # everything
 ```
@@ -233,6 +263,10 @@ above whenever something below `src-admin/` or `src-devices/` changed, and commi
 `src-devices` has a dev harness: `cd src-devices && npm start` opens the widgets on
 `http://localhost:3000` against a real ioBroker admin on `localhost:8081`, so they can be developed
 without rebuilding into ioBroker.devices every time.
+
+`src-web` has the same: `cd src-web && npm start` serves the control page on
+`http://localhost:4174` and proxies the socket, the socket client and the cover images to a web
+instance on `localhost:8082`.
 
 ## To Do
 * Rewrite with https://github.com/svrooij/node-sonos-ts
@@ -269,6 +303,7 @@ adapter to get a working state back.
 -->
 ## Changelog
 ### **WORK IN PROGRESS**
+* (@GermanBluefox) Added a control page for the web adapter under `/sonos/`, plus a tile on the admin overview
 * (@GermanBluefox) Added the source selection (favorites, playlists, queue, recently played, sources) to all four widgets
 * (@GermanBluefox) Added `queue_array`, the play queue as JSON - `queue` joins the tracks with a comma and cannot be split back reliably
 

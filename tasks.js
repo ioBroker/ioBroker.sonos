@@ -6,12 +6,13 @@
  *   src-widgets/  -> widgets/sonos/       the vis-2 widget set (loaded by vis-2)
  *   src-admin/    -> admin/custom/        the JsonConfig `custom` component of the "Control" tab
  *   src-devices/  -> admin/dm-widgets/    the widgets ioBroker.devices shows in its dashboard
+ *   src-web/      -> www/                 the control page the `web` adapter serves at /sonos/
  *
- * `npm run build` builds the adapter and the vis-2 widgets - that is what CI and `npm publish`
- * run. The two admin bundles take several minutes each because module federation pre-builds the
- * whole shared GUI stack, so their result is committed instead: run `npm run build:admin` or
- * `npm run build:devices` yourself whenever something under `src-admin/` or `src-devices/`
- * changed, and commit the output.
+ * `npm run build` builds the adapter, the vis-2 widgets and the web page - that is what CI and
+ * `npm publish` run. The two admin bundles take several minutes each because module federation
+ * pre-builds the whole shared GUI stack, so their result is committed instead: run
+ * `npm run build:admin` or `npm run build:devices` yourself whenever something under
+ * `src-admin/` or `src-devices/` changed, and commit the output.
  */
 'use strict';
 
@@ -24,6 +25,8 @@ const SRC_WIDGETS = `${__dirname}/src-widgets`;
 const SRC_ADMIN = `${__dirname}/src-admin`;
 /** Directory of the ioBroker.devices widgets */
 const SRC_DEVICES = `${__dirname}/src-devices`;
+/** Directory of the control page for the web adapter */
+const SRC_WEB = `${__dirname}/src-web`;
 
 /**
  * Copies the built vis-2 widgets into `widgets/sonos/`.
@@ -60,6 +63,17 @@ function copyDevices() {
     copyFiles(['src-devices/src/i18n/*.json'], 'admin/dm-widgets/i18n');
 }
 
+/**
+ * Copies the built control page into `www/`.
+ *
+ * `iobroker upload sonos` puts that folder into the ioBroker file storage of this adapter, and the
+ * web adapter serves it from there - its catch-all route reads the first path segment as the
+ * adapter name, so `http://<host>:8082/sonos/` is `www/index.html`. No web extension is involved.
+ */
+function copyWeb() {
+    copyFiles(['src-web/build/**/*'], 'www/');
+}
+
 async function installIfNeeded(dir) {
     if (!fs.existsSync(`${dir}/node_modules`)) {
         await npmInstall(dir);
@@ -89,6 +103,14 @@ async function buildDevices() {
     copyDevices();
 }
 
+async function buildWeb() {
+    deleteFoldersRecursive(`${__dirname}/www`);
+    deleteFoldersRecursive(`${SRC_WEB}/build`);
+    await installIfNeeded(SRC_WEB);
+    await buildReact(SRC_WEB, { rootDir: SRC_WEB, vite: true });
+    copyWeb();
+}
+
 async function main() {
     if (process.argv.includes('--copy-files')) {
         copyWidgets();
@@ -102,8 +124,13 @@ async function main() {
         await buildDevices();
         return;
     }
+    if (process.argv.includes('--web')) {
+        await buildWeb();
+        return;
+    }
     if (process.argv.includes('--all')) {
         await buildWidgets();
+        await buildWeb();
         await buildAdmin();
         await buildDevices();
         return;

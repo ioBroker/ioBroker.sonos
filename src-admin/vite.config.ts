@@ -1,7 +1,7 @@
 import react from '@vitejs/plugin-react';
 import commonjs from 'vite-plugin-commonjs';
 import { federation } from '@module-federation/vite';
-import { moduleFederationShared } from '@iobroker/gui-components/modulefederation.admin.config';
+import { moduleFederationShared } from '@iobroker/gui-components/modulefederation.admin.config.js';
 import pack from './package.json';
 
 const config = {

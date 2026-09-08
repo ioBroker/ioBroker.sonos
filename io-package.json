@@ -155,6 +155,41 @@
     "adminUI": {
       "config": "json"
     },
+    "localLinks": {
+      "_default": {
+        "link": "%web_protocol%://%ip%:%web_port%/sonos/",
+        "name": {
+          "en": "SONOS",
+          "de": "SONOS",
+          "ru": "SONOS",
+          "pt": "SONOS",
+          "nl": "SONOS",
+          "fr": "SONOS",
+          "it": "SONOS",
+          "es": "SONOS",
+          "pl": "SONOS",
+          "uk": "SONOS",
+          "zh-cn": "SONOS"
+        },
+        "description": {
+          "en": "Control the SONOS speakers in the browser",
+          "de": "Die SONOS-Lautsprecher im Browser steuern",
+          "ru": "Управление колонками SONOS в браузере",
+          "pt": "Controlar as colunas SONOS no navegador",
+          "nl": "De SONOS-luidsprekers in de browser bedienen",
+          "fr": "Piloter les enceintes SONOS dans le navigateur",
+          "it": "Controllare gli altoparlanti SONOS nel browser",
+          "es": "Controlar los altavoces SONOS en el navegador",
+          "pl": "Sterowanie głośnikami SONOS w przeglądarce",
+          "uk": "Керування колонками SONOS у браузері",
+          "zh-cn": "在浏览器中控制 SONOS 扬声器"
+        },
+        "color": "#e31c23",
+        "icon": "sonos.admin/sonos.png",
+        "intro": true,
+        "order": 10
+      }
+    },
     "restartAdapters": [
       "vis",
       "vis-2"

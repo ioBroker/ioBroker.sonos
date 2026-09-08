@@ -1,7 +1,7 @@
 import react from '@vitejs/plugin-react';
 import commonjs from 'vite-plugin-commonjs';
 import { federation } from '@module-federation/vite';
-import { moduleFederationShared } from '@iobroker/dm-widgets/modulefederation.devices.config';
+import { moduleFederationShared } from '@iobroker/dm-widgets/modulefederation.devices.config.js';
 import path from 'node:path';
 import pack from './package.json';
 
