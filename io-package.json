@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "sonos",
-    "version": "4.2.3",
+    "version": "4.2.4",
     "news": {
+      "4.2.4": {
+        "en": "Added a control page for the web adapter under `/sonos/`, plus a tile on the admin overview\nAdded the source selection (favorites, playlists, queue, recently played, sources) to all four widgets\nAdded `queue_array`, the play queue as JSON - `queue` joins the tracks with a comma and cannot be split back reliably",
+        "de": "Steuerseite für den Webadapter unter `/sonos/` und Kachel in der Admin-Übersicht\nQuellenauswahl (Favoriten, Playlisten, Queue, zuletzt gespielt, Quellen) zu allen vier Widgets hinzugefügt\n`queue_array` hinzugefügt, die Play-Queue als JSON — `queue` fügt Titel mit Komma zusammen und kann nicht geteilt werden",
+        "ru": "Добавлена страница управления веб-адаптером в разделе `/sonos/`, а также плитка с обзором администратора\nДобавлен выбор исходного кода (избранное, плейлисты, очередь, недавно сыгранные игры, исходники) во все четыре виджета\nДобавлен `queue_array`, очередь воспроизведения в формате JSON - `queue` соединяет треки запятой и не может быть надежно разделена",
+        "pt": "Adicionou uma página de controle do adaptador web em `/sonos/` e um quadro na visão geral\nAdicionou a seleção de fontes (favoritas, playlists, fila, fontes recentes) aos quatro widgets\nAdicionou `queue_array`, a fila de reprodução em JSON - `queue` une as faixas com uma vírgula e não é segura",
+        "nl": "Een controlepagina voor de webadapter toegevoegd onder `/sonos/`, plus een tegel in het beheerdersoverzicht\nDe bronselectie (favorieten, afspeellijsten, wachtrij, recent afgespeeld, bronnen) toegevoegd aan alle vier de widgets\n`queue_array` toegevoegd, de afspeelwachtrij als JSON - `queue` voegt de nummers samen met een komma en kan niet betrouwbaar worden opgesplitst",
+        "fr": "Ajout d'une page de contrôle pour l'adaptateur Web sous « /sonos/ », et d'une vignette sur l'admin\nAjout de la sélection de sources (favoris, playlists, file d'attente, derniers écoutés, sources) aux quatre widgets\n`queue_array` a été ajouté, la file de lecture au format JSON. `queue` joint les pistes par une virgule et ne peut pas être divisée",
+        "it": "Aggiunta una pagina di controllo per il web adapter in `/sonos/` e un pannello admin\nAggiunta la selezione di sorgenti (preferiti, playlist, coda, recenti) a tutti e quattro i widget\nAggiunto `queue_array`, la coda di riproduzione in JSON - `queue` unisce le tracce con una virgola",
+        "es": "Se ha añadido una página de control del adaptador web en `/sonos/` y un icono en la lista de administración\nHa añadido la selección de fuentes (favoritos, listas, cola, reproducidos recientemente, fuentes) a los cuatro widgets\nSe ha añadido `queue_array`, la cola de reproducción como JSON: `queue` une las pistas con una coma y no se puede dividir de forma fiable",
+        "pl": "Dodano stronę kontrolną dla karty sieciowej pod `/sonos/` oraz kafelek w przeglądzie administratora\nDodano wybór źródła (ulubione, playlisty, kolejka, ostatnio odtwarzane, źródła) do wszystkich czterech widżetów\nDodano `queue_array`, kolejka odtwarzania jako JSON - `queue` łączy utwory przecinkiem i nie można ich niezawodnie podzielić",
+        "uk": "Додана сторінка управління веб-адаптером у розділі `/sonos/`, плюс плитка в огляді адміністратора\nДодано вибір джерела (вибране, списки відтворення, черга, нещодавно відтворені, джерела) до всіх чотирьох віджетів\nДодано `queue_array`, черга відтворення як JSON - `queue` приєднується до треків комою і не може бути надійно розділена",
+        "zh-cn": "在 `/sonos/` 下添加了 Web 适配器的控制页面，以及管理员概述上的图块\n向所有四个小部件添加了来源选择（收藏夹、播放列表、队列、最近播放的内容、来源）\n添加了 `queue_array`，游戏队列作为 JSON-`queue` 使用逗号加入曲目，无法可靠地拆分回去"
+      },
       "4.2.2": {
         "en": "Added two widgets for the `ioBroker.devices` dashboard: SONOS player and SONOS rooms\nAdded a \"Control\" tab to the instance settings, which plays and groups the speakers directly in admin",
         "de": "Zwei Widgets für das `ioBroker.Devices`-Dashboard hinzugefügt: SONOS Player und SONOS Rooms\nDen Instanzeinstellungen wurde ein „Control“ -Tab hinzugefügt, der die Sprecher direkt im Admin",
