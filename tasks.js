@@ -17,7 +17,7 @@
 'use strict';
 
 const fs = require('node:fs');
-const { deleteFoldersRecursive, npmInstall, buildReact, copyFiles } = require('@iobroker/build-tools');
+const { deleteFoldersRecursive, npmInstall, buildReact, copyFiles, patchHtmlFile } = require('@iobroker/build-tools');
 
 /** Directory of the vis-2 widget sources */
 const SRC_WIDGETS = `${__dirname}/src-widgets`;
@@ -70,8 +70,9 @@ function copyDevices() {
  * web adapter serves it from there - its catch-all route reads the first path segment as the
  * adapter name, so `http://<host>:8082/sonos/` is `www/index.html`. No web extension is involved.
  */
-function copyWeb() {
+async function copyWeb() {
     copyFiles(['src-web/build/**/*'], 'www/');
+    await patchHtmlFile('www/index.html', '..');
 }
 
 async function installIfNeeded(dir) {
@@ -108,7 +109,7 @@ async function buildWeb() {
     deleteFoldersRecursive(`${SRC_WEB}/build`);
     await installIfNeeded(SRC_WEB);
     await buildReact(SRC_WEB, { rootDir: SRC_WEB, vite: true });
-    copyWeb();
+    await copyWeb();
 }
 
 async function main() {

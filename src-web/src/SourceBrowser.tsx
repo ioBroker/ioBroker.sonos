@@ -12,8 +12,8 @@ import {
 } from '@mui/material';
 import { ArrowBack, Clear, Folder, History, Login, MusicNote, QueueMusic, Search, Star, Tv } from '@mui/icons-material';
 
-import { t } from './i18n';
 import type { LibraryTab, MediaBrowseItem, MediaBrowseResult, QueueTrack, RecentTrack } from './types';
+import { I18n } from '@iobroker/gui-components';
 
 /**
  * States the source selection reads. The adapter writes them to the channel of the group
@@ -342,14 +342,14 @@ export default class SourceBrowser extends React.Component<SourceBrowserProps, S
                             value={entry.id}
                         >
                             {entry.icon}
-                            <span style={{ marginLeft: 4 }}>{t(entry.label)}</span>
+                            <span style={{ marginLeft: 4 }}>{I18n.t(entry.label)}</span>
                         </ToggleButton>
                     ))}
                 </ToggleButtonGroup>
                 <TextField
                     size="small"
                     variant="standard"
-                    placeholder={t('search')}
+                    placeholder={I18n.t('search')}
                     value={this.state.query}
                     onChange={e => this.setState({ query: e.target.value })}
                     onKeyUp={e => e.key === 'Enter' && searchable && this.search()}
@@ -382,7 +382,7 @@ export default class SourceBrowser extends React.Component<SourceBrowserProps, S
                             variant="caption"
                             style={{ opacity: 0.6, padding: 8 }}
                         >
-                            {t('nothing_found')}
+                            {I18n.t('nothing_found')}
                         </Typography>
                     )}
                 </Box>

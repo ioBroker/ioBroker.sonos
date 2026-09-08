@@ -19,13 +19,16 @@ import {
     Checkbox,
     Chip,
     CircularProgress,
+    CssBaseline,
     FormControlLabel,
     IconButton,
     LinearProgress,
     MenuItem,
     Paper,
     Slider,
+    StyledEngineProvider,
     TextField,
+    ThemeProvider,
     Toolbar,
     Tooltip,
     Typography,
@@ -46,12 +49,30 @@ import {
     VolumeUp,
 } from '@mui/icons-material';
 
-import type { Connection } from '@iobroker/socket-client';
+import {
+    GenericApp,
+    type GenericAppProps,
+    type GenericAppSettings,
+    type GenericAppState,
+    I18n,
+    ScrollbarStyles,
+} from '@iobroker/gui-components';
+import { Connection } from '@iobroker/socket-client';
 
-import { createConnection } from './socket';
-import { setLanguage, t, translated } from './i18n';
 import SourceBrowser, { LIBRARY_STATES } from './SourceBrowser';
 import type { SonosRoomInfo } from './types';
+
+import en from './i18n/en.json';
+import de from './i18n/de.json';
+import ru from './i18n/ru.json';
+import pt from './i18n/pt.json';
+import nl from './i18n/nl.json';
+import fr from './i18n/fr.json';
+import it from './i18n/it.json';
+import es from './i18n/es.json';
+import pl from './i18n/pl.json';
+import uk from './i18n/uk.json';
+import zhCn from './i18n/zh-cn.json';
 
 /** States the page reads for every discovered room. */
 const ROOM_STATES = [
@@ -78,9 +99,10 @@ const ROOM_STATES = [
 /** Remembers the room across reloads, so the page opens where it was left. */
 const STORAGE_ROOM = 'sonos.web.room';
 
-const SONOS_RED = '#e31c23';
+/** Remembers the instance, so a household with two instances opens the one used last. */
+const STORAGE_INSTANCE = 'sonos.web.instance';
 
-interface AppState {
+interface AppState extends GenericAppState {
     /** False while the socket is down - the page then greys out instead of lying about values. */
     connected: boolean;
     /** True once the first connect finished, so "connecting" is only shown at the very beginning. */
@@ -94,20 +116,47 @@ interface AppState {
     values: Record<string, ioBroker.StateValue>;
     /** Volume while the slider is being dragged, so it does not jump back to the old value. */
     localVolume: number | null;
+    systemConfig: ioBroker.SystemConfigObject | null;
 }
 
-export default class App extends React.Component<Record<string, never>, AppState> {
-    private socket: Connection | null = null;
-
+export default class App extends GenericApp<GenericAppProps, AppState> {
     private subscribed: string[] = [];
 
     private volumeTimer: ReturnType<typeof setTimeout> | null = null;
 
     private unmounted = false;
 
-    constructor(props: Record<string, never>) {
-        super(props);
+    constructor(props: GenericAppProps) {
+        const extendedProps: GenericAppSettings = { ...props };
+
+        extendedProps.translations = {
+            en,
+            de,
+            ru,
+            pt,
+            nl,
+            fr,
+            it,
+            es,
+            pl,
+            uk,
+            'zh-cn': zhCn,
+        };
+        // @ts-expect-error no idea how to fix it
+        extendedProps.Connection = Connection;
+        if (window.location.port.startsWith('300')) {
+            extendedProps.socket = {
+                port: 8082,
+            };
+        }
+
+        super(props, extendedProps);
+        const theme = this.createTheme();
         this.state = {
+            ...this.state,
+            theme,
+            themeName: this.getThemeName(theme),
+            themeType: this.getThemeType(theme),
             connected: false,
             ready: false,
             instances: [],
@@ -119,52 +168,53 @@ export default class App extends React.Component<Record<string, never>, AppState
         };
     }
 
-    async componentDidMount(): Promise<void> {
-        try {
-            this.socket = await createConnection(
-                () => void this.onReady(),
-                connected => !this.unmounted && this.setState({ connected }),
+    async onConnectionReady(): Promise<void> {
+        super.onConnectionReady();
+        if (this.socket?.systemConfig) {
+            I18n.setLanguage(this.socket.systemConfig.common.language);
+            let instances: string[] = [];
+            try {
+                const objects = await this.socket.getAdapterInstances('sonos');
+                instances = (objects || []).map(obj => obj._id.replace('system.adapter.', '')).sort();
+            } catch (error) {
+                console.warn(`Cannot read the SONOS instances: ${error as string}`);
+            }
+
+            // `?instance=sonos.1` pins the page to one instance, e.g. for a bookmark or a vis iframe.
+            // Without it the page falls back to the instance that was selected last.
+            const wanted =
+                new URLSearchParams(globalThis.location.search).get('instance') ||
+                globalThis.localStorage?.getItem(STORAGE_INSTANCE) ||
+                '';
+            const instance = (instances.includes(wanted) ? wanted : instances[0]) || '';
+
+            if (this.unmounted) {
+                return;
+            }
+            this.setState(
+                { systemConfig: this.socket.systemConfig, instances, instance, connected: true, ready: true },
+                () => void this.loadRooms(),
             );
-        } catch (error) {
-            console.error(`Cannot connect to ioBroker: ${error as string}`);
-            this.setState({ ready: true });
         }
     }
 
+    /** `common.name` may be a plain string or a translation object - it is never a key. */
+    static translated(text: ioBroker.StringOrTranslated): string {
+        if (typeof text === 'object') {
+            return text[I18n.getLanguage()] || text.en;
+        }
+        return text;
+    }
+
     componentWillUnmount(): void {
+        super.componentWillUnmount();
         this.unmounted = true;
         if (this.volumeTimer) {
             clearTimeout(this.volumeTimer);
             this.volumeTimer = null;
         }
         this.unsubscribeAll();
-    }
-
-    /** Called once the socket is up: pick the language, find the instances and load the rooms. */
-    private async onReady(): Promise<void> {
-        try {
-            const config = await this.socket!.getSystemConfig();
-            setLanguage(config?.common?.language);
-        } catch {
-            // the browser language stays
-        }
-
-        let instances: string[] = [];
-        try {
-            const objects = await this.socket!.getAdapterInstances('sonos');
-            instances = (objects || []).map(obj => obj._id.replace('system.adapter.', '')).sort();
-        } catch (error) {
-            console.warn(`Cannot read the SONOS instances: ${error as string}`);
-        }
-
-        // `?instance=sonos.1` pins the page to one instance, e.g. for a bookmark or a vis iframe
-        const wanted = new URLSearchParams(globalThis.location.search).get('instance');
-        const instance = (wanted && instances.includes(wanted) ? wanted : instances[0]) || '';
-
-        if (this.unmounted) {
-            return;
-        }
-        this.setState({ instances, instance, connected: true, ready: true }, () => void this.loadRooms());
+        super.componentWillUnmount();
     }
 
     private async loadRooms(): Promise<void> {
@@ -176,12 +226,12 @@ export default class App extends React.Component<Record<string, never>, AppState
         const prefix = `${instance}.root.`;
         let rooms: SonosRoomInfo[] = [];
         try {
-            const channels = await this.socket!.getObjectViewSystem('channel', prefix, `${prefix}香`);
+            const channels = await this.socket.getObjectViewSystem('channel', prefix, `${prefix}香`);
             rooms = Object.keys(channels || {})
                 .map(id => id.substring(prefix.length))
                 // only direct children - a nested channel is not a speaker
                 .filter(ip => ip && !ip.includes('.'))
-                .map(ip => ({ ip, name: translated(channels[`${prefix}${ip}`]?.common?.name) || ip }))
+                .map(ip => ({ ip, name: App.translated(channels[`${prefix}${ip}`]?.common?.name) || ip }))
                 .sort((a, b) => a.name.localeCompare(b.name));
         } catch (error) {
             console.warn(`Cannot read the SONOS rooms of ${instance}: ${error as string}`);
@@ -300,6 +350,18 @@ export default class App extends React.Component<Record<string, never>, AppState
         return this.num(ip, 'current_type') === 2 && this.str(ip, 'current_title') === 'TV';
     }
 
+    private selectInstance(instance: string): void {
+        try {
+            globalThis.localStorage?.setItem(STORAGE_INSTANCE, instance);
+        } catch {
+            // a browser that refuses storage just forgets the instance
+        }
+        this.setState({ instance, rooms: [], values: {} }, () => {
+            this.unsubscribeAll();
+            void this.loadRooms();
+        });
+    }
+
     private selectRoom(ip: string): void {
         try {
             globalThis.localStorage?.setItem(STORAGE_ROOM, ip);
@@ -324,7 +386,7 @@ export default class App extends React.Component<Record<string, never>, AppState
         return (
             <AppBar
                 position="static"
-                sx={{ bgcolor: SONOS_RED }}
+                sx={{ bgcolor: 'primary.main', color: 'primary.contrastText' }}
             >
                 <Toolbar variant="dense">
                     <Typography
@@ -338,15 +400,10 @@ export default class App extends React.Component<Record<string, never>, AppState
                             select
                             size="small"
                             variant="standard"
-                            label={t('instance')}
+                            label={I18n.t('instance')}
                             value={this.state.instance}
                             sx={{ minWidth: 120, mr: 2 }}
-                            onChange={e =>
-                                this.setState({ instance: e.target.value, rooms: [], values: {} }, () => {
-                                    this.unsubscribeAll();
-                                    void this.loadRooms();
-                                })
-                            }
+                            onChange={e => this.selectInstance(e.target.value)}
                         >
                             {this.state.instances.map(instance => (
                                 <MenuItem
@@ -359,7 +416,7 @@ export default class App extends React.Component<Record<string, never>, AppState
                         </TextField>
                     ) : null}
                     {this.state.connected ? null : (
-                        <Tooltip title={t('disconnected')}>
+                        <Tooltip title={I18n.t('disconnected')}>
                             <CircularProgress
                                 size={20}
                                 color="inherit"
@@ -401,12 +458,12 @@ export default class App extends React.Component<Record<string, never>, AppState
         if (this.isOnTv(ip)) {
             return (
                 <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <Tooltip title={t('mute')}>
+                    <Tooltip title={I18n.t('mute')}>
                         <IconButton onClick={() => this.set(ip, 'muted', !muted)}>
                             {muted ? <VolumeOff /> : <VolumeUp />}
                         </IconButton>
                     </Tooltip>
-                    <Tooltip title={t('night_mode')}>
+                    <Tooltip title={I18n.t('night_mode')}>
                         <IconButton
                             color={this.val(ip, 'night_mode') === true ? 'primary' : 'default'}
                             onClick={() => this.set(ip, 'night_mode', this.val(ip, 'night_mode') !== true)}
@@ -414,7 +471,7 @@ export default class App extends React.Component<Record<string, never>, AppState
                             <NightsStay />
                         </IconButton>
                     </Tooltip>
-                    <Tooltip title={t('speech_enhancement')}>
+                    <Tooltip title={I18n.t('speech_enhancement')}>
                         <IconButton
                             color={this.val(ip, 'speech_enhancement') === true ? 'primary' : 'default'}
                             onClick={() =>
@@ -430,22 +487,22 @@ export default class App extends React.Component<Record<string, never>, AppState
 
         return (
             <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-                <Tooltip title={t('previous')}>
+                <Tooltip title={I18n.t('previous')}>
                     <IconButton onClick={() => this.set(ip, 'prev', true)}>
                         <SkipPreviousRounded fontSize="large" />
                     </IconButton>
                 </Tooltip>
-                <Tooltip title={t(playing ? 'pause' : 'play')}>
+                <Tooltip title={I18n.t(playing ? 'pause' : 'play')}>
                     <IconButton onClick={() => this.set(ip, 'state_simple', !playing)}>
                         {playing ? <PauseRounded fontSize="large" /> : <PlayArrowRounded fontSize="large" />}
                     </IconButton>
                 </Tooltip>
-                <Tooltip title={t('next')}>
+                <Tooltip title={I18n.t('next')}>
                     <IconButton onClick={() => this.set(ip, 'next', true)}>
                         <SkipNextRounded fontSize="large" />
                     </IconButton>
                 </Tooltip>
-                <Tooltip title={t('shuffle')}>
+                <Tooltip title={I18n.t('shuffle')}>
                     <IconButton
                         color={this.val(ip, 'shuffle') === true ? 'primary' : 'default'}
                         onClick={() => this.set(ip, 'shuffle', this.val(ip, 'shuffle') !== true)}
@@ -453,7 +510,7 @@ export default class App extends React.Component<Record<string, never>, AppState
                         <ShuffleRounded />
                     </IconButton>
                 </Tooltip>
-                <Tooltip title={t('repeat')}>
+                <Tooltip title={I18n.t('repeat')}>
                     <IconButton
                         color={repeat ? 'primary' : 'default'}
                         onClick={() => this.set(ip, 'repeat', (repeat + 1) % 3)}
@@ -461,7 +518,7 @@ export default class App extends React.Component<Record<string, never>, AppState
                         {repeat === 2 ? <RepeatOne /> : <Repeat />}
                     </IconButton>
                 </Tooltip>
-                <Tooltip title={t('mute')}>
+                <Tooltip title={I18n.t('mute')}>
                     <IconButton onClick={() => this.set(ip, 'muted', !muted)}>
                         {muted ? <VolumeOff /> : <VolumeUp />}
                     </IconButton>
@@ -492,7 +549,7 @@ export default class App extends React.Component<Record<string, never>, AppState
                     max={100}
                     value={Math.min(100, Math.max(0, (elapsed / duration) * 100))}
                     valueLabelDisplay="off"
-                    sx={{ color: SONOS_RED }}
+                    sx={{ color: 'primary.main' }}
                     onChangeCommitted={(_e, value) => this.set(ip, 'seek', Array.isArray(value) ? value[0] : value)}
                 />
                 <Typography
@@ -511,7 +568,7 @@ export default class App extends React.Component<Record<string, never>, AppState
 
         return (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Tooltip title={t('volume')}>
+                <Tooltip title={I18n.t('volume')}>
                     <VolumeUp fontSize="small" />
                 </Tooltip>
                 <Slider
@@ -520,7 +577,7 @@ export default class App extends React.Component<Record<string, never>, AppState
                     max={100}
                     value={volume}
                     valueLabelDisplay="auto"
-                    sx={{ color: SONOS_RED }}
+                    sx={{ color: 'primary.main' }}
                     onChange={(_e, value) => {
                         const next = Array.isArray(value) ? value[0] : value;
                         this.setState({ localVolume: next });
@@ -557,7 +614,7 @@ export default class App extends React.Component<Record<string, never>, AppState
 
         return (
             <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.5 }}>
-                <Typography variant="caption">{t('group')}</Typography>
+                <Typography variant="caption">{I18n.t('group')}</Typography>
                 {this.state.rooms.map(room => (
                     <FormControlLabel
                         key={room.ip}
@@ -580,7 +637,7 @@ export default class App extends React.Component<Record<string, never>, AppState
 
     private renderPlayer(ip: string): React.JSX.Element {
         const cover = this.str(ip, 'current_cover');
-        const title = this.str(ip, 'current_title') || t('nothing_playing');
+        const title = this.str(ip, 'current_title') || I18n.t('nothing_playing');
         const station = this.str(ip, 'current_station');
         const sub = [this.str(ip, 'current_artist'), this.str(ip, 'current_album') || station]
             .filter(Boolean)
@@ -624,14 +681,14 @@ export default class App extends React.Component<Record<string, never>, AppState
                             variant="h6"
                             sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                         >
-                            {alive ? title : t('offline')}
+                            {alive ? title : I18n.t('offline')}
                         </Typography>
                         {grouped ? (
                             <Typography
                                 variant="caption"
                                 sx={{ opacity: 0.6, flex: '0 0 auto' }}
                             >
-                                {`· ${t('grouped')}`}
+                                {`· ${I18n.t('grouped')}`}
                             </Typography>
                         ) : null}
                     </Box>
@@ -652,18 +709,23 @@ export default class App extends React.Component<Record<string, never>, AppState
     render(): React.JSX.Element {
         if (!this.state.ready) {
             return (
-                <Box sx={{ p: 3 }}>
-                    <Typography variant="body2">{t('connecting')}</Typography>
-                    <LinearProgress sx={{ mt: 1 }} />
-                </Box>
+                <StyledEngineProvider injectFirst>
+                    <ThemeProvider theme={this.state.theme}>
+                        <CssBaseline />
+                        <Box sx={{ p: 3 }}>
+                            <Typography variant="body2">{I18n.t('connecting')}</Typography>
+                            <LinearProgress sx={{ mt: 1 }} />
+                        </Box>
+                    </ThemeProvider>
+                </StyledEngineProvider>
             );
         }
 
         let body: React.JSX.Element;
         if (!this.state.instance) {
-            body = <Typography variant="body2">{t('no_instance')}</Typography>;
+            body = <Typography variant="body2">{I18n.t('no_instance')}</Typography>;
         } else if (!this.state.rooms.length) {
-            body = <Typography variant="body2">{t('no_players')}</Typography>;
+            body = <Typography variant="body2">{I18n.t('no_players')}</Typography>;
         } else {
             const ip = this.state.selectedRoom;
             body = (
@@ -684,26 +746,32 @@ export default class App extends React.Component<Record<string, never>, AppState
         }
 
         return (
-            <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
-                {this.renderHeader()}
-                <Box
-                    sx={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 1,
-                        p: 1.5,
-                        flex: 1,
-                        minHeight: 0,
-                        overflow: 'auto',
-                        maxWidth: 900,
-                        width: '100%',
-                        boxSizing: 'border-box',
-                        mx: 'auto',
-                    }}
-                >
-                    {body}
-                </Box>
-            </Box>
+            <StyledEngineProvider injectFirst>
+                <ThemeProvider theme={this.state.theme}>
+                    <CssBaseline />
+                    <ScrollbarStyles theme={this.state.theme} />
+                    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+                        {this.renderHeader()}
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 1,
+                                p: 1.5,
+                                flex: 1,
+                                minHeight: 0,
+                                overflow: 'auto',
+                                maxWidth: 900,
+                                width: '100%',
+                                boxSizing: 'border-box',
+                                mx: 'auto',
+                            }}
+                        >
+                            {body}
+                        </Box>
+                    </Box>
+                </ThemeProvider>
+            </StyledEngineProvider>
         );
     }
 }

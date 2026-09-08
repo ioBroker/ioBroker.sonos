@@ -10,16 +10,12 @@ const config = {
     plugins: [react()],
     base: './',
     server: {
-        port: 4174,
+        // `index.html` recognizes the dev server by this port and then loads the socket client
+        // straight from the web adapter - so the port is not free to choose.
+        port: 3000,
         proxy: {
-            // The socket client is delivered by the web adapter itself - it sends either the
-            // socket.io client or the @iobroker/ws one, depending on how that instance is set up.
-            '/socket.io.js': {
-                target: 'http://localhost:8082',
-                changeOrigin: true,
-                rewrite: () => '/sonos/socket.io.js',
-            },
-            '/socket.io': 'http://localhost:8082',
+            // How the page reaches the socket of this web instance: `socketUrl` and friends.
+            '/_socket': 'http://localhost:8082',
             // Cover images live in the file storage of the adapter: `current_cover` holds
             // `/sonos/coverImage/<ip>.png`, which the web adapter serves from there.
             '/sonos': 'http://localhost:8082',
