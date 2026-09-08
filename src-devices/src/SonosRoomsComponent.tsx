@@ -323,6 +323,7 @@ export class SonosRoomsComponent extends WidgetGeneric<SonosRoomsComponentState,
     // ---- pieces -------------------------------------------------------------
 
     /** Small round button, used for play/pause and the link toggle. */
+    // eslint-disable-next-line class-methods-use-this
     private renderButton(
         key: string,
         content: React.ReactNode,
@@ -465,25 +466,25 @@ export class SonosRoomsComponent extends WidgetGeneric<SonosRoomsComponentState,
                     </Box>
                 ) : null}
 
-                {this.props.settings.allowGrouping !== false && this.visibleRooms.length > 1 ? (
-                    this.renderButton(
-                        `link-${room}`,
-                        <LinkIcon sx={{ fontSize: 'inherit' }} />,
-                        () => this.onLink(room),
-                        {
-                            active: isMaster || linked,
-                            title: I18n.t(
-                                isMaster
-                                    ? 'sonosdm_link_cancel'
-                                    : master
-                                      ? linked
-                                          ? 'sonosdm_link_remove'
-                                          : 'sonosdm_link_add'
-                                      : 'sonosdm_link_start',
-                            ),
-                        },
-                    )
-                ) : null}
+                {this.props.settings.allowGrouping !== false && this.visibleRooms.length > 1
+                    ? this.renderButton(
+                          `link-${room}`,
+                          <LinkIcon sx={{ fontSize: 'inherit' }} />,
+                          () => this.onLink(room),
+                          {
+                              active: isMaster || linked,
+                              title: I18n.t(
+                                  isMaster
+                                      ? 'sonosdm_link_cancel'
+                                      : master
+                                        ? linked
+                                            ? 'sonosdm_link_remove'
+                                            : 'sonosdm_link_add'
+                                        : 'sonosdm_link_start',
+                              ),
+                          },
+                      )
+                    : null}
 
                 {this.renderButton(
                     `play-${room}`,

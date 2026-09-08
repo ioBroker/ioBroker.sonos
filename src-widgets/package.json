@@ -1,7 +1,7 @@
 {
     "name": "iobroker.sonos-widgets",
     "private": true,
-    "version": "4.2.0",
+    "version": "4.2.1",
     "type": "module",
     "dependencies": {
         "@iobroker/types-vis-2": "~2.20.1",
@@ -23,7 +23,8 @@
         "start": "vite --port 4173",
         "build": "tsc && vite build",
         "preview": "vite preview",
-        "npm": "npm i -f"
+        "npm": "npm i -f",
+        "lint": "eslint -c eslint.config.mjs src"
     },
     "homepage": ".",
     "browserslist": [

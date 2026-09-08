@@ -117,9 +117,10 @@ class DevStateContext implements IStateContext {
         }
     }
 
+    // eslint-disable-next-line class-methods-use-this
     getObjectProperty(_id: string, _property: string, _cb: ObjectChangeListener): void {}
 
-    // eslint-disable-next-line @typescript-eslint/require-await
+    // eslint-disable-next-line class-methods-use-this
     async removeObject(_id: string, _cb: ObjectChangeListener): Promise<void> {}
 
     getSocket(): Connection {
@@ -204,7 +205,7 @@ export default function App(): React.JSX.Element {
                         .catch((error: unknown) => console.warn(`Cannot read the rooms: ${error as string}`));
                 },
                 onError: (error: Error) => setConnection({ error: String(error?.message || error) }),
-            } as ConstructorParameters<typeof Connection>[0]);
+            });
         } catch (error) {
             setConnection({ error: String(error) });
         }

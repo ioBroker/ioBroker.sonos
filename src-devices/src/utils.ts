@@ -84,7 +84,7 @@ export function parseJson<T>(value: ioBroker.StateValue | undefined): T | null {
         return null;
     }
     if (typeof value === 'object') {
-        return value as T;
+        return value;
     }
     try {
         return JSON.parse(String(value)) as T;

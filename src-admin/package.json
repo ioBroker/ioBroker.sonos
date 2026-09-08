@@ -5,7 +5,8 @@
     "scripts": {
         "start": "vite --port 4174",
         "build": "vite build",
-        "check-ts": "tsc --noEmit"
+        "check-ts": "tsc --noEmit",
+        "lint": "eslint -c eslint.config.mjs src"
     },
     "dependencies": {},
     "devDependencies": {

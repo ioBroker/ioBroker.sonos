@@ -5,7 +5,8 @@
     "scripts": {
         "start": "vite",
         "build": "vite build",
-        "check-ts": "tsc --noEmit"
+        "check-ts": "tsc --noEmit",
+        "lint": "eslint -c eslint.config.mjs src"
     },
     "devDependencies": {
         "@emotion/react": "^11.14.0",

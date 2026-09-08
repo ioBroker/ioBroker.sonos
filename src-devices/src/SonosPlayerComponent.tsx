@@ -291,11 +291,7 @@ export class SonosPlayerComponent extends WidgetGeneric<SonosPlayerComponentStat
 
     private get displayName(): string {
         return (
-            this.props.settings.name ||
-            this.state.name ||
-            this.state.roomName ||
-            this.room ||
-            I18n.t('sonosdm_no_room')
+            this.props.settings.name || this.state.name || this.state.roomName || this.room || I18n.t('sonosdm_no_room')
         );
     }
 
@@ -367,6 +363,7 @@ export class SonosPlayerComponent extends WidgetGeneric<SonosPlayerComponentStat
     }
 
     /** One round transport button. Rendered as a styled Box so no MUI button has to be bridged. */
+    // eslint-disable-next-line class-methods-use-this
     private renderButton(
         key: string,
         content: React.ReactNode,

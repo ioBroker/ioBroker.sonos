@@ -58,7 +58,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "npm run build:ts && npm run build:widgets",
+    "build": "npm run build:ts && npm run build:widgets && npm run build:admin && npm run build:devices",
     "build:ts": "tsc -p tsconfig.build.json",
     "build:widgets": "node tasks.js",
     "build:admin": "node tasks.js --admin",
@@ -66,7 +66,7 @@
     "build:all": "npm run build:ts && node tasks.js --all",
     "watch": "tsc -p tsconfig.build.json --watch",
     "check:ts": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint -c eslint.config.mjs src",
+    "lint": "eslint -c eslint.config.mjs src && cd src-devices && npm run lint && cd ../src-admin && npm run lint",
     "lint:fix": "eslint -c eslint.config.mjs src --fix",
     "prepublishOnly": "npm run build",
     "test": "npm run test:package && npm run test:lib && npm run test:unit",

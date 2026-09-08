@@ -25,11 +25,7 @@ export { WidgetGeneric, default, isNeumorphicTheme, StateContext } from '@iobrok
  * and border come from the host at runtime. For the standalone harness it is approximated here,
  * so the widget is not shown floating on a bare page.
  */
-export function getTileStyles(
-    _theme: unknown,
-    isActive: boolean,
-    accentColor?: string,
-): Record<string, unknown> {
+export function getTileStyles(_theme: unknown, isActive: boolean, accentColor?: string): Record<string, unknown> {
     return {
         backgroundColor: isActive ? 'rgba(227, 28, 35, 0.10)' : 'rgba(255, 255, 255, 0.04)',
         border: `1px solid ${accentColor || (isActive ? 'rgba(227, 28, 35, 0.45)' : 'rgba(255, 255, 255, 0.12)')}`,
