@@ -204,11 +204,7 @@ export default class SonosControlComponent extends ConfigGeneric<ConfigGenericPr
         const rooms: SonosRoomInfo[] = [];
 
         try {
-            const channels = await this.props.oContext.socket.getObjectViewSystem(
-                'channel',
-                prefix,
-                `${prefix}香`,
-            );
+            const channels = await this.props.oContext.socket.getObjectViewSystem('channel', prefix, `${prefix}香`);
             for (const id of Object.keys(channels || {})) {
                 const room = id.substring(prefix.length);
                 // only the direct children are speakers
@@ -332,7 +328,7 @@ export default class SonosControlComponent extends ConfigGeneric<ConfigGenericPr
             return null;
         }
         if (typeof raw === 'object') {
-            return raw as T;
+            return raw;
         }
         try {
             return JSON.parse(String(raw)) as T;
@@ -465,7 +461,7 @@ export default class SonosControlComponent extends ConfigGeneric<ConfigGenericPr
                                 <Speaker fontSize="small" />
                             )}
                             <div style={{ minWidth: 0, flex: 1 }}>
-                                <div style={styles.sub as React.CSSProperties}>
+                                <div style={styles.sub}>
                                     <Typography
                                         variant="body2"
                                         component="span"
@@ -479,7 +475,9 @@ export default class SonosControlComponent extends ConfigGeneric<ConfigGenericPr
                                     component="div"
                                     style={styles.sub}
                                 >
-                                    {alive ? title || I18n.t('sonos_ctrl_nothing_playing') : I18n.t('sonos_ctrl_offline')}
+                                    {alive
+                                        ? title || I18n.t('sonos_ctrl_nothing_playing')
+                                        : I18n.t('sonos_ctrl_offline')}
                                 </Typography>
                             </div>
                             <Typography
@@ -663,7 +661,7 @@ export default class SonosControlComponent extends ConfigGeneric<ConfigGenericPr
         );
     }
 
-    private renderMediaItem(key: string, item: MediaBrowseItem, onClick: () => void): React.JSX.Element {
+    static renderMediaItem(key: string, item: MediaBrowseItem, onClick: () => void): React.JSX.Element {
         return (
             <Box
                 key={key}
@@ -688,7 +686,7 @@ export default class SonosControlComponent extends ConfigGeneric<ConfigGenericPr
                     </Box>
                 )}
                 <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={styles.sub as React.CSSProperties}>{item.title}</div>
+                    <div style={styles.sub}>{item.title}</div>
                     {item.artist || item.album ? (
                         <Typography
                             variant="caption"
@@ -746,7 +744,7 @@ export default class SonosControlComponent extends ConfigGeneric<ConfigGenericPr
             list = favorites
                 .filter(matches)
                 .map(name =>
-                    this.renderMediaItem(`fav-${name}`, { id: name, title: name }, () =>
+                    SonosControlComponent.renderMediaItem(`fav-${name}`, { id: name, title: name }, () =>
                         this.set(room, 'favorites_set', name),
                     ),
                 );
@@ -755,7 +753,7 @@ export default class SonosControlComponent extends ConfigGeneric<ConfigGenericPr
             list = playlists
                 .filter(matches)
                 .map(name =>
-                    this.renderMediaItem(`pl-${name}`, { id: name, title: name }, () =>
+                    SonosControlComponent.renderMediaItem(`pl-${name}`, { id: name, title: name }, () =>
                         this.set(room, 'playlist_set', name),
                     ),
                 );
@@ -767,7 +765,7 @@ export default class SonosControlComponent extends ConfigGeneric<ConfigGenericPr
             list = queue
                 .filter(matches)
                 .map((line, index) =>
-                    this.renderMediaItem(`q-${index}`, { id: String(index), title: line }, () =>
+                    SonosControlComponent.renderMediaItem(`q-${index}`, { id: String(index), title: line }, () =>
                         this.set(room, 'current_track_number', index + 1),
                     ),
                 );
@@ -776,7 +774,7 @@ export default class SonosControlComponent extends ConfigGeneric<ConfigGenericPr
             list = recent
                 .filter(track => matches(`${track.title} ${track.artist || ''} ${track.album || ''}`))
                 .map((track, index) =>
-                    this.renderMediaItem(
+                    SonosControlComponent.renderMediaItem(
                         `r-${index}`,
                         {
                             id: track.uri || String(index),
@@ -827,7 +825,9 @@ export default class SonosControlComponent extends ConfigGeneric<ConfigGenericPr
                 </div>
             );
 
-            list = items.map(item => this.renderMediaItem(`s-${item.id}-${item.title}`, item, () => this.playItem(item)));
+            list = items.map(item =>
+                SonosControlComponent.renderMediaItem(`s-${item.id}-${item.title}`, item, () => this.playItem(item)),
+            );
         }
 
         const searchable =
