@@ -1,4 +1,8 @@
 # Older changes
+## 3.0.0 (2023-10-09)
+* (udondan) Added support for the playing Sonos playlists (added new state `playlist_set`)
+* (bluefox) The minimal node.js version is 16
+
 ## 2.3.3 (2023-09-21)
 * (foxriver76) fixed cover url
 

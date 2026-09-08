@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "sonos",
-    "version": "4.2.2",
+    "version": "4.2.3",
     "news": {
       "4.2.2": {
         "en": "Added two widgets for the `ioBroker.devices` dashboard: SONOS player and SONOS rooms\nAdded a \"Control\" tab to the instance settings, which plays and groups the speakers directly in admin",
@@ -80,19 +80,6 @@
         "pl": "url",
         "uk": "фіксована кришка виворітна",
         "zh-cn": "固定的维修费"
-      },
-      "2.3.2": {
-        "en": "store the cover file in files instead of binary states",
-        "de": "speichern der coverdatei in dateien statt binären zuständen",
-        "ru": "хранить файл обложки в файлах вместо бинарных государств",
-        "pt": "armazenar o arquivo de capa em arquivos em vez de estados binários",
-        "nl": "verberg het dossier in bestanden in plaats van binaire staten",
-        "fr": "stocker le fichier de couverture dans les fichiers au lieu des états binaires",
-        "it": "memorizzare il file di copertura in file invece di stati binari",
-        "es": "almacenar el archivo de portada en archivos en lugar de estados binarios",
-        "pl": "przechowywać pliki w plikach zamiast stanów binarnych",
-        "uk": "зберігати файл кришки у файлах замість бінарних штатів",
-        "zh-cn": "储存档案,而不是超级州。"
       }
     },
     "titleLang": {

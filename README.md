@@ -341,10 +341,6 @@ adapter to get a working state back.
 * (seb2010) Added support for treble and bass information
 * (Apollon77) stores the tts files in files instead of binary states
 
-### 3.0.0 (2023-10-09)
-* (udondan) Added support for the playing Sonos playlists (added new state `playlist_set`)
-* (bluefox) The minimal node.js version is 16
-
 ## License
 
 The MIT License (MIT)
