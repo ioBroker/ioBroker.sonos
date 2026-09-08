@@ -7,6 +7,7 @@
     "sonosdm_showVolume": "Mostrar volume",
     "sonosdm_showSeek": "Mostrar progresso",
     "sonosdm_showModes": "Mostrar aleatório e repetição",
+    "sonosdm_showSource": "Mostrar seleção de fonte",
     "sonosdm_allowGrouping": "Permitir agrupamento",
     "sonosdm_hideOffline": "Ocultar colunas inacessíveis",
     "sonosdm_icon": "Ícone",
@@ -29,5 +30,13 @@
     "sonosdm_link_cancel": "Cancelar agrupamento",
     "sonosdm_link_add": "Adicionar ao grupo",
     "sonosdm_link_remove": "Remover do grupo",
-    "sonosdm_link_hint": "Escolha as colunas que devem juntar-se à selecionada"
+    "sonosdm_link_hint": "Escolha as colunas que devem juntar-se à selecionada",
+    "sonosdm_select_source": "Selecionar fonte",
+    "sonosdm_sources": "Fontes",
+    "sonosdm_favorites": "Favoritos",
+    "sonosdm_playlists": "Playlists",
+    "sonosdm_queue": "Fila",
+    "sonosdm_recent": "Recentes",
+    "sonosdm_search": "Pesquisar",
+    "sonosdm_nothing_found": "Nada encontrado"
 }

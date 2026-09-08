@@ -451,6 +451,16 @@ export function getChannelStates(): Record<string, StateDefinition> {
             role: 'state',
             name: 'Play queue',
         },
+        queue_array: {
+            // the same tracks as `queue`, but as JSON so a UI can address a single entry
+            def: '[]',
+            type: 'array',
+            read: true,
+            write: false,
+            role: 'media',
+            desc: 'Play queue as JSON array of { artist, title, album, cover }',
+            name: 'Play queue array',
+        },
         queue_html: {
             // queue html table
             def: '',

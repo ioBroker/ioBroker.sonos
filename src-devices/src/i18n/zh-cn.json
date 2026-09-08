@@ -7,6 +7,7 @@
     "sonosdm_showVolume": "显示音量",
     "sonosdm_showSeek": "显示进度",
     "sonosdm_showModes": "显示随机播放和重复",
+    "sonosdm_showSource": "显示音源选择",
     "sonosdm_allowGrouping": "允许分组",
     "sonosdm_hideOffline": "隐藏无法访问的扬声器",
     "sonosdm_icon": "图标",
@@ -29,5 +30,13 @@
     "sonosdm_link_cancel": "取消分组",
     "sonosdm_link_add": "加入群组",
     "sonosdm_link_remove": "从群组移除",
-    "sonosdm_link_hint": "选择要加入所选扬声器的扬声器"
+    "sonosdm_link_hint": "选择要加入所选扬声器的扬声器",
+    "sonosdm_select_source": "选择音源",
+    "sonosdm_sources": "音源",
+    "sonosdm_favorites": "收藏",
+    "sonosdm_playlists": "播放列表",
+    "sonosdm_queue": "队列",
+    "sonosdm_recent": "最近播放",
+    "sonosdm_search": "搜索",
+    "sonosdm_nothing_found": "未找到内容"
 }

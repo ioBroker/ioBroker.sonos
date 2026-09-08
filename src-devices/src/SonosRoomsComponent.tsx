@@ -35,8 +35,10 @@ import type { ConfigItemPanel as JsonConfigItemPanel } from '@iobroker/json-conf
 import type { I18n as I18nType, Icon as IconType } from '@iobroker/gui-components';
 
 import { coordinatorOf, loadRooms, stateId, type SonosRoom } from './utils';
+import SourceDialog from './SourceDialog';
 import {
     CloseIcon,
+    LibraryIcon,
     LinkIcon,
     MusicIcon,
     MutedIcon,
@@ -80,6 +82,8 @@ interface SonosRoomsSettings extends CustomWidgetPlugin {
     showVolume?: boolean;
     /** Offer the link button that joins and removes speakers from a group. */
     allowGrouping?: boolean;
+    /** Offer the button that opens the source selection of a speaker. */
+    showSource?: boolean;
 }
 
 interface SonosRoomsComponentState extends WidgetGenericState {
@@ -96,6 +100,8 @@ interface SonosRoomsComponentState extends WidgetGenericState {
     linkMaster: string | null;
     /** Volume of the room that is currently being dragged, so the slider does not jump back. */
     localVolume: { room: string; value: number } | null;
+    /** Room whose source selection is open, or `null` while no dialog is shown. */
+    sourceRoom: string | null;
 }
 
 export class SonosRoomsComponent extends WidgetGeneric<SonosRoomsComponentState, SonosRoomsSettings> {
@@ -115,6 +121,7 @@ export class SonosRoomsComponent extends WidgetGeneric<SonosRoomsComponentState,
             dialogOpen: false,
             linkMaster: null,
             localVolume: null,
+            sourceRoom: null,
         };
     }
 
@@ -138,6 +145,12 @@ export class SonosRoomsComponent extends WidgetGeneric<SonosRoomsComponentState,
                 allowGrouping: {
                     type: 'checkbox',
                     label: 'sonosdm_allowGrouping',
+                    default: true,
+                    sm: 6,
+                },
+                showSource: {
+                    type: 'checkbox',
+                    label: 'sonosdm_showSource',
                     default: true,
                     sm: 6,
                 },
@@ -180,7 +193,7 @@ export class SonosRoomsComponent extends WidgetGeneric<SonosRoomsComponentState,
         super.componentDidUpdate?.(prevProps, this.state);
         if (prevProps.settings.instance !== this.props.settings.instance) {
             this.unsubscribeStates();
-            this.setState({ rooms: [], values: {}, linkMaster: null }, () => void this.reload());
+            this.setState({ rooms: [], values: {}, linkMaster: null, sourceRoom: null }, () => void this.reload());
         }
     }
 
@@ -466,6 +479,15 @@ export class SonosRoomsComponent extends WidgetGeneric<SonosRoomsComponentState,
                     </Box>
                 ) : null}
 
+                {this.props.settings.showSource !== false && alive
+                    ? this.renderButton(
+                          `source-${room}`,
+                          <LibraryIcon sx={{ fontSize: 'inherit' }} />,
+                          () => this.setState({ sourceRoom: room }),
+                          { active: this.state.sourceRoom === room, title: I18n.t('sonosdm_select_source') },
+                      )
+                    : null}
+
                 {this.props.settings.allowGrouping !== false && this.visibleRooms.length > 1
                     ? this.renderButton(
                           `link-${room}`,
@@ -567,6 +589,24 @@ export class SonosRoomsComponent extends WidgetGeneric<SonosRoomsComponentState,
         );
     }
 
+    /** Favorites, playlists, queue, recently played and the sources of one speaker. */
+    private renderSourceDialog(): React.JSX.Element | null {
+        const room = this.state.sourceRoom;
+        if (!room) {
+            return null;
+        }
+
+        return (
+            <SourceDialog
+                stateContext={this.props.stateContext}
+                instance={this.instance}
+                room={room}
+                roomName={this.state.rooms.find(item => item.room === room)?.name || room}
+                onClose={() => this.setState({ sourceRoom: null })}
+            />
+        );
+    }
+
     /** Full list in a dialog - opened by clicking a tile that is too small for the list. */
     private renderDialog(): React.JSX.Element | null {
         if (!this.state.dialogOpen) {
@@ -630,6 +670,7 @@ export class SonosRoomsComponent extends WidgetGeneric<SonosRoomsComponentState,
                     {content}
                 </Box>
                 {this.renderDialog()}
+                {this.renderSourceDialog()}
             </Box>
         );
     }

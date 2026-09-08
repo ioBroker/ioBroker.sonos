@@ -1,7 +1,9 @@
 import React from 'react';
 
-import { Box, IconButton, Slider, Typography } from '@mui/material';
+import { Box, Dialog, DialogContent, DialogTitle, IconButton, Slider, Tooltip, Typography } from '@mui/material';
 import {
+    Close,
+    LibraryMusic,
     MusicNote,
     PauseRounded,
     PlayArrowRounded,
@@ -15,11 +17,13 @@ import {
 import type { RxRenderWidgetProps, RxWidgetInfo, VisRxWidgetProps, VisRxWidgetState } from '@iobroker/types-vis-2';
 
 import Generic from './Generic';
+import SourceBrowser, { LIBRARY_STATES } from './SourceBrowser';
 import type { SonosRoomInfo } from './types';
 
-/** Only what a single compact card shows. */
+/** Only what a single compact card shows. `coordinator` points at the room the library lives on. */
 const ROOM_STATES = [
     'alive',
+    'coordinator',
     'current_album',
     'current_artist',
     'current_cover',
@@ -57,12 +61,15 @@ interface SonosRoomRxData {
     instance: string;
     room: string;
     showVolume: boolean;
+    showSource: boolean;
 }
 
 interface SonosRoomState extends VisRxWidgetState {
     rooms: SonosRoomInfo[];
     sonos: Record<string, ioBroker.StateValue>;
     localVolume: number | null;
+    /** The source selection is a dialog here - the card itself has no room for it. */
+    sourceOpen: boolean;
 }
 
 /**
@@ -76,7 +83,7 @@ export default class SonosRoom extends Generic<SonosRoomRxData, SonosRoomState> 
 
     constructor(props: VisRxWidgetProps) {
         super(props);
-        this.state = { ...this.state, rooms: [], sonos: {}, localVolume: null };
+        this.state = { ...this.state, rooms: [], sonos: {}, localVolume: null, sourceOpen: false };
     }
 
     static getWidgetInfo(): RxWidgetInfo {
@@ -101,6 +108,7 @@ export default class SonosRoom extends Generic<SonosRoomRxData, SonosRoomState> 
                         { name: 'noCard', type: 'checkbox', label: 'without_card' },
                         { name: 'widgetTitle', label: 'name', hidden: '!!data.noCard' },
                         { name: 'showVolume', type: 'checkbox', default: true, label: 'show_volume' },
+                        { name: 'showSource', type: 'checkbox', default: true, label: 'show_source' },
                     ],
                 },
             ],
@@ -159,8 +167,24 @@ export default class SonosRoom extends Generic<SonosRoomRxData, SonosRoomState> 
         );
     }
 
+    /** The room whose playback this one follows - its library is the one the source dialog shows. */
+    private coordinatorOf(ip: string): string {
+        const coordinator = this.str(ip, 'coordinator').trim();
+        return coordinator && coordinator !== ip ? coordinator : ip;
+    }
+
     private onSonosState = (id: string, state: ioBroker.State | null | undefined): void => {
-        this.setState(prev => ({ sonos: { ...prev.sonos, [id]: state ? state.val : null } }));
+        this.setState(
+            prev => ({ sonos: { ...prev.sonos, [id]: state ? state.val : null } }),
+            () => {
+                // The library of a group member is written to the coordinator's channel, and the
+                // coordinator is only known once its state arrived - so the subscription follows it.
+                const room = this.currentRoom();
+                if (room && id === this.getRoomStateId(room.ip, 'coordinator')) {
+                    this.resubscribe();
+                }
+            },
+        );
     };
 
     private unsubscribeAll(): void {
@@ -170,9 +194,29 @@ export default class SonosRoom extends Generic<SonosRoomRxData, SonosRoomState> 
         }
     }
 
-    private resubscribe(): void {
+    /** The card itself only needs `ROOM_STATES`; the library is added while the dialog is open. */
+    private wantedIds(): string[] {
         const room = this.currentRoom();
-        const wanted = room ? ROOM_STATES.map(name => this.getRoomStateId(room.ip, name)) : [];
+        if (!room) {
+            return [];
+        }
+
+        const ids = ROOM_STATES.map(name => this.getRoomStateId(room.ip, name));
+        if (this.state.sourceOpen) {
+            const coordinator = this.coordinatorOf(room.ip);
+            LIBRARY_STATES.forEach(name => {
+                ids.push(this.getRoomStateId(room.ip, name));
+                if (coordinator !== room.ip) {
+                    ids.push(this.getRoomStateId(coordinator, name));
+                }
+            });
+        }
+
+        return [...new Set(ids)];
+    }
+
+    private resubscribe(): void {
+        const wanted = this.wantedIds();
         if (wanted.length === this.subscribed.length && wanted.every(id => this.subscribed.includes(id))) {
             return;
         }
@@ -199,6 +243,42 @@ export default class SonosRoom extends Generic<SonosRoomRxData, SonosRoomState> 
 
     private set(ip: string, name: string, value: ioBroker.StateValue): void {
         this.props.context.setValue(this.getRoomStateId(ip, name), value);
+    }
+
+    /** Favorites, playlists, queue and the browsable sources of the speaker. */
+    private renderSourceDialog(ip: string): React.JSX.Element | null {
+        if (!this.state.sourceOpen) {
+            return null;
+        }
+
+        return (
+            <Dialog
+                open
+                maxWidth="sm"
+                fullWidth
+                onClose={() => this.setState({ sourceOpen: false }, () => this.resubscribe())}
+            >
+                <DialogTitle style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <LibraryMusic />
+                    <span style={{ flex: 1 }}>{Generic.t('sources')}</span>
+                    <IconButton
+                        size="small"
+                        onClick={() => this.setState({ sourceOpen: false }, () => this.resubscribe())}
+                    >
+                        <Close />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent style={{ display: 'flex', flexDirection: 'column', gap: 8, minHeight: 320 }}>
+                    <SourceBrowser
+                        ip={ip}
+                        coordinator={this.coordinatorOf(ip)}
+                        defaultTab="favorites"
+                        getValue={(room, name) => this.val(room, name)}
+                        setValue={(room, name, value) => this.set(room, name, value)}
+                    />
+                </DialogContent>
+            </Dialog>
+        );
     }
 
     renderWidgetBody(props: RxRenderWidgetProps): React.JSX.Element | React.JSX.Element[] | null {
@@ -276,6 +356,16 @@ export default class SonosRoom extends Generic<SonosRoomRxData, SonosRoomState> 
                         >
                             {muted ? <VolumeOff /> : <VolumeUp />}
                         </IconButton>
+                        {this.state.rxData.showSource ? (
+                            <Tooltip title={Generic.t('sources')}>
+                                <IconButton
+                                    size="small"
+                                    onClick={() => this.setState({ sourceOpen: true }, () => this.resubscribe())}
+                                >
+                                    <LibraryMusic />
+                                </IconButton>
+                            </Tooltip>
+                        ) : null}
                     </div>
                     {this.state.rxData.showVolume ? (
                         <div style={styles.volume}>
@@ -307,6 +397,7 @@ export default class SonosRoom extends Generic<SonosRoomRxData, SonosRoomState> 
                         </div>
                     ) : null}
                 </div>
+                {this.renderSourceDialog(ip)}
             </div>
         );
 

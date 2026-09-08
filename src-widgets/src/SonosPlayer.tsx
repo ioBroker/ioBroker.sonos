@@ -6,34 +6,22 @@ import {
     Chip,
     FormControlLabel,
     IconButton,
-    InputAdornment,
     LinearProgress,
     Slider,
-    TextField,
-    ToggleButton,
-    ToggleButtonGroup,
     Tooltip,
     Typography,
 } from '@mui/material';
 import {
-    ArrowBack,
-    Clear,
-    Folder,
     Hearing,
-    Login,
     MusicNote,
     NightsStay,
     PauseRounded,
     PlayArrowRounded,
-    QueueMusic,
     Repeat,
     RepeatOne,
-    Search,
     ShuffleRounded,
     SkipNextRounded,
     SkipPreviousRounded,
-    Speaker,
-    Star,
     Tv,
     VolumeOff,
     VolumeUp,
@@ -42,24 +30,8 @@ import {
 import type { RxRenderWidgetProps, RxWidgetInfo, VisRxWidgetProps, VisRxWidgetState } from '@iobroker/types-vis-2';
 
 import Generic, { ROOM_STATES } from './Generic';
-import type { LibraryTab, MediaBrowseItem, MediaBrowseResult, RecentTrack, SonosRoomInfo } from './types';
-
-/** Library states of the selected room and of its group coordinator. */
-const LIBRARY_STATES = [
-    'favorites_list_array',
-    'playlist_list_array',
-    'queue',
-    'recent_tracks',
-    'media_browse_result',
-] as const;
-
-const TABS: { id: LibraryTab; label: string; icon: React.JSX.Element }[] = [
-    { id: 'favorites', label: 'favorites', icon: <Star fontSize="small" /> },
-    { id: 'playlists', label: 'playlists', icon: <QueueMusic fontSize="small" /> },
-    { id: 'queue', label: 'queue', icon: <MusicNote fontSize="small" /> },
-    { id: 'recent', label: 'recent', icon: <Speaker fontSize="small" /> },
-    { id: 'sources', label: 'sources', icon: <Folder fontSize="small" /> },
-];
+import SourceBrowser, { LIBRARY_STATES } from './SourceBrowser';
+import type { SonosRoomInfo } from './types';
 
 const styles: Record<string, React.CSSProperties> = {
     root: { display: 'flex', flexDirection: 'column', gap: 8, width: '100%', height: '100%', minHeight: 0 },
@@ -83,22 +55,6 @@ const styles: Record<string, React.CSSProperties> = {
     seek: { display: 'flex', alignItems: 'center', gap: 8 },
     volume: { display: 'flex', alignItems: 'center', gap: 8 },
     groups: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 4 },
-    sheet: { flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' },
-    item: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        padding: '6px 4px',
-        cursor: 'pointer',
-        textAlign: 'left',
-        width: '100%',
-        border: 0,
-        background: 'transparent',
-        color: 'inherit',
-        font: 'inherit',
-        borderRadius: 4,
-    },
-    thumb: { width: 36, height: 36, borderRadius: 4, backgroundSize: 'cover', backgroundPosition: 'center' },
 };
 
 interface SonosPlayerRxData {
@@ -118,9 +74,6 @@ interface SonosPlayerState extends VisRxWidgetState {
     rooms: SonosRoomInfo[];
     selectedRoom: string;
     sonos: Record<string, ioBroker.StateValue>;
-    tab: LibraryTab | '';
-    query: string;
-    path: { id: string; title: string }[];
     /** Volume while the slider is being dragged, so it does not jump back */
     localVolume: number | null;
 }
@@ -137,9 +90,6 @@ export default class SonosPlayer extends Generic<SonosPlayerRxData, SonosPlayerS
             rooms: [],
             selectedRoom: '',
             sonos: {},
-            tab: '',
-            query: '',
-            path: [],
             localVolume: null,
         };
     }
@@ -211,7 +161,7 @@ export default class SonosPlayer extends Generic<SonosPlayerRxData, SonosPlayerS
 
     async onRxDataChanged(prevRxData: SonosPlayerRxData): Promise<void> {
         if (prevRxData.instance !== this.state.rxData.instance || prevRxData.oid !== this.state.rxData.oid) {
-            this.setState({ selectedRoom: '', sonos: {}, path: [], tab: '' });
+            this.setState({ selectedRoom: '', sonos: {} });
             await this.refreshRooms();
         } else if (prevRxData.defaultRoom !== this.state.rxData.defaultRoom) {
             await this.refreshRooms();
@@ -316,21 +266,6 @@ export default class SonosPlayer extends Generic<SonosPlayerRxData, SonosPlayerS
         this.props.context.setValue(this.getRoomStateId(ip, name), value);
     }
 
-    private parseJson<T>(ip: string, name: string): T | null {
-        const raw = this.val(ip, name);
-        if (raw === null || raw === undefined || raw === '') {
-            return null;
-        }
-        if (typeof raw === 'object') {
-            return raw as T;
-        }
-        try {
-            return JSON.parse(String(raw)) as T;
-        } catch {
-            return null;
-        }
-    }
-
     /** TV/HDMI has no transport control, so the buttons must not be offered */
     private isOnTv(ip: string): boolean {
         return this.num(ip, 'current_type') === 2 && this.str(ip, 'current_title') === 'TV';
@@ -339,67 +274,7 @@ export default class SonosPlayer extends Generic<SonosPlayerRxData, SonosPlayerS
     // ---- actions ------------------------------------------------------------
 
     private selectRoom(ip: string): void {
-        this.setState({ selectedRoom: ip, path: [], query: '' }, () => this.resubscribe());
-    }
-
-    private browse(objectId: string, title: string, push: boolean): void {
-        const selected = this.state.selectedRoom;
-        if (!selected) {
-            return;
-        }
-        this.setState(
-            prev => ({
-                path: push ? [...prev.path, { id: objectId, title }] : prev.path,
-                query: '',
-            }),
-            () => this.set(selected, 'media_browse', objectId),
-        );
-    }
-
-    private browseBack(): void {
-        const path = [...this.state.path];
-        path.pop();
-        const target = path.length ? path[path.length - 1] : { id: 'root', title: '' };
-        this.setState({ path, query: '' }, () => this.set(this.state.selectedRoom, 'media_browse', target.id));
-    }
-
-    private playItem(item: MediaBrowseItem): void {
-        const selected = this.state.selectedRoom;
-        if (!selected) {
-            return;
-        }
-        if (item.folder) {
-            this.browse(item.id, item.title, true);
-            return;
-        }
-        if (!item.uri && !item.favorite && !item.playlist && item.id !== 'tv') {
-            return;
-        }
-        this.set(
-            selected,
-            'media_play',
-            JSON.stringify({
-                uri: item.uri || '',
-                metadata: item.metadata || '',
-                favorite: item.favorite,
-                playlist: item.playlist,
-                tv: item.id === 'tv' || undefined,
-            }),
-        );
-    }
-
-    private search(): void {
-        const browse = this.parseJson<MediaBrowseResult>(this.coordinatorOf(this.state.selectedRoom), 'media_browse_result');
-        const service = browse?.serviceName;
-        const term = this.state.query.trim();
-        if (!service || !term) {
-            return;
-        }
-        this.set(
-            this.state.selectedRoom,
-            'media_browse',
-            `smapi-search:${encodeURIComponent(service)}:${encodeURIComponent(term)}`,
-        );
+        this.setState({ selectedRoom: ip }, () => this.resubscribe());
     }
 
     private toggleGroupMember(memberIp: string, join: boolean): void {
@@ -609,215 +484,19 @@ export default class SonosPlayer extends Generic<SonosPlayerRxData, SonosPlayerS
         );
     }
 
-    private renderItem(key: string, item: MediaBrowseItem, onClick: () => void): React.JSX.Element {
-        return (
-            <Box
-                component="button"
-                type="button"
-                key={key}
-                sx={{ ...styles.item, '&:hover': { backgroundColor: 'action.hover' } }}
-                onClick={onClick}
-            >
-                {item.cover ? (
-                    <div style={{ ...styles.thumb, backgroundImage: `url("${encodeURI(item.cover)}")` }} />
-                ) : (
-                    <Box
-                        sx={{ ...styles.thumb, backgroundColor: 'action.selected' }}
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    >
-                        {item.id === 'tv' ? (
-                            <Tv fontSize="small" />
-                        ) : item.folder ? (
-                            <Folder fontSize="small" />
-                        ) : (
-                            <MusicNote fontSize="small" />
-                        )}
-                    </Box>
-                )}
-                <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={styles.title as React.CSSProperties}>{item.title}</div>
-                    {item.artist || item.album ? (
-                        <Typography
-                            variant="caption"
-                            style={styles.sub}
-                            component="div"
-                        >
-                            {item.artist || item.album}
-                        </Typography>
-                    ) : null}
-                </div>
-            </Box>
-        );
-    }
-
+    /** Favorites, playlists, queue, recently played and the browsable sources of the speaker. */
     private renderLibrary(ip: string): React.JSX.Element | null {
         if (!this.state.rxData.showLibrary) {
             return null;
         }
 
-        const coordinator = this.coordinatorOf(ip);
-        const tab = this.state.tab;
-
-        const tabs = (
-            <ToggleButtonGroup
-                size="small"
-                exclusive
-                value={tab}
-                onChange={(_e, value: LibraryTab | null) => {
-                    this.setState({ tab: value || '', query: '', path: [] }, () => {
-                        if (value === 'sources') {
-                            this.set(ip, 'media_browse', 'root');
-                        }
-                    });
-                }}
-            >
-                {TABS.map(entry => (
-                    <ToggleButton
-                        key={entry.id}
-                        value={entry.id}
-                    >
-                        {entry.icon}
-                        <span style={{ marginLeft: 4 }}>{Generic.t(entry.label)}</span>
-                    </ToggleButton>
-                ))}
-            </ToggleButtonGroup>
-        );
-
-        if (!tab) {
-            return <div>{tabs}</div>;
-        }
-
-        const query = this.state.query.trim().toLowerCase();
-        const matches = (text: string): boolean => !query || text.toLowerCase().includes(query);
-        let list: React.JSX.Element[] = [];
-        let header: React.JSX.Element | null = null;
-
-        if (tab === 'favorites') {
-            const favorites = this.parseJson<string[]>(coordinator, 'favorites_list_array') || [];
-            list = favorites
-                .filter(matches)
-                .map(name =>
-                    this.renderItem(`fav-${name}`, { id: name, title: name }, () => this.set(ip, 'favorites_set', name)),
-                );
-        } else if (tab === 'playlists') {
-            const playlists = this.parseJson<string[]>(coordinator, 'playlist_list_array') || [];
-            list = playlists
-                .filter(matches)
-                .map(name =>
-                    this.renderItem(`pl-${name}`, { id: name, title: name }, () => this.set(ip, 'playlist_set', name)),
-                );
-        } else if (tab === 'queue') {
-            const queue = this.str(coordinator, 'queue')
-                .split('\n')
-                .map(line => line.trim())
-                .filter(Boolean);
-            list = queue.filter(matches).map((line, index) =>
-                this.renderItem(`q-${index}`, { id: String(index), title: line }, () =>
-                    this.set(ip, 'current_track_number', index + 1),
-                ),
-            );
-        } else if (tab === 'recent') {
-            const recent = this.parseJson<RecentTrack[]>(ip, 'recent_tracks') || [];
-            list = recent
-                .filter(track => matches(`${track.title} ${track.artist || ''} ${track.album || ''}`))
-                .map((track, index) =>
-                    this.renderItem(
-                        `r-${index}`,
-                        {
-                            id: track.uri || String(index),
-                            title: track.title,
-                            artist: track.artist,
-                            album: track.album,
-                            cover: track.cover,
-                            uri: track.uri,
-                        },
-                        () => track.uri && this.set(ip, 'play_uri', track.uri),
-                    ),
-                );
-        } else {
-            const browse = this.parseJson<MediaBrowseResult>(coordinator, 'media_browse_result');
-            const items = (browse?.items || []).filter(item =>
-                matches(`${item.title} ${item.artist || ''} ${item.album || ''}`),
-            );
-
-            header = (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    {this.state.path.length ? (
-                        <IconButton
-                            size="small"
-                            onClick={() => this.browseBack()}
-                        >
-                            <ArrowBack fontSize="small" />
-                        </IconButton>
-                    ) : null}
-                    <Typography variant="caption">
-                        {this.state.path.length ? this.state.path[this.state.path.length - 1].title : browse?.title}
-                    </Typography>
-                    {browse?.loginUrl ? (
-                        <Tooltip title={browse.loginHint || browse.loginUrl}>
-                            <IconButton
-                                size="small"
-                                onClick={() =>
-                                    this.set(ip, 'media_browse', `smapi-auth:${encodeURIComponent(browse.serviceName || '')}`)
-                                }
-                            >
-                                <Login fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
-                    ) : null}
-                </div>
-            );
-
-            list = items.map(item => this.renderItem(`s-${item.id}-${item.title}`, item, () => this.playItem(item)));
-        }
-
-        const searchable =
-            tab === 'sources' && this.parseJson<MediaBrowseResult>(coordinator, 'media_browse_result')?.searchable;
-
         return (
-            <>
-                <div>{tabs}</div>
-                <TextField
-                    size="small"
-                    variant="standard"
-                    placeholder={Generic.t('search')}
-                    value={this.state.query}
-                    onChange={e => this.setState({ query: e.target.value })}
-                    onKeyUp={e => e.key === 'Enter' && searchable && this.search()}
-                    slotProps={{
-                        input: {
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <Search fontSize="small" />
-                                </InputAdornment>
-                            ),
-                            endAdornment: this.state.query ? (
-                                <InputAdornment position="end">
-                                    <IconButton
-                                        size="small"
-                                        onClick={() => this.setState({ query: '' })}
-                                    >
-                                        <Clear fontSize="small" />
-                                    </IconButton>
-                                </InputAdornment>
-                            ) : null,
-                        },
-                    }}
-                />
-                {header}
-                <div style={styles.sheet}>
-                    {list.length ? (
-                        list
-                    ) : (
-                        <Typography
-                            variant="caption"
-                            style={{ opacity: 0.6, padding: 8 }}
-                        >
-                            {Generic.t('nothing_found')}
-                        </Typography>
-                    )}
-                </div>
-            </>
+            <SourceBrowser
+                ip={ip}
+                coordinator={this.coordinatorOf(ip)}
+                getValue={(room, name) => this.val(room, name)}
+                setValue={(room, name, value) => this.set(room, name, value)}
+            />
         );
     }
 

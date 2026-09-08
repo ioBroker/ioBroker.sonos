@@ -1365,6 +1365,7 @@ class Sonos extends utils.Adapter {
         }
 
         const queue = await this.getStateAsync(`root.${coordinatorIp}.queue`);
+        const queueArray = await this.getStateAsync(`root.${coordinatorIp}.queue_array`);
         const queueHtml = await this.getStateAsync(`root.${coordinatorIp}.queue_html`);
         const playMode = sonosState.playMode;
         const playing = display || this.playbackDisplay(sonosState);
@@ -1462,6 +1463,12 @@ class Sonos extends utils.Adapter {
                 await this.setState(
                     { device: 'root', channel: memberIp, state: 'queue' },
                     { val: queue.val, ack: true },
+                );
+            }
+            if (queueArray?.val !== undefined && queueArray.val !== null) {
+                await this.setState(
+                    { device: 'root', channel: memberIp, state: 'queue_array' },
+                    { val: queueArray.val, ack: true },
                 );
             }
             if (queueHtml?.val !== undefined && queueHtml.val !== null) {
@@ -2322,11 +2329,20 @@ class Sonos extends utils.Adapter {
     private async takeSonosQueue(ip: string, player: SonosDevice, queue: SonosQueueEntry[]): Promise<void> {
         const _text: string[] = [];
         const _html: string[] = [];
+        // `queue` joins the tracks with a comma, so a UI cannot split it back reliably - a title
+        // may contain one. `queue_array` therefore carries the same tracks entry by entry.
+        const _array: { artist?: string; title?: string; album?: string; cover?: string }[] = [];
 
         _html.push('<table class="sonosQueueTable">');
 
         for (let q = 0; q < queue.length; q++) {
             _text.push(`${queue[q].artist} - ${queue[q].title}`);
+            _array.push({
+                artist: queue[q].artist,
+                title: queue[q].title,
+                album: queue[q].album,
+                cover: queue[q].albumArtUri ? `${player.baseUrl}${queue[q].albumArtUri}` : undefined,
+            });
             _html.push(`
                         <tr class="sonosQueueRow" onclick="vis.setValue('${this.namespace}.root.${
                             player.channel
@@ -2354,6 +2370,10 @@ class Sonos extends utils.Adapter {
         const qhtml = _html.join('');
 
         await this.setState({ device: 'root', channel: ip, state: 'queue' }, { val: qtext, ack: true });
+        await this.setState(
+            { device: 'root', channel: ip, state: 'queue_array' },
+            { val: JSON.stringify(_array), ack: true },
+        );
         this.log.debug(`queue for ${player.baseUrl}: ${qtext}`);
         await this.setState({ device: 'root', channel: ip, state: 'queue_html' }, { val: qhtml, ack: true });
         this.log.debug(`queue for ${player.baseUrl}: ${qhtml}`);

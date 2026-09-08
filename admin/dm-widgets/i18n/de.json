@@ -7,6 +7,7 @@
     "sonosdm_showVolume": "Lautstärke anzeigen",
     "sonosdm_showSeek": "Fortschritt anzeigen",
     "sonosdm_showModes": "Zufall und Wiederholung anzeigen",
+    "sonosdm_showSource": "Quellenauswahl anzeigen",
     "sonosdm_allowGrouping": "Gruppieren erlauben",
     "sonosdm_hideOffline": "Nicht erreichbare Lautsprecher ausblenden",
     "sonosdm_icon": "Symbol",
@@ -29,5 +30,13 @@
     "sonosdm_link_cancel": "Gruppierung abbrechen",
     "sonosdm_link_add": "Zur Gruppe hinzufügen",
     "sonosdm_link_remove": "Aus der Gruppe entfernen",
-    "sonosdm_link_hint": "Lautsprecher auswählen, die dem gewählten folgen sollen"
+    "sonosdm_link_hint": "Lautsprecher auswählen, die dem gewählten folgen sollen",
+    "sonosdm_select_source": "Quelle auswählen",
+    "sonosdm_sources": "Quellen",
+    "sonosdm_favorites": "Favoriten",
+    "sonosdm_playlists": "Playlists",
+    "sonosdm_queue": "Warteschlange",
+    "sonosdm_recent": "Zuletzt",
+    "sonosdm_search": "Suchen",
+    "sonosdm_nothing_found": "Nichts gefunden"
 }

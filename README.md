@@ -53,7 +53,8 @@ widget sets and loads the jQuery one. Views that were built with the vis-1 widge
 `oid` binding when they are opened in vis-2.
 
 vis-2 additionally offers **Sonos room**, one speaker as a compact card with cover, title, transport
-and volume. It has no vis-1 counterpart.
+and volume. Its last button opens the same source selection in a dialog, so a single card can also
+start a favorite, a playlist or a source. It has no vis-1 counterpart.
 
 In vis-2 each part of Sonos Control (rooms, groups, volume, library) can be switched off, and the
 widget can start on a given room.
@@ -85,13 +86,19 @@ speakers comes from the adapter itself, so it always matches the devices on the 
 | 2x0.5 | A strip: cover thumbnail, title, previous/play/next, mute |
 | 2x1, 2x2 | The whole player: cover, title, transport, shuffle, repeat, progress and volume |
 
-Cover, progress, volume and the shuffle/repeat buttons can be switched off individually. On a
-speaker that plays its TV input the transport buttons are hidden, because the HDMI input cannot be
-controlled - only mute stays.
+Cover, progress, volume, the shuffle/repeat buttons and the source button can be switched off
+individually. On a speaker that plays its TV input the transport buttons are hidden, because the
+HDMI input cannot be controlled - only mute stays.
+
+The source button opens the same selection the vis widget shows - favorites, playlists, the queue,
+recently played and the browsable sources of the speaker - as a dialog on top of the tile.
 
 **SONOS rooms** is the whole household in one widget: how many speakers are playing, what each of
 them plays, and their volume. The small sizes show the counter and open the list in a dialog; 2x1
 and 2x2 show the list directly.
+
+Every row also has a source button that opens the source selection for that speaker, so a
+favorite or a playlist can be started without leaving the overview.
 
 It also forms groups: the link button of a speaker marks it as the group master, and the link
 button of every other speaker then adds it to that group or removes it again. Clicking the master a
@@ -129,6 +136,11 @@ Workaround for text to speech is to use the [SONOS HTTP API](https://github.com/
 
 ## Favorites & Queue in VIS
 Use states `favorites_list_html` and `queue_html` to show playlists and current queue with basic html widget in VIS. By clicking on a row, the playlist or track will be played immediately.
+
+For an own UI the same lists are available as JSON: `favorites_list_array`, `playlist_list_array`
+and `queue_array`. `queue` joins the tracks with a comma and cannot be split back reliably, so use
+`queue_array` - it carries one `{ artist, title, album, cover }` entry per track, and the index of
+an entry is the value for `current_track_number`.
 Format the table with the following css classes:
 
 ### Favorites
@@ -256,6 +268,10 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
+### **WORK IN PROGRESS**
+* (@GermanBluefox) Added the source selection (favorites, playlists, queue, recently played, sources) to all four widgets
+* (@GermanBluefox) Added `queue_array`, the play queue as JSON - `queue` joins the tracks with a comma and cannot be split back reliably
+
 ### 4.2.2 (2026-09-08)
 * (@GermanBluefox) Added two widgets for the `ioBroker.devices` dashboard: SONOS player and SONOS rooms
 * (@GermanBluefox) Added a "Control" tab to the instance settings, which plays and groups the speakers directly in admin

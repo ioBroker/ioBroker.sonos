@@ -7,6 +7,7 @@
     "sonosdm_showVolume": "Show volume",
     "sonosdm_showSeek": "Show progress",
     "sonosdm_showModes": "Show shuffle and repeat",
+    "sonosdm_showSource": "Show source selection",
     "sonosdm_allowGrouping": "Allow grouping",
     "sonosdm_hideOffline": "Hide unreachable speakers",
     "sonosdm_icon": "Icon",
@@ -29,5 +30,13 @@
     "sonosdm_link_cancel": "Cancel grouping",
     "sonosdm_link_add": "Add to the group",
     "sonosdm_link_remove": "Remove from the group",
-    "sonosdm_link_hint": "Pick the speakers that should join the selected one"
+    "sonosdm_link_hint": "Pick the speakers that should join the selected one",
+    "sonosdm_select_source": "Select source",
+    "sonosdm_sources": "Sources",
+    "sonosdm_favorites": "Favorites",
+    "sonosdm_playlists": "Playlists",
+    "sonosdm_queue": "Queue",
+    "sonosdm_recent": "Recent",
+    "sonosdm_search": "Search",
+    "sonosdm_nothing_found": "Nothing found"
 }

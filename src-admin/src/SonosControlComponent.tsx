@@ -91,6 +91,7 @@ const LIBRARY_STATES = [
     'favorites_list_array',
     'playlist_list_array',
     'queue',
+    'queue_array',
     'recent_tracks',
     'media_browse_result',
 ] as const;
@@ -314,6 +315,29 @@ export default class SonosControlComponent extends ConfigGeneric<ConfigGenericPr
         this.props.oContext.socket.setState(this.stateId(room, name), value, false).catch((error: unknown) => {
             console.warn(`Cannot write ${this.stateId(room, name)}: ${error as string}`);
         });
+    }
+
+    /**
+     * The play queue of the group.
+     *
+     * `queue_array` carries one entry per track. Adapters that have not written it yet only offer
+     * `queue`, where the tracks are joined with a comma - good enough for a list, but a title
+     * containing a comma is then split into two rows.
+     */
+    private queue(coordinator: string): { title: string; artist?: string; album?: string; cover?: string }[] {
+        const array = this.parseJson<{ title?: string; artist?: string; album?: string; cover?: string }[]>(
+            coordinator,
+            'queue_array',
+        );
+        if (array?.length) {
+            return array.map(track => ({ ...track, title: track.title || '' }));
+        }
+
+        return this.str(coordinator, 'queue')
+            .split(/\r?\n|, /)
+            .map(line => line.trim())
+            .filter(Boolean)
+            .map(line => ({ title: line }));
     }
 
     /** The room whose playback `room` follows - itself when it is not a group member. */
@@ -758,15 +782,15 @@ export default class SonosControlComponent extends ConfigGeneric<ConfigGenericPr
                     ),
                 );
         } else if (tab === 'queue') {
-            const queue = this.str(coordinator, 'queue')
-                .split('\n')
-                .map(line => line.trim())
-                .filter(Boolean);
-            list = queue
-                .filter(matches)
-                .map((line, index) =>
-                    SonosControlComponent.renderMediaItem(`q-${index}`, { id: String(index), title: line }, () =>
-                        this.set(room, 'current_track_number', index + 1),
+            // Keep the original index - it is the track number `current_track_number` expects
+            list = this.queue(coordinator)
+                .map((track, index) => ({ track, index }))
+                .filter(entry => matches(`${entry.track.title} ${entry.track.artist || ''}`))
+                .map(entry =>
+                    SonosControlComponent.renderMediaItem(
+                        `q-${entry.index}`,
+                        { id: String(entry.index), ...entry.track },
+                        () => this.set(room, 'current_track_number', entry.index + 1),
                     ),
                 );
         } else if (tab === 'recent') {

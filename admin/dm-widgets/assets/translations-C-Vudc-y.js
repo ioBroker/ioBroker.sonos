@@ -1,1 +1,0 @@
-import{t as e}from"./translations-CRpOM9E-.js";export{e as default};

@@ -34,7 +34,9 @@ import type { ConfigItemPanel as JsonConfigItemPanel } from '@iobroker/json-conf
 import type { I18n as I18nType, Icon as IconType } from '@iobroker/gui-components';
 
 import { coordinatorOf, stateId, timeString, translated } from './utils';
+import SourceDialog from './SourceDialog';
 import {
+    LibraryIcon,
     MusicIcon,
     MutedIcon,
     NextIcon,
@@ -93,6 +95,8 @@ interface SonosPlayerSettings extends CustomWidgetPlugin {
     showSeek?: boolean;
     /** Show shuffle and repeat next to the transport buttons. */
     showModes?: boolean;
+    /** Offer the button that opens the source selection. */
+    showSource?: boolean;
 }
 
 interface SonosPlayerComponentState extends WidgetGenericState {
@@ -102,6 +106,8 @@ interface SonosPlayerComponentState extends WidgetGenericState {
     localVolume: number | null;
     /** `common.name` of the room channel - the name the user gave the speaker in the adapter. */
     roomName: string;
+    /** The source selection is a dialog - a tile is far too small for the lists. */
+    sourceOpen: boolean;
 }
 
 export class SonosPlayerComponent extends WidgetGeneric<SonosPlayerComponentState, SonosPlayerSettings> {
@@ -117,6 +123,7 @@ export class SonosPlayerComponent extends WidgetGeneric<SonosPlayerComponentStat
             values: {},
             localVolume: null,
             roomName: '',
+            sourceOpen: false,
         };
     }
 
@@ -166,6 +173,12 @@ export class SonosPlayerComponent extends WidgetGeneric<SonosPlayerComponentStat
                     default: true,
                     sm: 6,
                 },
+                showSource: {
+                    type: 'checkbox',
+                    label: 'sonosdm_showSource',
+                    default: true,
+                    sm: 6,
+                },
                 icon: {
                     type: 'component',
                     subType: 'iconSelect',
@@ -201,7 +214,7 @@ export class SonosPlayerComponent extends WidgetGeneric<SonosPlayerComponentStat
         super.componentDidUpdate?.(prevProps, this.state);
         if (prevProps.settings.instance !== this.props.settings.instance || prevProps.settings.room !== this.room) {
             this.unsubscribeStates();
-            this.setState({ values: {}, localVolume: null, roomName: '' }, () => {
+            this.setState({ values: {}, localVolume: null, roomName: '', sourceOpen: false }, () => {
                 this.subscribeStates();
                 void this.readRoomName();
             });
@@ -478,7 +491,38 @@ export class SonosPlayerComponent extends WidgetGeneric<SonosPlayerComponentStat
                           { size, active: !!repeat, title: I18n.t('sonosdm_repeat') },
                       )
                     : null}
+                {this.renderSourceButton(size)}
             </Box>
+        );
+    }
+
+    /** Opens the source selection - favorites, playlists, queue, recently played and the sources. */
+    private renderSourceButton(size: number): React.JSX.Element | null {
+        if (this.props.settings.showSource === false || !this.room) {
+            return null;
+        }
+
+        return this.renderButton(
+            'source',
+            <LibraryIcon sx={{ fontSize: 'inherit' }} />,
+            () => this.setState({ sourceOpen: true }),
+            { size, active: this.state.sourceOpen, title: I18n.t('sonosdm_select_source') },
+        );
+    }
+
+    private renderSourceDialog(): React.JSX.Element | null {
+        if (!this.state.sourceOpen) {
+            return null;
+        }
+
+        return (
+            <SourceDialog
+                stateContext={this.props.stateContext}
+                instance={this.instance}
+                room={this.room}
+                roomName={this.displayName}
+                onClose={() => this.setState({ sourceOpen: false })}
+            />
         );
     }
 
@@ -692,6 +736,7 @@ export class SonosPlayerComponent extends WidgetGeneric<SonosPlayerComponentStat
                         {content}
                     </div>
                 </Box>
+                {this.renderSourceDialog()}
             </Box>
         );
     }
@@ -740,6 +785,7 @@ export class SonosPlayerComponent extends WidgetGeneric<SonosPlayerComponentStat
                     }}
                 >
                     {hint || this.renderNowPlaying(true)}
+                    {hint ? null : this.renderSourceButton(28)}
                     {hint
                         ? null
                         : this.renderButton(

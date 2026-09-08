@@ -7,6 +7,7 @@
     "sonosdm_showVolume": "Afficher le volume",
     "sonosdm_showSeek": "Afficher la progression",
     "sonosdm_showModes": "Afficher aléatoire et répétition",
+    "sonosdm_showSource": "Afficher le choix de la source",
     "sonosdm_allowGrouping": "Autoriser le groupement",
     "sonosdm_hideOffline": "Masquer les enceintes injoignables",
     "sonosdm_icon": "Icône",
@@ -29,5 +30,13 @@
     "sonosdm_link_cancel": "Annuler le groupement",
     "sonosdm_link_add": "Ajouter au groupe",
     "sonosdm_link_remove": "Retirer du groupe",
-    "sonosdm_link_hint": "Choisissez les enceintes qui doivent rejoindre celle sélectionnée"
+    "sonosdm_link_hint": "Choisissez les enceintes qui doivent rejoindre celle sélectionnée",
+    "sonosdm_select_source": "Choisir la source",
+    "sonosdm_sources": "Sources",
+    "sonosdm_favorites": "Favoris",
+    "sonosdm_playlists": "Playlists",
+    "sonosdm_queue": "File d'attente",
+    "sonosdm_recent": "Récents",
+    "sonosdm_search": "Rechercher",
+    "sonosdm_nothing_found": "Rien trouvé"
 }

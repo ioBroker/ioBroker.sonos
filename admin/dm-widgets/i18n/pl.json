@@ -7,6 +7,7 @@
     "sonosdm_showVolume": "Pokaż głośność",
     "sonosdm_showSeek": "Pokaż postęp",
     "sonosdm_showModes": "Pokaż losowo i powtarzanie",
+    "sonosdm_showSource": "Pokaż wybór źródła",
     "sonosdm_allowGrouping": "Zezwól na grupowanie",
     "sonosdm_hideOffline": "Ukryj nieosiągalne głośniki",
     "sonosdm_icon": "Ikona",
@@ -29,5 +30,13 @@
     "sonosdm_link_cancel": "Anuluj grupowanie",
     "sonosdm_link_add": "Dodaj do grupy",
     "sonosdm_link_remove": "Usuń z grupy",
-    "sonosdm_link_hint": "Wybierz głośniki, które mają dołączyć do wybranego"
+    "sonosdm_link_hint": "Wybierz głośniki, które mają dołączyć do wybranego",
+    "sonosdm_select_source": "Wybierz źródło",
+    "sonosdm_sources": "Źródła",
+    "sonosdm_favorites": "Ulubione",
+    "sonosdm_playlists": "Playlisty",
+    "sonosdm_queue": "Kolejka",
+    "sonosdm_recent": "Ostatnie",
+    "sonosdm_search": "Szukaj",
+    "sonosdm_nothing_found": "Nic nie znaleziono"
 }

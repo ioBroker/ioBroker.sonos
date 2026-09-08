@@ -1,0 +1,1 @@
+import{t as e}from"./translations-D5hndz9R.js";export{e as default};

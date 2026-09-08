@@ -7,6 +7,7 @@
     "sonosdm_showVolume": "Volume tonen",
     "sonosdm_showSeek": "Voortgang tonen",
     "sonosdm_showModes": "Shuffle en herhalen tonen",
+    "sonosdm_showSource": "Bronkeuze tonen",
     "sonosdm_allowGrouping": "Groeperen toestaan",
     "sonosdm_hideOffline": "Onbereikbare luidsprekers verbergen",
     "sonosdm_icon": "Pictogram",
@@ -29,5 +30,13 @@
     "sonosdm_link_cancel": "Groeperen annuleren",
     "sonosdm_link_add": "Aan de groep toevoegen",
     "sonosdm_link_remove": "Uit de groep verwijderen",
-    "sonosdm_link_hint": "Kies de luidsprekers die zich bij de geselecteerde moeten voegen"
+    "sonosdm_link_hint": "Kies de luidsprekers die zich bij de geselecteerde moeten voegen",
+    "sonosdm_select_source": "Bron kiezen",
+    "sonosdm_sources": "Bronnen",
+    "sonosdm_favorites": "Favorieten",
+    "sonosdm_playlists": "Afspeellijsten",
+    "sonosdm_queue": "Wachtrij",
+    "sonosdm_recent": "Recent",
+    "sonosdm_search": "Zoeken",
+    "sonosdm_nothing_found": "Niets gevonden"
 }

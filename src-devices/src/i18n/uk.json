@@ -7,6 +7,7 @@
     "sonosdm_showVolume": "Показувати гучність",
     "sonosdm_showSeek": "Показувати прогрес",
     "sonosdm_showModes": "Показувати перемішування та повтор",
+    "sonosdm_showSource": "Показувати вибір джерела",
     "sonosdm_allowGrouping": "Дозволити групування",
     "sonosdm_hideOffline": "Приховувати недоступні колонки",
     "sonosdm_icon": "Піктограма",
@@ -29,5 +30,13 @@
     "sonosdm_link_cancel": "Скасувати групування",
     "sonosdm_link_add": "Додати до групи",
     "sonosdm_link_remove": "Прибрати з групи",
-    "sonosdm_link_hint": "Виберіть колонки, які мають приєднатися до вибраної"
+    "sonosdm_link_hint": "Виберіть колонки, які мають приєднатися до вибраної",
+    "sonosdm_select_source": "Вибрати джерело",
+    "sonosdm_sources": "Джерела",
+    "sonosdm_favorites": "Обране",
+    "sonosdm_playlists": "Плейлисти",
+    "sonosdm_queue": "Черга",
+    "sonosdm_recent": "Останні",
+    "sonosdm_search": "Пошук",
+    "sonosdm_nothing_found": "Нічого не знайдено"
 }

@@ -7,6 +7,7 @@
     "sonosdm_showVolume": "Показывать громкость",
     "sonosdm_showSeek": "Показывать прогресс",
     "sonosdm_showModes": "Показывать перемешивание и повтор",
+    "sonosdm_showSource": "Показывать выбор источника",
     "sonosdm_allowGrouping": "Разрешить группировку",
     "sonosdm_hideOffline": "Скрывать недоступные колонки",
     "sonosdm_icon": "Иконка",
@@ -29,5 +30,13 @@
     "sonosdm_link_cancel": "Отменить группировку",
     "sonosdm_link_add": "Добавить в группу",
     "sonosdm_link_remove": "Убрать из группы",
-    "sonosdm_link_hint": "Выберите колонки, которые присоединятся к выбранной"
+    "sonosdm_link_hint": "Выберите колонки, которые присоединятся к выбранной",
+    "sonosdm_select_source": "Выбрать источник",
+    "sonosdm_sources": "Источники",
+    "sonosdm_favorites": "Избранное",
+    "sonosdm_playlists": "Плейлисты",
+    "sonosdm_queue": "Очередь",
+    "sonosdm_recent": "Недавние",
+    "sonosdm_search": "Поиск",
+    "sonosdm_nothing_found": "Ничего не найдено"
 }

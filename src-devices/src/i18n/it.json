@@ -7,6 +7,7 @@
     "sonosdm_showVolume": "Mostra volume",
     "sonosdm_showSeek": "Mostra avanzamento",
     "sonosdm_showModes": "Mostra casuale e ripetizione",
+    "sonosdm_showSource": "Mostra selezione sorgente",
     "sonosdm_allowGrouping": "Consenti il raggruppamento",
     "sonosdm_hideOffline": "Nascondi altoparlanti non raggiungibili",
     "sonosdm_icon": "Icona",
@@ -29,5 +30,13 @@
     "sonosdm_link_cancel": "Annulla raggruppamento",
     "sonosdm_link_add": "Aggiungi al gruppo",
     "sonosdm_link_remove": "Rimuovi dal gruppo",
-    "sonosdm_link_hint": "Scegli gli altoparlanti che devono unirsi a quello selezionato"
+    "sonosdm_link_hint": "Scegli gli altoparlanti che devono unirsi a quello selezionato",
+    "sonosdm_select_source": "Seleziona sorgente",
+    "sonosdm_sources": "Sorgenti",
+    "sonosdm_favorites": "Preferiti",
+    "sonosdm_playlists": "Playlist",
+    "sonosdm_queue": "Coda",
+    "sonosdm_recent": "Recenti",
+    "sonosdm_search": "Cerca",
+    "sonosdm_nothing_found": "Nessun risultato"
 }
