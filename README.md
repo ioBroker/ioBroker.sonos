@@ -168,7 +168,7 @@ For an own UI the same lists are available as JSON: `favorites_list_array`, `pla
 and `queue_array`. `queue` joins the tracks with a comma and cannot be split back reliably, so use
 `queue_array` - it carries one `{ artist, title, album, cover }` entry per track, and the index of
 an entry is the value for `current_track_number`.
-Format the table with the following css classes:
+Format the table with the following CSS classes:
 
 ### Favorites
 * `sonosFavoriteTable`: hole favorite table
@@ -302,6 +302,9 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
+### **WORK IN PROGRESS**
+* (@GermanBluefox) Corrected devices widget
+
 ### 4.2.5 (2026-09-08)
 * (@GermanBluefox) Added a control page for the web adapter under `/sonos/`, plus a tile on the admin overview
 * (@GermanBluefox) Added the source selection (favorites, playlists, queue, recently played, sources) to all four widgets

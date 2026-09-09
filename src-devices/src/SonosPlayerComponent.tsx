@@ -212,7 +212,12 @@ export class SonosPlayerComponent extends WidgetGeneric<SonosPlayerComponentStat
 
     componentDidUpdate(prevProps: Readonly<WidgetGenericProps<SonosPlayerSettings>>): void {
         super.componentDidUpdate?.(prevProps, this.state);
-        if (prevProps.settings.instance !== this.props.settings.instance || prevProps.settings.room !== this.room) {
+        // Compare the normalized values: `settings.room` may be undefined while the `room` getter falls
+        // back to an empty string. A raw comparison would then be true on every update and the setState
+        // below would trigger the next componentDidUpdate forever (React error #185).
+        const prevInstance = prevProps.settings.instance || 'sonos.0';
+        const prevRoom = prevProps.settings.room || '';
+        if (prevInstance !== this.instance || prevRoom !== this.room) {
             this.unsubscribeStates();
             this.setState({ values: {}, localVolume: null, roomName: '', sourceOpen: false }, () => {
                 this.subscribeStates();
