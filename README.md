@@ -87,7 +87,7 @@ speakers comes from the adapter itself, so it always matches the devices on the 
 | 2x1, 2x2 | The whole player: cover, title, transport, shuffle, repeat, progress and volume |
 
 Cover, progress, volume, the shuffle/repeat buttons and the source button can be switched off
-individually. On a speaker that plays its TV input the transport buttons are hidden, because the
+individually. On a speaker that plays its TV input, the transport buttons are hidden because the
 HDMI input cannot be controlled - only mute stays.
 
 The source button opens the same selection the vis widget shows - favorites, playlists, the queue,
@@ -107,7 +107,7 @@ second time leaves the mode.
 ## Control tab in admin
 
 The instance settings have a third tab, **Control**. It is the same player as in vis, but inside
-admin: pick a speaker on the left, and control it on the right - transport, progress, volume,
+admin: pick a speaker on the left and control it on the right - transport, progress, volume,
 grouping, and the library with favorites, playlists, queue, recently played and sources.
 
 This is meant for checking that a freshly added speaker really answers, without leaving the adapter
@@ -137,7 +137,9 @@ the web adapter for `socket.io.js` and gets whatever that instance uses - socket
 `@iobroker/ws`.
 
 `?instance=sonos.1` pins the page to one instance, `?room=Kitchen` opens it on a given speaker.
-Otherwise, the first instance is used and the last speaker is remembered in the browser.
+Without them the page falls back to the instance and the speaker it was used with last, both
+remembered in the browser; only when nothing is remembered yet does it open the first instance and
+its first speaker.
 
 In admin the page also appears as a tile on the overview, next to the tiles of the other adapters.
 
@@ -157,12 +159,12 @@ To use the [sayit adapter](https://github.com/ioBroker/ioBroker.sayit) with this
 ### Warning: Stability problems in combination with sayIt adapter
 Please note: This SONOS adapter has stability issues if using 'text to speech' with the sayIt adapter. Symptoms observed:
 1. Arbitrary change of volume to 0 or 100 %.
-2. No response after a random number of text to speech sequences
+2. No response after a random number of text-to-speech sequences
 
 Workaround for text to speech is to use the [SONOS HTTP API](https://github.com/jishi/node-sonos-http-api).
 
 ## Favorites & Queue in VIS
-Use states `favorites_list_html` and `queue_html` to show playlists and current queue with basic html widget in VIS. By clicking on a row, the playlist or track will be played immediately.
+Use states `favorites_list_html` and `queue_html` to show playlists and current queue with basic HTML widget in VIS. By clicking on a row, the playlist or track will be played immediately.
 
 For an own UI the same lists are available as JSON: `favorites_list_array`, `playlist_list_array`
 and `queue_array`. `queue` joins the tracks with a comma and cannot be split back reliably, so use
@@ -171,14 +173,14 @@ an entry is the value for `current_track_number`.
 Format the table with the following CSS classes:
 
 ### Favorites
-* `sonosFavoriteTable`: hole favorite table
+* `sonosFavoriteTable`: whole favorite table
 * `sonosFavoriteRow`: rows with favorite information
 * `sonosFavoriteNumber`: Number of favorites
 * `sonosFavoriteCover`: Album art of favorite (grab image with `.sonosFavoriteCover img`)
 * `sonosFavoriteTitle`: Name of favorite
 
 ### Queue
-* `.sonosQueueTable`: hole table
+* `.sonosQueueTable`: whole table
 * `.sonosQueueRow`: rows containing track information
 * `.currentTrack`: added to the row containg the current playing track
 * `.sonosQueueTrackNumber`: Number or track
@@ -187,7 +189,7 @@ Format the table with the following CSS classes:
 * `.sonosQueueTrackAlbum`: Name of album (use `display:none`if not needed)
 * `.sonosQueueTrackTitle`: Name of title
 
-For long lists add `overflow:auto;` or `overflow-y:auto;` to basic html widget.
+For long lists add `overflow:auto;` or `overflow-y:auto;` to basic HTML widget.
 Please note: highlighting current playing favorite is not supported.
 
 ### Sample CSS
@@ -248,32 +250,43 @@ module federation:
 | `src-web/`     | `www/`              | the **web** adapter, at `/sonos/`            |
 
 ```bash
-npm run npm:all        # install the adapter and all four front-ends
-npm run build          # adapter + vis-2 widgets + web page - what CI and npm publish run
-npm run build:web      # the control page          -> www/
-npm run build:admin    # the Control tab component -> admin/custom
-npm run build:devices  # the ioBroker.devices widgets -> admin/dm-widgets
-npm run build:all      # everything
+npm run npm            # install the adapter and all four front-ends
+npm run build          # all four of them plus the adapter - what CI and npm publish run
+npm run build:widgets  # the vis-2 widget set         -> widgets/sonos/
+npm run build:web      # the control page             -> www/
+npm run build:admin    # the Control tab component    -> admin/custom/
+npm run build:devices  # the ioBroker.devices widgets -> admin/dm-widgets/
+npm run build:all      # the same as build, in a single tasks.mts run
 ```
 
+All of them are driven by `tasks.mts`, which node runs straight from source with its own type
+stripping - there is no build step for the build script, but `npm run check:ts` type-checks it and
+rejects syntax that could not be stripped.
+
 `admin/custom/` and `admin/dm-widgets/` are committed, because a cold module federation build
-pre-builds the whole shared GUI stack and takes several minutes - rebuild them with the scripts
-above whenever something below `src-admin/` or `src-devices/` changed, and commit the result.
+pre-builds the whole shared GUI stack and takes several minutes. `npm run build` rebuilds them
+together with everything else, `npm run build:admin` / `npm run build:devices` rebuild only one of
+them - either way, commit the output when something below `src-admin/` or `src-devices/` changed.
 
 `src-devices` has a dev harness: `cd src-devices && npm start` opens the widgets on
 `http://localhost:3000` against a real ioBroker admin on `localhost:8081`, so they can be developed
-without rebuilding into ioBroker.devices every time.
+without rebuilding into `ioBroker.devices` every time.
 
 `src-web` has the same: `cd src-web && npm start` serves the control page on
-`http://localhost:4174` and proxies the socket, the socket client and the cover images to a web
-instance on `localhost:8082`.
+`http://localhost:3000` and proxies the socket, the socket client and the cover images to a web
+instance on `localhost:8082`. The page recognises its dev server by that port, so it cannot be
+changed - and because `src-devices` listens on 3000 as well, only one of the two harnesses can run
+at a time.
 
 ## To Do
-* Rewrite with https://github.com/svrooij/node-sonos-ts
+* Make `@svrooij/sonos` the default once the experimental backend has proven itself on real
+  households, and drop `sonos-discovery`
 
 ## Configuration
 - Web server - [optional] If web server enabled or not
 - Update of elapsed time(ms) - Interval in ms how often to update elapsed timer when the title is playing. (Default 2000)
+- Fade in (text2speech) - Interval in ms over which the volume is raised at the start of an announcement. 0 disables the fade in. (Default 0)
+- Fade out (text2speech) - Interval in ms over which the volume is lowered at the end of an announcement. 0 disables the fade out. (Default 0)
 - Sonos library - which client library talks to the speakers, see below
 
 ### Sonos library

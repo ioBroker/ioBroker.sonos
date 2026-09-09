@@ -4,6 +4,10 @@
         "allowJs": false,
         "checkJs": false,
         "noEmit": false,
-        "declaration": false
-    }
+        "declaration": false,
+        "outDir": "./build",
+        "rootDir": "./src"
+    },
+    // tasks.mts is only type-checked, never emitted - node runs it from source
+    "include": ["src/**/*.ts"]
 }

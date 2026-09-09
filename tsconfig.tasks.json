@@ -1,0 +1,12 @@
+// Type checking for the build script. `tasks.mts` is not compiled: node runs it straight from
+// source with its type stripping, so `erasableSyntaxOnly` rejects anything a compiler would have
+// to rewrite - enum, namespace, parameter properties.
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "rootDir": ".",
+        "erasableSyntaxOnly": true,
+        "types": ["node"]
+    },
+    "include": ["tasks.mts"]
+}

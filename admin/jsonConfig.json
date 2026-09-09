@@ -23,7 +23,7 @@
           "min": 500,
           "max": 60000,
           "label": "Update of elapsed time",
-          "help": "in milliseconds. ",
+          "help": "in milliseconds",
           "sm": 12,
           "md": 4,
           "lg": 3

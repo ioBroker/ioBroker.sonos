@@ -27,10 +27,11 @@ export default [
             'admin/**/*',
             'test/**/*',
             'widgets/**/*',
-            // the three front-ends are built separately and have their own tsconfig
+            // the four front-ends are built separately and have their own tsconfig
             'src-widgets/**/*',
             'src-admin/**/*',
             'src-devices/**/*',
+            'src-web/**/*',
             '**/*.mjs',
         ],
     },
