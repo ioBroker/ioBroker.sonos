@@ -1,4 +1,16 @@
 # Older changes
+## 4.0.3 (2026-08-13)
+* (@GermanBluefox) Fixed TTS: without a volume in the file name, the announcement was played with volume 0
+* (@GermanBluefox) Fixed the immediate stop of TTS: the state before TTS was not restored and TTS stayed blocked
+* (@GermanBluefox) A muted player is unmuted now for the announcement and muted again afterwards
+* (@GermanBluefox) An empty value in the `tts` state stops the running announcement
+* (@GermanBluefox) The adapter was migrated to TypeScript and is now based on classes
+* (@GermanBluefox) The "root" device object is created now by js-controller from io-package.json
+* (biglouis) Missing states of the already existing devices will be created at the start
+* (VierlingMt) Fixed the error if `favorites_set` was called with an empty value
+* (seb2010) Added support for treble and bass information
+* (Apollon77) stores the tts files in files instead of binary states
+
 ## 3.0.0 (2023-10-09)
 * (udondan) Added support for the playing Sonos playlists (added new state `playlist_set`)
 * (bluefox) The minimal node.js version is 16
