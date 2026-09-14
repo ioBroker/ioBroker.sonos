@@ -319,7 +319,7 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
-### **WORK IN PROGRESS**
+### 4.2.7 (2026-09-14)
 * (@GermanBluefox) SONOS player widget for ioBroker.devices: the tile looks like the media player of ioBroker.devices, and a click opens the full player with shuffle, repeat, seek, volume and the source selection
 
 ### 4.2.6 (2026-09-09)
@@ -338,19 +338,6 @@ adapter to get a working state back.
 * (@GermanBluefox) The client library can be switched in the instance settings
 * (@GermanBluefox) Added `@svrooij/sonos` as an experimental alternative to `sonos-discovery`
 * (@GermanBluefox) The adapter talks to a backend interface now, so both libraries fill the same states
-
-### 4.1.0 (2026-09-06)
-* (@GermanBluefox) Added a React implementation of `Sonos Control` for vis-2, plus the new `Sonos room` widget
-* (kosmix1980) vis widget: rooms, groups, favorites, playlists, queue, recent tracks and sources
-* (kosmix1980) Sources: TuneIn, music library, network shares, line-in and SMAPI catalog search
-* (kosmix1980) TV HDMI as a playable source with format, cover, night sound and speech enhancement
-* (kosmix1980) Added `playlist_list` / `playlist_list_array` and per-room `recent_tracks`
-* (kosmix1980) Group members follow the coordinator's now-playing and transport
-* (@GermanBluefox) TV is offered only on speakers that have an HDMI/optical input
-* (@GermanBluefox) Music services are listed only when the household reports them
-* (@GermanBluefox) Removed the YouTube Music catalog search: it used a private, undocumented Google endpoint
-* (@GermanBluefox) Only the group coordinator updates the elapsed time of the group now
-* (@GermanBluefox) SMAPI account tokens are stored with restrictive file permissions
 
 ## License
 
