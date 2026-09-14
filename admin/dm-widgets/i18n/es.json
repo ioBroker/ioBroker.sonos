@@ -38,5 +38,9 @@
     "sonosdm_queue": "Cola",
     "sonosdm_recent": "Recientes",
     "sonosdm_search": "Buscar",
-    "sonosdm_nothing_found": "No se encontró nada"
+    "sonosdm_nothing_found": "No se encontró nada",
+    "sonosdm_unmute": "Activar sonido",
+    "sonosdm_repeat_all": "Repetir todo",
+    "sonosdm_repeat_one": "Repetir pista",
+    "sonosdm_close": "Cerrar"
 }

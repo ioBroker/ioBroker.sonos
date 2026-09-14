@@ -38,5 +38,9 @@
     "sonosdm_queue": "Fila",
     "sonosdm_recent": "Recentes",
     "sonosdm_search": "Pesquisar",
-    "sonosdm_nothing_found": "Nada encontrado"
+    "sonosdm_nothing_found": "Nada encontrado",
+    "sonosdm_unmute": "Ativar som",
+    "sonosdm_repeat_all": "Repetir tudo",
+    "sonosdm_repeat_one": "Repetir faixa",
+    "sonosdm_close": "Fechar"
 }

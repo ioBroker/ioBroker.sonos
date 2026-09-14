@@ -38,5 +38,9 @@
     "sonosdm_queue": "队列",
     "sonosdm_recent": "最近播放",
     "sonosdm_search": "搜索",
-    "sonosdm_nothing_found": "未找到内容"
+    "sonosdm_nothing_found": "未找到内容",
+    "sonosdm_unmute": "取消静音",
+    "sonosdm_repeat_all": "全部循环",
+    "sonosdm_repeat_one": "单曲循环",
+    "sonosdm_close": "关闭"
 }

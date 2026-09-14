@@ -38,5 +38,9 @@
     "sonosdm_queue": "Coda",
     "sonosdm_recent": "Recenti",
     "sonosdm_search": "Cerca",
-    "sonosdm_nothing_found": "Nessun risultato"
+    "sonosdm_nothing_found": "Nessun risultato",
+    "sonosdm_unmute": "Riattiva audio",
+    "sonosdm_repeat_all": "Ripeti tutto",
+    "sonosdm_repeat_one": "Ripeti brano",
+    "sonosdm_close": "Chiudi"
 }

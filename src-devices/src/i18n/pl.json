@@ -38,5 +38,9 @@
     "sonosdm_queue": "Kolejka",
     "sonosdm_recent": "Ostatnie",
     "sonosdm_search": "Szukaj",
-    "sonosdm_nothing_found": "Nic nie znaleziono"
+    "sonosdm_nothing_found": "Nic nie znaleziono",
+    "sonosdm_unmute": "Wyłącz wyciszenie",
+    "sonosdm_repeat_all": "Powtarzaj wszystko",
+    "sonosdm_repeat_one": "Powtarzaj utwór",
+    "sonosdm_close": "Zamknij"
 }

@@ -38,5 +38,9 @@
     "sonosdm_queue": "Warteschlange",
     "sonosdm_recent": "Zuletzt",
     "sonosdm_search": "Suchen",
-    "sonosdm_nothing_found": "Nichts gefunden"
+    "sonosdm_nothing_found": "Nichts gefunden",
+    "sonosdm_unmute": "Stummschaltung aufheben",
+    "sonosdm_repeat_all": "Alle wiederholen",
+    "sonosdm_repeat_one": "Titel wiederholen",
+    "sonosdm_close": "Schließen"
 }

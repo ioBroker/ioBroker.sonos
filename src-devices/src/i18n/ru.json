@@ -38,5 +38,9 @@
     "sonosdm_queue": "Очередь",
     "sonosdm_recent": "Недавние",
     "sonosdm_search": "Поиск",
-    "sonosdm_nothing_found": "Ничего не найдено"
+    "sonosdm_nothing_found": "Ничего не найдено",
+    "sonosdm_unmute": "Включить звук",
+    "sonosdm_repeat_all": "Повторять все",
+    "sonosdm_repeat_one": "Повторять трек",
+    "sonosdm_close": "Закрыть"
 }

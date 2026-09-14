@@ -38,5 +38,9 @@
     "sonosdm_queue": "Wachtrij",
     "sonosdm_recent": "Recent",
     "sonosdm_search": "Zoeken",
-    "sonosdm_nothing_found": "Niets gevonden"
+    "sonosdm_nothing_found": "Niets gevonden",
+    "sonosdm_unmute": "Dempen opheffen",
+    "sonosdm_repeat_all": "Alles herhalen",
+    "sonosdm_repeat_one": "Nummer herhalen",
+    "sonosdm_close": "Sluiten"
 }

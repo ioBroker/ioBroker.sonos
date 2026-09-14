@@ -38,5 +38,9 @@
     "sonosdm_queue": "Queue",
     "sonosdm_recent": "Recent",
     "sonosdm_search": "Search",
-    "sonosdm_nothing_found": "Nothing found"
+    "sonosdm_nothing_found": "Nothing found",
+    "sonosdm_unmute": "Unmute",
+    "sonosdm_repeat_all": "Repeat all",
+    "sonosdm_repeat_one": "Repeat track",
+    "sonosdm_close": "Close"
 }

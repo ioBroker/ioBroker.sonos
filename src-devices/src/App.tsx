@@ -151,6 +151,12 @@ class DevPlayerCompact extends SonosPlayerComponent {
     }
 }
 
+class DevPlayerWide extends SonosPlayerComponent {
+    override render(): React.JSX.Element {
+        return this.renderWide();
+    }
+}
+
 class DevRooms extends SonosRoomsComponent {
     override render(): React.JSX.Element {
         return this.renderWideTall();
@@ -279,6 +285,15 @@ export default function App(): React.JSX.Element {
                         widget={widget as never}
                         stateContext={context}
                         settings={{ ...playerSettings, size: '1x1' } as never}
+                        onHide={() => {}}
+                    />
+                </div>
+                <div style={{ width: 360 }}>
+                    <DevPlayerWide
+                        key={`wide-${room}`}
+                        widget={widget as never}
+                        stateContext={context}
+                        settings={{ ...playerSettings, size: '2x0.5' } as never}
                         onHide={() => {}}
                     />
                 </div>

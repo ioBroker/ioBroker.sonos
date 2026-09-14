@@ -80,18 +80,22 @@ every widget is configured with its own settings dialog - no state has to be pic
 **SONOS player** is one speaker. The settings ask for the instance and the speaker; the list of
 speakers comes from the adapter itself, so it always matches the devices on the *SONOS devices* tab.
 
-| Size     | What is shown                                                                   |
-|----------|---------------------------------------------------------------------------------|
-| 1x1      | The cover as background, the room, the title and play/pause                     |
-| 2x0.5    | A strip: cover thumbnail, title, previous/play/next, mute                       |
-| 2x1, 2x2 | The whole player: cover, title, transport, shuffle, repeat, progress and volume |
+| Size     | What is shown                                                                      |
+|----------|------------------------------------------------------------------------------------|
+| 1x1      | The cover as background, the speaker, title, artist, play state and the progress   |
+| 2x0.5    | A strip: cover thumbnail on the blurred cover, the speaker, title, artist, progress |
+| 2x1, 2x2 | The large cover with the speaker and play state on it, title, artist and progress  |
+
+The tiles are built like the media player of ioBroker.devices: a click opens the full player as a
+dialog - cover, title, artist and album, the progress slider to jump within the track, previous /
+play-pause / next, shuffle, repeat (off → all → one track), mute, volume and the source selection.
 
 Cover, progress, volume, the shuffle/repeat buttons and the source button can be switched off
-individually. On a speaker that plays its TV input, the transport buttons are hidden because the
-HDMI input cannot be controlled - only mute stays.
+individually. On a speaker that plays its TV input, the transport buttons and the progress are
+hidden because the HDMI input cannot be controlled - mute, volume and the source selection stay.
 
 The source button opens the same selection the vis widget shows - favorites, playlists, the queue,
-recently played and the browsable sources of the speaker - as a dialog on top of the tile.
+recently played and the browsable sources of the speaker - as a second dialog on top of the player.
 
 **SONOS rooms** is the whole household in one widget: how many speakers are playing, what each of
 them plays, and their volume. The small sizes show the counter and open the list in a dialog; 2x1
@@ -315,6 +319,9 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
+### **WORK IN PROGRESS**
+* (@GermanBluefox) SONOS player widget for ioBroker.devices: the tile looks like the media player of ioBroker.devices, and a click opens the full player with shuffle, repeat, seek, volume and the source selection
+
 ### 4.2.6 (2026-09-09)
 * (@GermanBluefox) Corrected devices widget
 

@@ -49,6 +49,7 @@ export const RepeatOneIcon = bridgedIcon('RepeatOne', '↺');
 export const SpeakerIcon = bridgedIcon('SpeakerGroup', '▤');
 export const LinkIcon = bridgedIcon('Link', '⛓');
 export const CloseIcon = bridgedIcon('Close', '✕');
+export const CollapseIcon = bridgedIcon('KeyboardArrowDown', '⌄');
 export const LibraryIcon = bridgedIcon('LibraryMusic', '☰');
 export const StarIcon = bridgedIcon('Star', '★');
 export const PlaylistIcon = bridgedIcon('QueueMusic', '≣');

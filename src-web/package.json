@@ -14,11 +14,11 @@
         "@iobroker/types": "^7.2.2",
         "@mui/icons-material": "^9.4.0",
         "@mui/material": "^9.4.0",
-        "@types/react": "^19.2.18",
-        "@types/react-dom": "^19.2.7",
-        "react": "^19.2.8",
-        "react-dom": "^19.2.8",
-        "vite": "^8.2.2"
+        "@types/react": "^19.3.0",
+        "@types/react-dom": "^19.3.0",
+        "react": "^19.3.0",
+        "react-dom": "^19.3.0",
+        "vite": "^8.3.0"
     },
     "scripts": {
         "start": "vite --port 3000",
