@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "sonos",
-    "version": "4.2.7",
+    "version": "4.2.8",
     "news": {
+      "4.2.8": {
+        "en": "SONOS player widget for ioBroker.devices: the tile looks like the media player of ioBroker.devices, and a click opens the full player with shuffle, repeat, seek, volume and the source selection",
+        "de": "SONOS Player-Widget für ioBroker.Devices: Die Kachel sieht aus wie der Media Player von ioBroker.Devices, und ein Klick öffnet den kompletten Player mit Shuffle, Repeat, Seek, Volume und Quellenauswahl",
+        "ru": "Виджет проигрывателя SONOS для IOBroker.Devices: плитка выглядит как медиаплеер IOBroker.Devices, и одним щелчком мыши открывается полный проигрыватель с перемешиванием, повтором, поиском, громкостью и выбором источника",
+        "pt": "Widget SONOS player para IOBroker.devices: o bloco parece o media player de IOBroker.devices, e um clique abre o player completo com shuffle, repeat, seek, volume e seleção de fonte",
+        "nl": "SONOS-spelerwidget voor IOBroker.devices: de tegel ziet eruit als de mediaspeler van IOBroker.Devices, en met één klik wordt de volledige speler geopend met shuffle, repeat, seek, volume en de bronselectie",
+        "fr": "Widget du lecteur SONOS pour IOBroker.Devices : la vignette ressemble au lecteur multimédia d'IObroker.Devices, et un clic ouvre le lecteur complet avec shuffle, repeat, seek, volume et source",
+        "it": "Widget SONOS Player per IOBroker.Devices: il riquadro assomiglia al lettore multimediale di IOBroker.Devices e un clic apre il lettore completo con shuffle, repeat, seek, volume e fonte",
+        "es": "Widget de reproductor SONOS para IOBroker.Dispositivos: el icono parece el reproductor multimedia de IOBroker.Dispositivos y un clic abre el reproductor completo con barajar, repetir, buscar, volumen y selección de fuente",
+        "pl": "Widżet odtwarzacza SONOS dla iOBroker.Devices: kafelek wygląda jak odtwarzacz multimedialny iOBroker.Devices, a kliknięcie otwiera pełny odtwarzacz z losowaniem, powtarzaniem, wyszukiwaniem, głośnością i wyborem źródła",
+        "uk": "Віджет програвача SONOS для IObroker.Devices: плитка виглядає як медіаплеєр IObroker.devices, а клацання відкриває повний плеєр з переміщенням, повторенням, пошуком, гучністю та вибором джерела",
+        "zh-cn": "适用于 iobroker.devices 的 SONOS 播放器控件：该图块看起来像 iobroker.devices 的媒体播放器，点击一下即可打开完整播放器，包括随机播放、重复、搜索、音量和源选择"
+      },
       "4.2.6": {
         "en": "Corrected devices widget",
         "de": "Geräte-Widget korrigiert",
