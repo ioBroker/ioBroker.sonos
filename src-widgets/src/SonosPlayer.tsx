@@ -1,7 +1,6 @@
 import React from 'react';
 
 import {
-    Box,
     Checkbox,
     Chip,
     FormControlLabel,
@@ -29,6 +28,7 @@ import {
 
 import type { RxRenderWidgetProps, RxWidgetInfo, VisRxWidgetProps, VisRxWidgetState } from '@iobroker/types-vis-2';
 
+import CoverBox from './CoverBox';
 import Generic, { ROOM_STATES } from './Generic';
 import SourceBrowser, { LIBRARY_STATES } from './SourceBrowser';
 import type { SonosRoomInfo } from './types';
@@ -206,7 +206,14 @@ export default class SonosPlayer extends Generic<SonosPlayerRxData, SonosPlayerS
 
     private onSonosState = (id: string, state: ioBroker.State | null | undefined): void => {
         this.setState(
-            prev => ({ sonos: { ...prev.sonos, [id]: state ? state.val : null } }),
+            prev => ({
+                sonos: {
+                    ...prev.sonos,
+                    [id]: state ? state.val : null,
+                    // see `cover()`
+                    ...(id.endsWith('.current_cover') ? { [`${id}.ts`]: state ? state.ts : null } : {}),
+                },
+            }),
             () => {
                 // The coordinator is only known once its state arrived, and the library of a group
                 // slave is written to the coordinator's channel - so the subscription has to follow.
@@ -250,6 +257,16 @@ export default class SonosPlayer extends Generic<SonosPlayerRxData, SonosPlayerS
     private str(ip: string, name: string): string {
         const value = this.val(ip, name);
         return value === null || value === undefined ? '' : String(value);
+    }
+
+    /**
+     * `current_cover` of the room. The file name is the same for every track, so the `ts` of the state
+     * is appended - otherwise the browser keeps the old cover, and one that did not load is not tried again.
+     */
+    private cover(ip: string): string {
+        const cover = this.str(ip, 'current_cover');
+        const ts = this.state.sonos[`${this.getRoomStateId(ip, 'current_cover')}.ts`];
+        return ts && /^\/[^/]/.test(cover) ? `${cover}?ts=${ts}` : cover;
     }
 
     private num(ip: string, name: string): number {
@@ -514,7 +531,7 @@ export default class SonosPlayer extends Generic<SonosPlayerRxData, SonosPlayerS
         }
 
         const ip = this.state.selectedRoom;
-        const cover = this.str(ip, 'current_cover');
+        const cover = this.cover(ip);
         const title = this.str(ip, 'current_title') || Generic.t('nothing_playing');
         const station = this.str(ip, 'current_station');
         const sub = [this.str(ip, 'current_artist'), this.str(ip, 'current_album') || station]
@@ -525,13 +542,12 @@ export default class SonosPlayer extends Generic<SonosPlayerRxData, SonosPlayerS
             <div style={styles.root}>
                 {this.renderRooms()}
                 <div style={styles.main}>
-                    {cover ? (
-                        <div style={{ ...styles.cover, backgroundImage: `url("${encodeURI(cover)}")` }} />
-                    ) : (
-                        <Box sx={{ ...styles.cover, backgroundColor: 'action.selected' }}>
-                            {this.isOnTv(ip) ? <Tv fontSize="large" /> : <MusicNote fontSize="large" />}
-                        </Box>
-                    )}
+                    <CoverBox
+                        url={cover}
+                        style={styles.cover}
+                    >
+                        {this.isOnTv(ip) ? <Tv fontSize="large" /> : <MusicNote fontSize="large" />}
+                    </CoverBox>
                     <div style={styles.meta}>
                         <div style={styles.title}>{title}</div>
                         <div style={styles.sub}>{sub}</div>

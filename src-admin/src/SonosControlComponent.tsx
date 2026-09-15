@@ -61,6 +61,7 @@ import {
 import { I18n } from '@iobroker/gui-components';
 import { ConfigGeneric, type ConfigGenericProps, type ConfigGenericState } from '@iobroker/json-config';
 
+import CoverBox from './CoverBox';
 import type { LibraryTab, MediaBrowseItem, MediaBrowseResult, RecentTrack, SonosRoomInfo } from './types';
 
 /** States read for every room, so the room list and the player can be rendered. */
@@ -261,7 +262,14 @@ export default class SonosControlComponent extends ConfigGeneric<ConfigGenericPr
 
     private onSonosState = (id: string, state: ioBroker.State | null | undefined): void => {
         this.setState(
-            prev => ({ sonos: { ...prev.sonos, [id]: state ? state.val : null } }),
+            prev => ({
+                sonos: {
+                    ...prev.sonos,
+                    [id]: state ? state.val : null,
+                    // see `cover()`
+                    ...(id.endsWith('.current_cover') ? { [`${id}.ts`]: state ? state.ts : null } : {}),
+                },
+            }),
             () => {
                 // The coordinator is only known once its state arrived, and the library of a group
                 // member is written to the coordinator's channel - so the subscription follows it.
@@ -305,6 +313,21 @@ export default class SonosControlComponent extends ConfigGeneric<ConfigGenericPr
     private str(room: string, name: string): string {
         const value = this.val(room, name);
         return value === null || value === undefined ? '' : String(value);
+    }
+
+    /**
+     * `current_cover` of the room as URL for admin. The adapter stores a path in its file storage
+     * (`/sonos/coverImage/<ip>.png`), which only the web adapter serves from its root - admin serves the
+     * storage below `files/`, the same way the file fields of JsonConfig read it. The `ts` of the state
+     * is appended, because the file name is the same for every track.
+     */
+    private cover(room: string): string {
+        const cover = this.str(room, 'current_cover');
+        if (!/^\/[^/]/.test(cover)) {
+            return cover;
+        }
+        const ts = this.state.sonos[`${this.stateId(room, 'current_cover')}.ts`];
+        return `${this.props.oContext.imagePrefix ?? './files'}${cover}${ts ? `?ts=${ts}` : ''}`;
     }
 
     private num(room: string, name: string): number {
@@ -693,22 +716,18 @@ export default class SonosControlComponent extends ConfigGeneric<ConfigGenericPr
                 sx={{ ...styles.listButton, '&:hover': { backgroundColor: 'action.hover' } }}
                 onClick={onClick}
             >
-                {item.cover ? (
-                    <div style={{ ...styles.thumb, backgroundImage: `url("${encodeURI(item.cover)}")` }} />
-                ) : (
-                    <Box
-                        sx={{ ...styles.thumb, backgroundColor: 'action.selected' }}
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    >
-                        {item.id === 'tv' ? (
-                            <Tv fontSize="small" />
-                        ) : item.folder ? (
-                            <Folder fontSize="small" />
-                        ) : (
-                            <MusicNote fontSize="small" />
-                        )}
-                    </Box>
-                )}
+                <CoverBox
+                    url={item.cover || ''}
+                    style={{ ...styles.thumb, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                    {item.id === 'tv' ? (
+                        <Tv fontSize="small" />
+                    ) : item.folder ? (
+                        <Folder fontSize="small" />
+                    ) : (
+                        <MusicNote fontSize="small" />
+                    )}
+                </CoverBox>
                 <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={styles.sub}>{item.title}</div>
                     {item.artist || item.album ? (
@@ -906,7 +925,7 @@ export default class SonosControlComponent extends ConfigGeneric<ConfigGenericPr
 
     private renderPlayer(): React.JSX.Element {
         const room = this.state.selectedRoom;
-        const cover = this.str(room, 'current_cover');
+        const cover = this.cover(room);
         const title = this.str(room, 'current_title') || I18n.t('sonos_ctrl_nothing_playing');
         const station = this.str(room, 'current_station');
         const sub = [this.str(room, 'current_artist'), this.str(room, 'current_album') || station]
@@ -917,13 +936,12 @@ export default class SonosControlComponent extends ConfigGeneric<ConfigGenericPr
         return (
             <Paper style={styles.player}>
                 <div style={{ ...styles.row, alignItems: 'flex-start', gap: 12 }}>
-                    {cover ? (
-                        <div style={{ ...styles.cover, backgroundImage: `url("${encodeURI(cover)}")` }} />
-                    ) : (
-                        <Box sx={{ ...styles.cover, backgroundColor: 'action.selected' }}>
-                            {this.isOnTv(room) ? <Tv fontSize="large" /> : <MusicNote fontSize="large" />}
-                        </Box>
-                    )}
+                    <CoverBox
+                        url={cover}
+                        style={styles.cover}
+                    >
+                        {this.isOnTv(room) ? <Tv fontSize="large" /> : <MusicNote fontSize="large" />}
+                    </CoverBox>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 0 }}>
                         <div style={styles.row}>
                             <Typography

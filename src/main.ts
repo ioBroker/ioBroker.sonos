@@ -7,6 +7,7 @@
  */
 import * as fs from 'node:fs';
 import * as http from 'node:http';
+import * as https from 'node:https';
 import * as crypto from 'node:crypto';
 import * as path from 'node:path';
 import * as os from 'node:os';
@@ -2001,31 +2002,40 @@ class Sonos extends utils.Adapter {
             return;
         }
 
-        http.get(
-            {
-                hostname,
-                port: 1400,
-                path: albumArtUri,
-            },
-            res => {
-                this.log.debug(`HTTP status code ${res.statusCode}`);
+        // sonos-discovery delivers the path on the speaker (`/getaa?...`), @svrooij/sonos an absolute URL
+        // (`http://<ip>:1400/getaa?...`), and a music service may point to its own server. Resolving
+        // against the speaker handles all of them - used as `path`, an absolute URL fails.
+        let url: URL;
+        try {
+            url = new URL(albumArtUri, `http://${hostname}:1400`);
+        } catch (e: any) {
+            this.log.warn(`Invalid cover URI "${albumArtUri}": ${e.message}`);
+            await this.syncCoverFileToStorage(DEFAULT_IMAGE, ip);
+            return;
+        }
 
-                if (res.statusCode === 200) {
-                    const cacheStream = fs.createWriteStream(filePath);
-                    res.pipe(cacheStream).on('finish', () => {
-                        void this.syncCoverFileToStorage(filePath, ip);
-                    });
-                } else if (res.statusCode === 404) {
-                    // no image exists! link it to the default image.
-                    res.resume();
-                    void this.syncCoverFileToStorage(DEFAULT_IMAGE, ip);
-                } else {
-                    res.resume();
-                }
+        const onResponse = (res: http.IncomingMessage): void => {
+            this.log.debug(`HTTP status code ${res.statusCode}`);
 
-                res.on('end', () => this.log.debug('Response "end" event'));
-            },
-        ).on('error', e => this.log.warn(`Got error: ${e.message}`));
+            if (res.statusCode === 200) {
+                const cacheStream = fs.createWriteStream(filePath);
+                res.pipe(cacheStream).on('finish', () => {
+                    void this.syncCoverFileToStorage(filePath, ip);
+                });
+            } else {
+                // No image (404) or it cannot be read: show the default image, not the cover of the last track.
+                res.resume();
+                void this.syncCoverFileToStorage(DEFAULT_IMAGE, ip);
+            }
+
+            res.on('end', () => this.log.debug('Response "end" event'));
+        };
+
+        const request = url.protocol === 'https:' ? https.get(url, onResponse) : http.get(url, onResponse);
+        request.on('error', e => {
+            this.log.warn(`Cannot read the cover ${url.href}: ${e.message}`);
+            void this.syncCoverFileToStorage(DEFAULT_IMAGE, ip);
+        });
     }
 
     /**
@@ -2059,6 +2069,26 @@ class Sonos extends utils.Adapter {
                 { device: 'root', channel: ip, state: 'current_cover' },
                 { val: `/${this.name}/${storagePath}`, ack: true },
             );
+        }
+    }
+
+    /**
+     * `iobroker upload sonos` replaces the whole file storage of the adapter, the covers included, but
+     * `current_cover` still points there. A cover is only written again when the track changes, so a
+     * speaker that is offline or idle would show a broken image. Put the default cover back instead.
+     */
+    private async restoreMissingCovers(): Promise<void> {
+        const states = await this.getStatesAsync('root.*.current_cover');
+        for (const id of Object.keys(states)) {
+            const ip = id.split('.')[3];
+            try {
+                if (!(await this.fileExistsAsync(this.name, `coverImage/${ip}.png`))) {
+                    this.log.debug(`Cover of ${ip} is missing in the storage, write the default cover`);
+                    await this.syncCoverFileToStorage(DEFAULT_IMAGE, ip);
+                }
+            } catch (e: any) {
+                this.log.warn(`Cannot check the cover of ${ip}: ${e.message}`);
+            }
         }
     }
 
@@ -2460,6 +2490,8 @@ class Sonos extends utils.Adapter {
         if (!fs.existsSync(this.cacheDir)) {
             fs.mkdirSync(this.cacheDir);
         }
+
+        await this.restoreMissingCovers();
 
         // Two client libraries are shipped side by side while the new one is being proven out.
         // A tester who hits a problem flips this setting instead of downgrading the adapter.

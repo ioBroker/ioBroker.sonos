@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Box, Dialog, DialogContent, DialogTitle, IconButton, Slider, Tooltip, Typography } from '@mui/material';
+import { Dialog, DialogContent, DialogTitle, IconButton, Slider, Tooltip, Typography } from '@mui/material';
 import {
     Close,
     LibraryMusic,
@@ -16,6 +16,7 @@ import {
 
 import type { RxRenderWidgetProps, RxWidgetInfo, VisRxWidgetProps, VisRxWidgetState } from '@iobroker/types-vis-2';
 
+import CoverBox from './CoverBox';
 import Generic from './Generic';
 import SourceBrowser, { LIBRARY_STATES } from './SourceBrowser';
 import type { SonosRoomInfo } from './types';
@@ -175,7 +176,14 @@ export default class SonosRoom extends Generic<SonosRoomRxData, SonosRoomState> 
 
     private onSonosState = (id: string, state: ioBroker.State | null | undefined): void => {
         this.setState(
-            prev => ({ sonos: { ...prev.sonos, [id]: state ? state.val : null } }),
+            prev => ({
+                sonos: {
+                    ...prev.sonos,
+                    [id]: state ? state.val : null,
+                    // see `cover()`
+                    ...(id.endsWith('.current_cover') ? { [`${id}.ts`]: state ? state.ts : null } : {}),
+                },
+            }),
             () => {
                 // The library of a group member is written to the coordinator's channel, and the
                 // coordinator is only known once its state arrived - so the subscription follows it.
@@ -241,6 +249,16 @@ export default class SonosRoom extends Generic<SonosRoomRxData, SonosRoomState> 
         return value === null || value === undefined ? '' : String(value);
     }
 
+    /**
+     * `current_cover` of the room. The file name is the same for every track, so the `ts` of the state
+     * is appended - otherwise the browser keeps the old cover, and one that did not load is not tried again.
+     */
+    private cover(ip: string): string {
+        const cover = this.str(ip, 'current_cover');
+        const ts = this.state.sonos[`${this.getRoomStateId(ip, 'current_cover')}.ts`];
+        return ts && /^\/[^/]/.test(cover) ? `${cover}?ts=${ts}` : cover;
+    }
+
     private set(ip: string, name: string, value: ioBroker.StateValue): void {
         this.props.context.setValue(this.getRoomStateId(ip, name), value);
     }
@@ -301,7 +319,7 @@ export default class SonosRoom extends Generic<SonosRoomRxData, SonosRoomState> 
         const onTv = Number(this.val(ip, 'current_type')) === 2 && this.str(ip, 'current_title') === 'TV';
         const playing = this.val(ip, 'state_simple') === true;
         const muted = this.val(ip, 'muted') === true;
-        const cover = this.str(ip, 'current_cover');
+        const cover = this.cover(ip);
         const volume = this.state.localVolume ?? (Number(this.val(ip, 'volume')) || 0);
         const sub = [this.str(ip, 'current_artist'), this.str(ip, 'current_album') || this.str(ip, 'current_station')]
             .filter(Boolean)
@@ -309,13 +327,12 @@ export default class SonosRoom extends Generic<SonosRoomRxData, SonosRoomState> 
 
         const content = (
             <div style={styles.root}>
-                {cover ? (
-                    <div style={{ ...styles.cover, backgroundImage: `url("${encodeURI(cover)}")` }} />
-                ) : (
-                    <Box sx={{ ...styles.cover, backgroundColor: 'action.selected' }}>
-                        {onTv ? <Tv /> : <MusicNote />}
-                    </Box>
-                )}
+                <CoverBox
+                    url={cover}
+                    style={styles.cover}
+                >
+                    {onTv ? <Tv /> : <MusicNote />}
+                </CoverBox>
                 <div style={styles.meta}>
                     <div style={styles.title}>{this.str(ip, 'current_title') || Generic.t('nothing_playing')}</div>
                     <Typography

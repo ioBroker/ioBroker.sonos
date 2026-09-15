@@ -123,6 +123,10 @@ interface SonosPlayerComponentState extends WidgetGenericState {
     playerOpen: boolean;
     /** The source selection is a second dialog - the player is far too small for the lists. */
     sourceOpen: boolean;
+    /** `ts` of `current_cover`: the file name is the same for every track, this tells the covers apart. */
+    coverTs: number;
+    /** Cover URL that did not load (404, for example) - the placeholder is drawn instead. */
+    brokenCover: string;
 }
 
 interface ButtonOptions {
@@ -153,6 +157,12 @@ export class SonosPlayerComponent extends WidgetGeneric<SonosPlayerComponentStat
     /** Keeps the new position after a jump until the adapter reports it. */
     private seekTimer: ReturnType<typeof setTimeout> | null = null;
 
+    /** Loads the cover a second time to notice a URL that does not load, see `checkCover`. */
+    private coverProbe: HTMLImageElement | null = null;
+
+    /** The cover URL the last probe was started for. */
+    private probedCover = '';
+
     constructor(props: WidgetGenericProps<SonosPlayerSettings>) {
         super(props);
         this.state = {
@@ -163,6 +173,8 @@ export class SonosPlayerComponent extends WidgetGeneric<SonosPlayerComponentStat
             roomName: '',
             playerOpen: false,
             sourceOpen: false,
+            coverTs: 0,
+            brokenCover: '',
         };
     }
 
@@ -251,6 +263,7 @@ export class SonosPlayerComponent extends WidgetGeneric<SonosPlayerComponentStat
 
     componentDidUpdate(prevProps: Readonly<WidgetGenericProps<SonosPlayerSettings>>): void {
         super.componentDidUpdate?.(prevProps, this.state);
+        this.checkCover();
         // Compare the normalized values: `settings.room` may be undefined while the `room` getter falls
         // back to an empty string. A raw comparison would then be true on every update and the setState
         // below would trigger the next componentDidUpdate forever (React error #185).
@@ -278,6 +291,11 @@ export class SonosPlayerComponent extends WidgetGeneric<SonosPlayerComponentStat
     componentWillUnmount(): void {
         super.componentWillUnmount?.();
         this.unsubscribeStates();
+        if (this.coverProbe) {
+            this.coverProbe.onload = null;
+            this.coverProbe.onerror = null;
+            this.coverProbe = null;
+        }
         if (this.volumeTimer) {
             clearTimeout(this.volumeTimer);
             this.volumeTimer = null;
@@ -316,7 +334,10 @@ export class SonosPlayerComponent extends WidgetGeneric<SonosPlayerComponentStat
         for (const name of STATES) {
             const id = stateId(this.instance, this.room, name);
             const handler = (_id: string, state: ioBroker.State): void => {
-                this.setState(prev => ({ values: { ...prev.values, [name]: state ? state.val : null } }));
+                this.setState(prev => ({
+                    values: { ...prev.values, [name]: state ? state.val : null },
+                    coverTs: name === 'current_cover' ? state?.ts || 0 : prev.coverTs,
+                }));
             };
             context.getState(id, handler);
             this.subscribed.push({ id, handler });
@@ -370,9 +391,58 @@ export class SonosPlayerComponent extends WidgetGeneric<SonosPlayerComponentStat
         );
     }
 
-    /** The cover URL, or an empty string when there is none or it is switched off. */
+    /** The cover to draw, or an empty string - then the placeholder is shown - also when it does not load. */
     private get cover(): string {
-        return this.props.settings.showCover === false ? '' : this.str('current_cover');
+        const url = this.coverUrl;
+        return url === this.state.brokenCover ? '' : url;
+    }
+
+    /**
+     * A background image has no `onerror`, so the cover is loaded once more with an `Image`. If that
+     * fails - the file was removed from the storage, for example - the placeholder is drawn instead.
+     * The next track brings a new `ts` and with it a new URL, which is tried again.
+     */
+    private checkCover(): void {
+        const url = this.coverUrl;
+        if (url === this.probedCover) {
+            return;
+        }
+        this.probedCover = url;
+        if (this.coverProbe) {
+            this.coverProbe.onload = null;
+            this.coverProbe.onerror = null;
+            this.coverProbe = null;
+        }
+        if (!url || url === this.state.brokenCover) {
+            return;
+        }
+        const probe = new Image();
+        probe.onload = () => {
+            if (this.coverProbe === probe) {
+                this.coverProbe = null;
+            }
+        };
+        probe.onerror = () => {
+            if (this.coverProbe === probe) {
+                this.coverProbe = null;
+                this.setState({ brokenCover: url });
+            }
+        };
+        this.coverProbe = probe;
+        probe.src = encodeURI(url);
+    }
+
+    /** The cover URL, or an empty string when there is none or it is switched off. */
+    private get coverUrl(): string {
+        const cover = this.props.settings.showCover === false ? '' : this.str('current_cover');
+        if (!cover || /^(https?:|data:|\/\/)/.test(cover)) {
+            return cover;
+        }
+        // `current_cover` is a path in the file storage (`/sonos/coverImage/<ip>.png`). Only the web
+        // adapter serves the storage from its root - admin, where ioBroker.devices usually runs, needs
+        // `/files/`. The host knows its own prefix.
+        const url = this.props.stateContext.getImagePath(cover) || cover;
+        return this.state.coverTs ? `${url}?ts=${this.state.coverTs}` : url;
     }
 
     /** The widget colour if the user set one, otherwise the SONOS red. */
