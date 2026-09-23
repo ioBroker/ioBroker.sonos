@@ -5,7 +5,7 @@
     "type": "module",
     "dependencies": {
         "@iobroker/types-vis-2": "~2.20.1",
-        "@module-federation/vite": "^1.21.6",
+        "@module-federation/vite": "^1.22.0",
         "@vitejs/plugin-react": "^6.1.1"
     },
     "devDependencies": {
