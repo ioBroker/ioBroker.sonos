@@ -244,7 +244,7 @@ export class SonosPlayerComponent extends WidgetGeneric<SonosPlayerComponentStat
             },
         };
 
-        return { name: 'SonosPlayer', schema: schema as unknown as ConfigItemPanel };
+        return { name: 'SonosPlayer', schema };
     }
 
     private get instance(): string {

@@ -174,7 +174,7 @@ export class SonosRoomsComponent extends WidgetGeneric<SonosRoomsComponentState,
             },
         };
 
-        return { name: 'SonosRooms', schema: schema as unknown as ConfigItemPanel };
+        return { name: 'SonosRooms', schema };
     }
 
     private get instance(): string {
