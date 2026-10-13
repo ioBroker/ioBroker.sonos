@@ -1,4 +1,9 @@
 # Older changes
+## 4.2.0 (2026-09-06)
+* (@GermanBluefox) The client library can be switched in the instance settings
+* (@GermanBluefox) Added `@svrooij/sonos` as an experimental alternative to `sonos-discovery`
+* (@GermanBluefox) The adapter talks to a backend interface now, so both libraries fill the same states
+
 ## 4.1.0 (2026-09-06)
 * (@GermanBluefox) Added a React implementation of `Sonos Control` for vis-2, plus the new `Sonos room` widget
 * (kosmix1980) vis widget: rooms, groups, favorites, playlists, queue, recent tracks and sources

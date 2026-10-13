@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "sonos",
-    "version": "4.2.9",
+    "version": "4.2.10",
     "news": {
+      "4.2.10": {
+        "en": "Small repo-checker fixes",
+        "de": "Kleine Repo-Fixes",
+        "ru": "Небольшие исправления для проверки репозиториев",
+        "pt": "Pequenas correções",
+        "nl": "Kleine oplossingen voor het controleren van repo's",
+        "fr": "Small Repo-Checker Corrections",
+        "it": "Piccole correzioni",
+        "es": "Pequeños arreglos de repositores",
+        "pl": "Małe poprawki sprawdzania repozytoriów",
+        "uk": "Невеликі виправлення репо-перевірки",
+        "zh-cn": "修复了小回购检查器"
+      },
       "4.2.9": {
         "en": "SONOS player widget for ioBroker.devices: the tile looks like the media player of `ioBroker.devices`, and a click opens the full player with shuffle, repeat, seek, volume and the source selection",
         "de": "SONOS Player-Widget für ioBroker.Devices: Die Kachel sieht aus wie der Media Player von `ioBroker.Devices`, und ein Klick öffnet den kompletten Player mit Shuffle, Repeat, Seek, Volume und Quellenwahl",
@@ -136,7 +149,7 @@
     ],
     "globalDependencies": [
       {
-          "admin": ">=7.6.20"
+        "admin": ">=7.6.20"
       }
     ],
     "keywords": [

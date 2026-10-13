@@ -319,7 +319,7 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
-### **WORK IN PROGRESS**
+### 4.2.10 (2026-10-13)
 * (@GermanBluefox) Small repo-checker fixes
 
 ### 4.2.9 (2026-09-15)
@@ -336,11 +336,6 @@ adapter to get a working state back.
 ### 4.2.2 (2026-09-08)
 * (@GermanBluefox) Added two widgets for the `ioBroker.devices` dashboard: SONOS player and SONOS rooms
 * (@GermanBluefox) Added a "Control" tab to the instance settings, which plays and groups the speakers directly in admin
-
-### 4.2.0 (2026-09-06)
-* (@GermanBluefox) The client library can be switched in the instance settings
-* (@GermanBluefox) Added `@svrooij/sonos` as an experimental alternative to `sonos-discovery`
-* (@GermanBluefox) The adapter talks to a backend interface now, so both libraries fill the same states
 
 ## License
 
