@@ -1,1 +1,0 @@
-import{t as e}from"./translations-DABmJCbA.js";export{e as default};

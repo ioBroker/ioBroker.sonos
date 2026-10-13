@@ -319,6 +319,9 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
+### **WORK IN PROGRESS**
+* (@GermanBluefox) Small repo-checker fixes
+
 ### 4.2.9 (2026-09-15)
 * (@GermanBluefox) SONOS player widget for ioBroker.devices: the tile looks like the media player of `ioBroker.devices`, and a click opens the full player with shuffle, repeat, seek, volume and the source selection
 
