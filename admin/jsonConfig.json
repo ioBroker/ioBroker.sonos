@@ -13,9 +13,11 @@
           "help": "used for TTS",
           "allowDeactivate": true,
           "long": true,
+          "xs": 12,
           "sm": 12,
           "md": 6,
-          "lg": 3
+          "lg": 3,
+          "xl": 3
         },
         "elapsedInterval": {
           "newLine": true,
@@ -24,16 +26,23 @@
           "max": 60000,
           "label": "Update of elapsed time",
           "help": "in milliseconds",
+          "xs": 12,
           "sm": 12,
           "md": 4,
-          "lg": 3
+          "lg": 3,
+          "xl": 3
         },
         "_tooltip_elapsedInterval": {
           "type": "staticText",
           "text": "tooltip_elapsedInterval",
           "style": {
             "marginTop": 21
-          }
+          },
+          "xs": 12,
+          "sm": 12,
+          "md": 8,
+          "lg": 9,
+          "xl": 9
         },
         "fadeIn": {
           "newLine": true,
@@ -42,16 +51,23 @@
           "max": 10000,
           "label": "Fade in (text2speech)",
           "help": "in milliseconds",
+          "xs": 12,
           "sm": 12,
           "md": 4,
-          "lg": 3
+          "lg": 3,
+          "xl": 3
         },
         "_tooltip_fadeIn": {
           "type": "staticText",
           "text": "tooltip_fadeIn",
           "style": {
             "marginTop": 21
-          }
+          },
+          "xs": 12,
+          "sm": 12,
+          "md": 8,
+          "lg": 9,
+          "xl": 9
         },
         "fadeOut": {
           "newLine": true,
@@ -60,16 +76,23 @@
           "max": 10000,
           "label": "Fade out (text2speech)",
           "help": "in milliseconds",
+          "xs": 12,
           "sm": 12,
           "md": 4,
-          "lg": 3
+          "lg": 3,
+          "xl": 3
         },
         "_tooltip_fadeOut": {
           "type": "staticText",
           "text": "tooltip_fadeOut",
           "style": {
             "marginTop": 21
-          }
+          },
+          "xs": 12,
+          "sm": 12,
+          "md": 8,
+          "lg": 9,
+          "xl": 9
         },
         "backend": {
           "newLine": true,
@@ -87,9 +110,11 @@
             }
           ],
           "default": "discovery",
+          "xs": 12,
           "sm": 12,
           "md": 6,
-          "lg": 3
+          "lg": 3,
+          "xl": 3
         }
       }
     },
@@ -106,7 +131,12 @@
           "jsonData": "{\"devices\":${JSON.stringify(data.devices)}}",
           "showProcess": true,
           "icon": "search",
-          "timeout": 10000
+          "timeout": 10000,
+          "xs": 12,
+          "sm": 12,
+          "md": 4,
+          "lg": 3,
+          "xl": 3
         },
         "devices": {
           "newLine": true,
@@ -133,7 +163,12 @@
               "title": "Room",
               "allowDeactivate": true
             }
-          ]
+          ],
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         }
       }
     },
@@ -147,7 +182,11 @@
           "url": "custom/customComponents.js",
           "name": "ConfigCustomSonosSet/Components/SonosControlComponent",
           "guiApi": 2,
-          "sm": 12
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         }
       }
     }

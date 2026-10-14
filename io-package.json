@@ -135,6 +135,7 @@
     "readme": "https://github.com/ioBroker/ioBroker.sonos/blob/master/README.md",
     "enabled": true,
     "compact": true,
+    "declareUsedResources": true,
     "connectionType": "local",
     "dataSource": "push",
     "tier": 2,

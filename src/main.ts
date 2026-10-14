@@ -25,6 +25,7 @@ import type {
 } from './lib/backend/types';
 
 import { TTS } from './lib/tts';
+import { UsedResources } from './lib/used-resources';
 import { getChannelStates } from './lib/states';
 import {
     getMediaRoot,
@@ -192,6 +193,7 @@ class Sonos extends utils.Adapter {
     /** All known devices with the IP address (dots replaced by underscores) as key */
     private channels: Record<string, ChannelInfo> = {};
     private backend: SonosBackend | null = null;
+    private usedResources: UsedResources | null = null;
     private lastCover: Record<string, string | null> = {};
     private lastTvFormat: Record<string, string> = {};
     private lastTvFormatFetch: Record<string, number> = {};
@@ -273,6 +275,9 @@ class Sonos extends utils.Adapter {
                 this.backend.dispose();
                 this.backend = null;
             }
+
+            this.usedResources?.dispose();
+            this.usedResources = null;
 
             callback();
         } catch {
@@ -2497,10 +2502,19 @@ class Sonos extends utils.Adapter {
         // A tester who hits a problem flips this setting instead of downgrading the adapter.
         const tokenFile = this.getTokenFile();
 
+        // must exist before the backend, which opens its event port right away
+        this.usedResources = new UsedResources(this);
+
         if (this.config.backend === 'svrooij') {
             this.log.info('Using the @svrooij/sonos backend (experimental)');
+            const port = parseInt(process.env.SONOS_LISTENER_PORT || '', 10) || 6329;
+            await this.usedResources.check(
+                port,
+                'the speakers cannot send events. Stop the other instance or set SONOS_LISTENER_PORT',
+            );
             this.backend = new SvrooijBackend({ tokenFile, log: this.log });
         } else {
+            await this.usedResources.check(3500, 'sonos-discovery will listen on the next free port');
             this.backend = new DiscoveryBackend({
                 log: this.log,
                 cacheDir: this.cacheDir,
