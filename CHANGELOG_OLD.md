@@ -1,4 +1,8 @@
 # Older changes
+## 4.2.2 (2026-09-08)
+* (@GermanBluefox) Added two widgets for the `ioBroker.devices` dashboard: SONOS player and SONOS rooms
+* (@GermanBluefox) Added a "Control" tab to the instance settings, which plays and groups the speakers directly in admin
+
 ## 4.2.0 (2026-09-06)
 * (@GermanBluefox) The client library can be switched in the instance settings
 * (@GermanBluefox) Added `@svrooij/sonos` as an experimental alternative to `sonos-discovery`
