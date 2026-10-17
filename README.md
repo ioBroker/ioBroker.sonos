@@ -80,11 +80,11 @@ every widget is configured with its own settings dialog - no state has to be pic
 **SONOS player** is one speaker. The settings ask for the instance and the speaker; the list of
 speakers comes from the adapter itself, so it always matches the devices on the *SONOS devices* tab.
 
-| Size     | What is shown                                                                      |
-|----------|------------------------------------------------------------------------------------|
-| 1x1      | The cover as background, the speaker, title, artist, play state and the progress   |
-| 2x0.5    | A strip: cover thumbnail on the blurred cover, the speaker, title, artist, progress |
-| 2x1, 2x2 | The large cover with the speaker and play state on it, title, artist and progress  |
+| Size      | What is shown                                                                       |
+|-----------|-------------------------------------------------------------------------------------|
+| 1x1       | The cover as background, the speaker, title, artist, play state and the progress    |
+| 2x0.5     | A strip: cover thumbnail on the blurred cover, the speaker, title, artist, progress |
+| 2x1, 2x2  | The large cover with the speaker and play state on it, title, artist and progress   |
 
 The tiles are built like the media player of ioBroker.devices: a click opens the full player as a
 dialog - cover, title, artist and album, the progress slider to jump within the track, previous /
@@ -319,6 +319,9 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
+### **WORK IN PROGRESS**
+* (@GermanBluefox) Updated packages
+
 ### 4.2.11 (2026-10-14)
 * (@GermanBluefox) Added the sizes for all screens to the settings. Removed the outdated admin pages
 * (@GermanBluefox) The TCP port for the SONOS events is reported to js-controller 8 as a used resource

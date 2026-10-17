@@ -4,20 +4,20 @@
     "version": "4.2.2",
     "type": "module",
     "dependencies": {
-        "@iobroker/socket-client": "^5.4.1",
+        "@iobroker/socket-client": "^5.5.0",
         "@vitejs/plugin-react": "^6.1.2"
     },
     "devDependencies": {
         "@emotion/react": "^11.14.0",
         "@emotion/styled": "^11.14.1",
-        "@iobroker/gui-components": "^10.3.10",
+        "@iobroker/gui-components": "^10.3.11",
         "@iobroker/types": "^7.2.5",
         "@mui/icons-material": "^9.5.0",
         "@mui/material": "^9.5.0",
         "@types/react": "^19.3.0",
         "@types/react-dom": "^19.3.0",
-        "react": "^19.3.0",
-        "react-dom": "^19.3.0",
+        "react": "^19.3.1",
+        "react-dom": "^19.3.1",
         "vite": "^8.3.4"
     },
     "scripts": {
