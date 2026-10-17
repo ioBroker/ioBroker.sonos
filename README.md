@@ -319,7 +319,7 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
-### **WORK IN PROGRESS**
+### 4.2.12 (2026-10-17)
 * (@GermanBluefox) Updated packages
 
 ### 4.2.11 (2026-10-14)
@@ -334,11 +334,6 @@ adapter to get a working state back.
 
 ### 4.2.6 (2026-09-09)
 * (@GermanBluefox) Corrected devices widget
-
-### 4.2.5 (2026-09-08)
-* (@GermanBluefox) Added a control page for the web adapter under `/sonos/`, plus a tile on the admin overview
-* (@GermanBluefox) Added the source selection (favorites, playlists, queue, recently played, sources) to all four widgets
-* (@GermanBluefox) Added `queue_array`, the play queue as JSON - `queue` joins the tracks with a comma and cannot be split back reliably
 
 ## License
 

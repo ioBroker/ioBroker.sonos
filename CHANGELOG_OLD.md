@@ -1,4 +1,9 @@
 # Older changes
+## 4.2.5 (2026-09-08)
+* (@GermanBluefox) Added a control page for the web adapter under `/sonos/`, plus a tile on the admin overview
+* (@GermanBluefox) Added the source selection (favorites, playlists, queue, recently played, sources) to all four widgets
+* (@GermanBluefox) Added `queue_array`, the play queue as JSON - `queue` joins the tracks with a comma and cannot be split back reliably
+
 ## 4.2.2 (2026-09-08)
 * (@GermanBluefox) Added two widgets for the `ioBroker.devices` dashboard: SONOS player and SONOS rooms
 * (@GermanBluefox) Added a "Control" tab to the instance settings, which plays and groups the speakers directly in admin
