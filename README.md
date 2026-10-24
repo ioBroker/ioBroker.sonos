@@ -319,6 +319,9 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
+### **WORK IN PROGRESS**
+* (@GermanBluefox) Fixed detection of radio streams (current_type, current_station, current_title) in the new backend (#363)
+
 ### 4.2.12 (2026-10-17)
 * (@GermanBluefox) Updated packages
 
