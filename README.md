@@ -319,6 +319,10 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
+### **WORK IN PROGRESS**
+* (@GermanBluefox) `alive` turns false when a speaker is switched off or goes to sleep: every speaker is checked every 30 seconds (#252)
+* (@GermanBluefox) Covers that were not used for 30 days are removed from the cache folder `iobroker-data/sonosCache`, which grew without limit (#222)
+
 ### 4.2.14 (2026-10-26)
 * (@GermanBluefox) The Control tab and the ioBroker.devices widgets are built again with the current GUI components and React, as before 4.2.13
 
