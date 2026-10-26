@@ -321,6 +321,8 @@ adapter to get a working state back.
 ## Changelog
 ### **WORK IN PROGRESS**
 * (@GermanBluefox) Fixed detection of radio streams (current_type, current_station, current_title) in the new backend (#363)
+* (@GermanBluefox) The adapter no longer stops with "Cannot read properties of undefined (reading 'members')" when a speaker leaves or rejoins the network (#170, #192, #269, #272)
+* (@GermanBluefox) Local TTS files are handed to the speaker under `/sonos/...` of the web adapter; the former `/files/sonos/...` URL does not exist there (#187)
 
 ### 4.2.12 (2026-10-17)
 * (@GermanBluefox) Updated packages
