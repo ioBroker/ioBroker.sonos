@@ -319,6 +319,9 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
+### **WORK IN PROGRESS**
+* (@GermanBluefox) `current_cover` changes with every new cover (`/sonos/coverImage/<ip>.png?v=<hash>`), so vis, Lovelace and the browser show the new cover instead of the old one - for example when switching back to a radio station (#204, #205)
+
 ### 4.2.15 (2026-10-26)
 * (@GermanBluefox) `alive` turns false when a speaker is switched off or goes to sleep: every speaker is checked every 30 seconds (#252)
 * (@GermanBluefox) Covers that were not used for 30 days are removed from the cache folder `iobroker-data/sonosCache`, which grew without limit (#222)

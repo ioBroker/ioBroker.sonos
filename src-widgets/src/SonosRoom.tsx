@@ -250,13 +250,13 @@ export default class SonosRoom extends Generic<SonosRoomRxData, SonosRoomState> 
     }
 
     /**
-     * `current_cover` of the room. The file name is the same for every track, so the `ts` of the state
-     * is appended - otherwise the browser keeps the old cover, and one that did not load is not tried again.
+     * `current_cover` of the room. The adapter appends the version of the cover (`?v=...`), the `ts` of
+     * the state is appended as well - otherwise a cover that did not load is not tried again.
      */
     private cover(ip: string): string {
         const cover = this.str(ip, 'current_cover');
         const ts = this.state.sonos[`${this.getRoomStateId(ip, 'current_cover')}.ts`];
-        return ts && /^\/[^/]/.test(cover) ? `${cover}?ts=${ts}` : cover;
+        return ts && /^\/[^/]/.test(cover) ? `${cover}${cover.includes('?') ? '&' : '?'}ts=${ts}` : cover;
     }
 
     private set(ip: string, name: string, value: ioBroker.StateValue): void {
