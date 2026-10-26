@@ -319,7 +319,7 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
-### **WORK IN PROGRESS**
+### 4.2.16 (2026-10-26)
 * (@GermanBluefox) `current_cover` changes with every new cover (`/sonos/coverImage/<ip>.png?v=<hash>`), so vis, Lovelace and the browser show the new cover instead of the old one - for example when switching back to a radio station (#204, #205)
 
 ### 4.2.15 (2026-10-26)
@@ -336,10 +336,6 @@ adapter to get a working state back.
 
 ### 4.2.12 (2026-10-17)
 * (@GermanBluefox) Updated packages
-
-### 4.2.11 (2026-10-14)
-* (@GermanBluefox) Added the sizes for all screens to the settings. Removed the outdated admin pages
-* (@GermanBluefox) The TCP port for the SONOS events is reported to js-controller 8 as a used resource
 
 ## License
 
