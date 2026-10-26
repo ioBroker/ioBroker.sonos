@@ -99,7 +99,8 @@ function transportState(state: string | undefined): string {
 }
 
 /** URIs of streams; the speakers often report these with a plain `object.item` class */
-const RADIO_URI = /^(x-sonosapi-stream:|x-sonosapi-radio:|x-rincon-mp3radio:|x-sonosapi-hls:|aac:|hls-radio:|x-sonosprog-http:)/i;
+const RADIO_URI =
+    /^(x-sonosapi-stream:|x-sonosapi-radio:|x-rincon-mp3radio:|x-sonosapi-hls:|aac:|hls-radio:|x-sonosprog-http:)/i;
 
 /** The library keeps `r:streamContent` on the parsed track when the DIDL carries it */
 type StreamTrack = Track & { StreamContent?: string };
