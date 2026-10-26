@@ -7,6 +7,8 @@
  */
 import SonosDiscovery from 'sonos-discovery';
 import type { SonosFavorite, SonosPlayer, SonosPlayerState, SonosQueueItem } from 'sonos-discovery';
+import LibraryPlayer from 'sonos-discovery/lib/models/Player';
+import type { PlayerInternals } from 'sonos-discovery/lib/models/Player';
 
 import {
     browseMedia,
@@ -66,6 +68,53 @@ function ipOf(baseUrl: string, underscores: boolean): string | null {
     }
 
     return null;
+}
+
+let libraryGuarded = false;
+
+/**
+ * Guards two spots of `sonos-discovery` that terminate the adapter (#170, #192, #269, #272).
+ *
+ * Every volume event of a speaker makes the library recalculate the group volume through
+ * `player.coordinator`. While a speaker drops off the network or comes back, the topology can
+ * name a coordinator the library does not know, so `coordinator` becomes `undefined`; or the
+ * coordinator is no longer the head of a zone, so its zone is `undefined`. Both throw inside a
+ * promise of the library, and the unhandled rejection stops the adapter. The library has not
+ * seen a release since 2022, so it is fixed here. The prototype must be patched only once per
+ * process, and in compact mode several instances share the module - hence the flag.
+ */
+export function guardLibrary(): void {
+    if (libraryGuarded) {
+        return;
+    }
+    libraryGuarded = true;
+
+    const proto = LibraryPlayer.prototype;
+
+    // An unknown coordinator means a standalone player, which is also the library's own default.
+    // The accessor on the prototype receives the assignments of the library to `coordinator`.
+    const coordinators = new WeakMap<PlayerInternals, PlayerInternals>();
+    Object.defineProperty(proto, 'coordinator', {
+        configurable: true,
+        get(this: PlayerInternals): PlayerInternals {
+            return coordinators.get(this) || this;
+        },
+        set(this: PlayerInternals, coordinator: PlayerInternals | undefined) {
+            if (coordinator) {
+                coordinators.set(this, coordinator);
+            } else {
+                coordinators.delete(this);
+            }
+        },
+    });
+
+    // Without its zone there are no members to average; the next topology event corrects it.
+    const recalculate = proto.recalculateGroupVolume;
+    proto.recalculateGroupVolume = function (this: PlayerInternals): void {
+        if (this.system?.zones?.some(zone => zone.uuid === this.uuid)) {
+            recalculate.call(this);
+        }
+    };
 }
 
 /** Browse results arrive either as an array or as a dictionary, depending on the call */
@@ -308,6 +357,8 @@ export class DiscoveryBackend implements SonosBackend {
     private readonly wrappers = new Map<string, DiscoveryDevice>();
 
     constructor(options: { cacheDir: string; port?: number; log: SmapiLog; tokenFile: string }) {
+        guardLibrary();
+
         this.discovery = new SonosDiscovery({
             household: null,
             log: options.log,

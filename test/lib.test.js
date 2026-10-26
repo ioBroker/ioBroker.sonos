@@ -436,3 +436,78 @@ describe('svrooij backend: partial events', () => {
         expect(d.state.currentTrack.title).to.equal('Kontakt zu SWR3');
     });
 });
+
+describe('discovery backend: library guards (#170, #272)', () => {
+    const { EventEmitter } = require('node:events');
+
+    let Player;
+    let listener;
+    let system;
+
+    before(() => {
+        // A player subscribes to the events of its speaker as soon as it is created. There is no
+        // speaker here, so the subscriber is replaced before the library is loaded.
+        const subscriberPath = require.resolve('sonos-discovery/lib/Subscriber');
+        require.cache[subscriberPath] = {
+            id: subscriberPath,
+            filename: subscriberPath,
+            loaded: true,
+            exports: function Subscriber() {
+                this.dispose = () => {};
+            },
+        };
+        require('../build/lib/backend/discovery-backend').guardLibrary();
+        Player = require('sonos-discovery/lib/models/Player');
+    });
+
+    beforeEach(() => {
+        listener = new EventEmitter();
+        listener.endpoint = () => 'http://127.0.0.1:3500/';
+        system = new EventEmitter();
+        system.zones = [];
+    });
+
+    const player = uuid =>
+        new Player(
+            { uuid, zonename: uuid, location: 'http://192.168.0.10:1400/xml/device_description.xml' },
+            listener,
+            system,
+        );
+
+    // the shape the notification listener hands over for a RenderingControl event
+    const volumeEvent = level => ({ volume: [{ channel: 'Master', val: String(level) }] });
+
+    it('treats a player whose coordinator the topology does not know as standalone', () => {
+        const a = player('RINCON_A');
+        // what SonosSystem assigns when the coordinator of the zone is not in its cache
+        a.coordinator = undefined;
+
+        expect(() => listener.emit('last-change', 'RINCON_A', volumeEvent(20))).to.not.throw();
+        expect(a.coordinator).to.equal(a);
+        expect(a.state.volume).to.equal(20);
+    });
+
+    it('skips the group volume of a coordinator that heads no zone', () => {
+        const a = player('RINCON_A');
+        const b = player('RINCON_B');
+        a.coordinator = b;
+        system.zones = [{ uuid: 'RINCON_C', members: [] }];
+
+        expect(() => listener.emit('last-change', 'RINCON_A', volumeEvent(20))).to.not.throw();
+        expect(a.state.volume).to.equal(20);
+    });
+
+    it('still averages the group volume of a known zone', () => {
+        const a = player('RINCON_A');
+        const b = player('RINCON_B');
+        b.coordinator = a;
+        system.zones = [{ uuid: 'RINCON_A', members: [a, b] }];
+
+        listener.emit('last-change', 'RINCON_A', volumeEvent(20));
+        listener.emit('last-change', 'RINCON_B', volumeEvent(40));
+
+        expect(a.groupState.volume).to.equal(30);
+        expect(b.coordinator).to.equal(a);
+        clearTimeout(a._groupVolumeTimer);
+    });
+});

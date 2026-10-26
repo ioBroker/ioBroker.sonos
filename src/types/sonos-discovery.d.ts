@@ -134,3 +134,17 @@ declare module 'sonos-discovery' {
         dispose(): void;
     }
 }
+
+/** The player class of the library. Only the part that `guardLibrary` in discovery-backend.ts patches is described. */
+declare module 'sonos-discovery/lib/models/Player' {
+    export interface PlayerInternals {
+        uuid: string;
+        /** The `SonosSystem`, which owns the current topology */
+        system?: { zones?: { uuid: string }[] };
+        coordinator: PlayerInternals;
+        recalculateGroupVolume(): void;
+    }
+
+    const Player: { prototype: PlayerInternals };
+    export default Player;
+}

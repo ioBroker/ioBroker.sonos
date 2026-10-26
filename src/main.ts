@@ -898,9 +898,11 @@ class Sonos extends utils.Adapter {
             const obj = await this.getForeignObjectAsync(this.config.webServer);
 
             if (obj?.native && this.backend) {
+                // The web adapter reads the first path segment as the name of the file storage,
+                // like for the cover and the control page. It has no "/files/" route (#187).
                 const url = `http${obj.native.secure ? 's' : ''}://${this.backend.localEndpoint}:${
                     obj.native.port as number
-                }/files/${this.name}${id}`;
+                }/${this.name}${id}`;
 
                 this.playOnAllPlayers(url, sonosIp, volume);
             }
