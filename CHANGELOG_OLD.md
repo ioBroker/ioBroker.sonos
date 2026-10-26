@@ -1,4 +1,7 @@
 # Older changes
+## 4.2.6 (2026-09-09)
+* (@GermanBluefox) Corrected devices widget
+
 ## 4.2.5 (2026-09-08)
 * (@GermanBluefox) Added a control page for the web adapter under `/sonos/`, plus a tile on the admin overview
 * (@GermanBluefox) Added the source selection (favorites, playlists, queue, recently played, sources) to all four widgets

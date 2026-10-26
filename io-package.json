@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "sonos",
-    "version": "4.2.12",
+    "version": "4.2.13",
     "news": {
+      "4.2.13": {
+        "en": "Fixed detection of radio streams (current_type, current_station, current_title) in the new backend (#363)\nThe adapter no longer stops with \"Cannot read properties of undefined (reading 'members')\" when a speaker leaves or rejoins the network (#170, #192, #269, #272)\nLocal TTS files are handed to the speaker under `/sonos/...` of the web adapter; the former `/files/sonos/...` URL does not exist there (#187)",
+        "de": "Erkennung von Radiostreams (current_type, current_station, current_title) im neuen Backend behoben (#363)\nDer Adapter stoppt nicht mehr mit „Cannot read properties of undefined (reading 'members')“, wenn ein Sprecher das Netzwerk verlässt oder wieder betritt (#170, #192, #269, #272)\nLokale TTS-Dateien werden dem Speaker unter `/sonos/... `des Webadapters ausgehändigt; die alte URL existiert dort nicht (#187)",
+        "ru": "Исправлено обнаружение радиопотоков (current_type, current_station, current_title) в новом бэкэнде (#363)\nКогда динамик выходит из сети или снова подключается к сети, адаптер больше не выдает сообщение «Невозможно прочитать свойства неопределенного имени (чтение «членов»)» (#170, #192, #269, #272)\nЛокальные файлы TTS передаются в динамик под названием `/sonos/... `веб-адаптера; прежний URL-адрес `/files/sonos/...` там не существует (#187)",
+        "pt": "Detecção fixa de streams de rádio (current_type, current_station, current_title) no novo backend (#363)\nO adaptador não para mais com “Can't read properties of undefined (reading 'members')” quando um alto-falante sai ou volta à rede (#170, #192, #269, #272)\nOs arquivos TTS locais são enviados ao locutor em `/sonos/... `do adaptador web; o antigo URL `/files/sonos/...` não existe (#187)",
+        "nl": "Detectie van radiostreams (current_type, current_station, current_title) in de nieuwe backend opgelost (#363)\nDe adapter stopt niet langer met „Kan eigenschappen van ongedefinieerd niet lezen (lees 'leden')” wanneer een luidspreker het netwerk verlaat of opnieuw verbinding maakt (#170, #192, #269, #272)\nLokale TTS-bestanden worden aan de spreker overhandigd onder `/sonos/... `van de webadapter; de voormalige URL van `/files/sonos/...` bestaat daar niet (#187)",
+        "fr": "Correction de la détection de flux radio (current_type, current_station, current_title) dans le nouveau backend (#363)\nL'adaptateur ne s'arrête plus sur « Cannot read properties of undefined (reading 'members') » lorsqu'un orateur quitte ou rejoint le réseau (#170, #192, #269, #272)\nLes fichiers TTS locaux sont transmis à l'enceinte sous « /sonos/... » de l'adaptateur Web ; l'ancienne URL « /files/sonos/... » n'y existe pas (#187)",
+        "it": "Rilevamento fisso dei flussi radio (current_type, current_station) nel nuovo backend (#363)\nL'adattatore non si ferma più con «Cannot read properties of undefined (reading 'members')» quando un oratore esce o si riconnette alla rete (#170, #192, #269, #272)\nI file TTS locali vengono inviati al relatore in `/sonos/... `del web adapter; il primo URL `/files/sonos/...` non esiste (#187)",
+        "es": "Detección fija de transmisiones de radio (current_type, current_title) en el nuevo backend (#363)\nEl adaptador ya no deja de decir «No puede leer las propiedades de lo indefinido (lee «miembros»)» cuando un altavoz sale o vuelve a unirse a la red (#170, #192, #269, #272)\nLos archivos TTS locales se entregan al altavoz en `/sonos/... `del adaptador web; la antigua URL `/files/sonos/...` no existe allí (#187)",
+        "pl": "Naprawiono wykrywanie strumieni radiowych (current_type, current_station, current_title) w nowym zapleczu (#363)\nAdapter nie zatrzymuje się już z funkcją „Nie można odczytać właściwości niezdefiniowanych (odczytywanie 'członków')”, gdy głośnik opuszcza sieć lub ponownie dołącza do sieci (#170, #192, #269, #272)\nLokalne pliki TTS są przekazywane do głośnika pod `/sonos/... `karty sieciowej; poprzedni adres URL `/files/sonos/...` tam nie istnieje (#187)",
+        "uk": "Виправлено виявлення радіопотоків (current_type, current_station, current_title) у новому бекенді (#363)\nАдаптер більше не зупиняється на «Неможливо прочитати властивості невизначених (читання 'членів')», коли динамік залишає мережу або знову приєднується до мережі (#170, #192, #269, #272)\nЛокальні файли TTS передаються спікеру під `/sonos/... `веб-адаптера; колишня URL-адреса `/files/sonos/...` там не існує (#187)",
+        "zh-cn": "修复了在新后端中检测无线电流（current_type、current_station、current_title）的问题 (#363)\n当扬声器离开或重新加入网络时，适配器不再显示 “无法读取未定义的属性（读取'成员'）”（#170、#192、#269、#272）\n本地 TTS 文件在 Web 适配器的 `/sonos/... `下传递给扬声器；以前的 `/files/sonos/... `URL 不存在 (#187)"
+      },
       "4.2.12": {
         "en": "Updated packages",
         "de": "Neue Pakete",
@@ -80,19 +93,6 @@
         "pl": "Dodano stronę kontrolną dla karty sieciowej pod `/sonos/` oraz kafelek w przeglądzie administratora\nDodano wybór źródła (ulubione, playlisty, kolejka, ostatnio odtwarzane, źródła) do wszystkich czterech widżetów\nDodano `queue_array`, kolejka odtwarzania jako JSON - `queue` łączy utwory przecinkiem i nie można ich niezawodnie podzielić",
         "uk": "Додана сторінка управління веб-адаптером у розділі `/sonos/`, плюс плитка в огляді адміністратора\nДодано вибір джерела (вибране, списки відтворення, черга, нещодавно відтворені, джерела) до всіх чотирьох віджетів\nДодано `queue_array`, черга відтворення як JSON - `queue` приєднується до треків комою і не може бути надійно розділена",
         "zh-cn": "在 `/sonos/` 下添加了 Web 适配器的控制页面，以及管理员概述上的图块\n向所有四个小部件添加了来源选择（收藏夹、播放列表、队列、最近播放的内容、来源）\n添加了 `queue_array`，游戏队列作为 JSON-`queue` 使用逗号加入曲目，无法可靠地拆分回去"
-      },
-      "4.2.0": {
-        "en": "The client library can be switched in the instance settings\nAdded `@svrooij/sonos` as an experimental alternative to `sonos-discovery`\nThe adapter talks to a backend interface now, so both libraries fill the same states",
-        "de": "Die Client-Bibliothek ist in den Instanzeinstellungen umschaltbar\n`@svrooij /sonos` als Testalternative zu `Sonos-Discovery` hinzugefügt\nDer Adapter kommuniziert jetzt im Backend, sodass beide Bibliotheken denselben Status haben",
-        "ru": "Клиентскую библиотеку можно переключить в настройках экземпляра\nДобавлено «@svrooij /sonos» в качестве экспериментальной альтернативы `sonos-discovery`\nТеперь адаптер взаимодействует с внутренним интерфейсом, поэтому обе библиотеки находятся в одном и том же состоянии",
-        "pt": "A biblioteca cliente pode ser trocada na instância\nAdicionado `@svrooij /sonos` como alternativa ao `sonos-discovery`\nAgora, o adaptador se comunica com um backend e as duas têm o mesmo estado",
-        "nl": "De clientbibliotheek kan worden omgeschakeld in de instantie-instellingen.\n`@svrooij /sonos` toegevoegd als experimenteel alternatief voor `sonos-discovery`\nDe adapter werkt nu met een backend-interface, dus beide bibliotheken hebben dezelfde status",
-        "fr": "La bibliothèque client peut être modifiée dans les paramètres\nAjout de « @svrooij /sonos » comme alternative expérimentale à « sonos-discovery »\nL'adaptateur communique avec un backend, donc les deux librairies ont le même état",
-        "it": "La libreria client può essere cambiata nelle istanze\nAggiunto `@svrooij /sonos` come alternativa a `sonos-discovery`\nL'adattatore ora parla con un backend, quindi entrambe le librerie sono uguali",
-        "es": "La biblioteca cliente se puede cambiar en la configuración de la instancia\nAñadió `@svrooij /sonos` como alternativa experimental a `sonos-discovery`\nEl adaptador ahora habla con una interfaz de fondo, por lo que ambas bibliotecas",
-        "pl": "Biblioteka klienta może być przełączana w ustawieniach instancji\nDodano `@svrooij /sonos` jako eksperymentalną alternatywę dla `sonos-discovery`\nAdapter rozmawia teraz z interfejsem zaplecza, więc obie biblioteki wypełniają te same stany",
-        "uk": "Клієнтську бібліотеку можна перемикати в налаштуваннях екземпляра\nДодано `@svrooij /sonos` як експериментальну альтернативу `sonos-discovery`\nТепер адаптер розмовляє з інтерфейсом бекенду, тому обидві бібліотеки заповнюють однакові стани",
-        "zh-cn": "可以在实例设置中切换客户端库\n添加了 “@svrooij /sonos” 作为 “sonos-discovery” 的实验性替代方案\n适配器现在与后端接口通信，因此两个库的状态相同"
       }
     },
     "titleLang": {

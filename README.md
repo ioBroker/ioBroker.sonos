@@ -319,7 +319,7 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
-### **WORK IN PROGRESS**
+### 4.2.13 (2026-10-26)
 * (@GermanBluefox) Fixed detection of radio streams (current_type, current_station, current_title) in the new backend (#363)
 * (@GermanBluefox) The adapter no longer stops with "Cannot read properties of undefined (reading 'members')" when a speaker leaves or rejoins the network (#170, #192, #269, #272)
 * (@GermanBluefox) Local TTS files are handed to the speaker under `/sonos/...` of the web adapter; the former `/files/sonos/...` URL does not exist there (#187)
@@ -336,9 +336,6 @@ adapter to get a working state back.
 
 ### 4.2.9 (2026-09-15)
 * (@GermanBluefox) SONOS player widget for ioBroker.devices: the tile looks like the media player of `ioBroker.devices`, and a click opens the full player with shuffle, repeat, seek, volume and the source selection
-
-### 4.2.6 (2026-09-09)
-* (@GermanBluefox) Corrected devices widget
 
 ## License
 
