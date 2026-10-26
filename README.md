@@ -319,7 +319,7 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
-### **WORK IN PROGRESS**
+### 4.2.15 (2026-10-26)
 * (@GermanBluefox) `alive` turns false when a speaker is switched off or goes to sleep: every speaker is checked every 30 seconds (#252)
 * (@GermanBluefox) Covers that were not used for 30 days are removed from the cache folder `iobroker-data/sonosCache`, which grew without limit (#222)
 
@@ -337,9 +337,6 @@ adapter to get a working state back.
 ### 4.2.11 (2026-10-14)
 * (@GermanBluefox) Added the sizes for all screens to the settings. Removed the outdated admin pages
 * (@GermanBluefox) The TCP port for the SONOS events is reported to js-controller 8 as a used resource
-
-### 4.2.10 (2026-10-13)
-* (@GermanBluefox) Small repo-checker fixes
 
 ## License
 

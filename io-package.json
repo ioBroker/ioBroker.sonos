@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "sonos",
-    "version": "4.2.14",
+    "version": "4.2.15",
     "news": {
+      "4.2.15": {
+        "en": "`alive` turns false when a speaker is switched off or goes to sleep: every speaker is checked every 30 seconds (#252)\nCovers that were not used for 30 days are removed from the cache folder `iobroker-data/sonosCache`, which grew without limit (#222)",
+        "de": "`alive` wird falsch, wenn ein Speaker aus- oder in den Ruhemodus geht: Alle 30 Sekunden geprüft (#252)\n30 Tage unbenutzte Cover werden aus dem unlimitiert wachsenden Ordner `ioBroker-Data/SonosCache` entfernt (#222)",
+        "ru": "`alive` переходит в режим false, когда динамик выключен или переходит в режим сна: каждый динамик проверяется каждые 30 секунд (#252)\nОбложки, которые не использовались в течение 30 дней, удаляются из папки кэша `IOBroker-data/SonoScache`, которая росла без ограничений (#222)",
+        "pt": "`alive` fica falso quando um alto-falante é desligado ou dorme: todo som é checado a cada 30 segundos (#252)\nCapas não usadas por 30 dias são removidas da pasta cache `iobroker-data/SonosCache`, que cresceu sem limite (#222)",
+        "nl": "`alive` wordt onwaar wanneer een luidspreker wordt uitgeschakeld of in de slaapstand gaat: elke luidspreker wordt elke 30 seconden gecontroleerd (#252)\nOmslagen die 30 dagen niet zijn gebruikt, worden verwijderd uit de cachemap `IOBroker-Data/SonosCache`, die onbeperkt is gegroeid (#222)",
+        "fr": "« Alive » devient faux quand un haut-parleur est éteint ou mis en veille : il est vérifié toutes les 30 secondes (#252)\nLes pochettes non utilisées depuis 30 jours sont supprimées du dossier de cache « IObroker-data/SonosCache », qui a augmenté sans limite (#222)",
+        "it": "`alive` diventa falso quando un altoparlante è spento o dorme: ogni altoparlante è controllato ogni 30 secondi (#252)\nLe cover inutilizzate da 30 giorni vengono rimosse dalla cache `IObroker-data/Sonoscache`, cresciuta senza limiti (#222)",
+        "es": "`alive` pasa a ser falso cuando un altavoz se apaga o se duerme: todos los altavoces se comprueban cada 30 segundos (#252)\nLas portadas que no se usaron durante 30 días se quitan de la carpeta caché `IOBroker-Data/SonosCache`, que creció sin límite (#222)",
+        "pl": "„żywy” staje się fałszywy, gdy głośnik jest wyłączony lub uśpiony: każdy głośnik jest sprawdzany co 30 sekund (#252)\nOkładki, które nie były używane przez 30 dni, są usuwane z folderu pamięci podręcznej `IOBroker-data/SonosCache`, który wzrósł bez ograniczeń (#222)",
+        "uk": "`live` перетворюється на false, коли динамік вимкнено або переходить у режим сну: кожен динамік перевіряється кожні 30 секунд (#252)\nОбкладинки, які не використовувалися протягом 30 днів, видаляються з папки кешу `ioBroker-Data/SonosCache`, яка росла без обмежень (#222)",
+        "zh-cn": "当扬声器关闭或进入睡眠状态时，`alive`变为假：每 30 秒检查一次每个扬声器 (#252)\n30 天未使用的封面将从缓存文件夹 “iobroker-data/SonosCache” 中移除，该缓存文件夹 “IOBroker-data/SonosCache” 无限增长 (#222)"
+      },
       "4.2.14": {
         "en": "The Control tab and the ioBroker.devices widgets are built again with the current GUI components and React, as before 4.2.13",
         "de": "Die Widgets Control und ioBroker.Devices sind wie vor 4.2.13 wieder mit der aktuellen GUI und React gebaut",
@@ -80,19 +93,6 @@
         "pl": "Widżet odtwarzacza SONOS dla iOBroker.Devices: kafelek wygląda jak odtwarzacz multimedialny „IOBroker.Devices”, a kliknięcie otwiera pełny odtwarzacz z shuffle, repeat, search, volume i wyborem źródła",
         "uk": "Віджет програвача SONOS для IObroker.devices: плитка виглядає як медіаплеєр `ioBroker.devices`, а клацання відкриває повний плеєр із переміщенням, повторенням, пошуком, гучністю та вибором джерела",
         "zh-cn": "适用于 iobroker.devices 的 SONOS 播放器控件：该图块看起来像 `iobroker.devices` 的媒体播放器，点击一下即可打开完整播放器，包括随机播放、重复、搜索、音量和源选择"
-      },
-      "4.2.6": {
-        "en": "Corrected devices widget",
-        "de": "Geräte-Widget korrigiert",
-        "ru": "Виджет исправленных устройств",
-        "pt": "Widget de itens corrigidos",
-        "nl": "Widget voor apparaten gecorrigeerd",
-        "fr": "Widget Appareils corrigés",
-        "it": "Widget dispositivi corretti",
-        "es": "Widget de dispositivos corregidos",
-        "pl": "Poprawiony widżet urządzeń",
-        "uk": "Виправлений віджет пристроїв",
-        "zh-cn": "更正了设备小部件"
       }
     },
     "titleLang": {
