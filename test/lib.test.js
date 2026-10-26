@@ -511,3 +511,94 @@ describe('discovery backend: library guards (#170, #272)', () => {
         clearTimeout(a._groupVolumeTimer);
     });
 });
+
+describe('reachability (#252)', () => {
+    const net = require('node:net');
+    const { isReachable } = require('../build/lib/reachability');
+
+    const listen = () =>
+        new Promise(resolve => {
+            const server = net.createServer(socket => socket.destroy());
+            server.listen(0, '127.0.0.1', () => resolve(server));
+        });
+
+    it('is true while the port accepts connections', async () => {
+        const server = await listen();
+        try {
+            expect(await isReachable('127.0.0.1', server.address().port, 1000)).to.be.true;
+        } finally {
+            server.close();
+        }
+    });
+
+    it('is false when nothing listens on the port', async () => {
+        const server = await listen();
+        const port = server.address().port;
+        await new Promise(resolve => server.close(resolve));
+
+        expect(await isReachable('127.0.0.1', port, 1000)).to.be.false;
+    });
+
+    it('is false when the host does not answer in time', async () => {
+        // TEST-NET-1 (RFC 5737) is never routed: the connect times out or fails right away
+        const start = Date.now();
+        expect(await isReachable('192.0.2.1', 1400, 300)).to.be.false;
+        expect(Date.now() - start).to.be.below(2000);
+    });
+});
+
+describe('cover cache (#222)', () => {
+    const fs = require('node:fs');
+    const os = require('node:os');
+    const path = require('node:path');
+    const { pruneCoverCache, touchCoverFile, COVER_CACHE_MAX_AGE } = require('../build/lib/cover-cache');
+
+    const DAY = 24 * 3600 * 1000;
+    let dir;
+
+    beforeEach(() => {
+        dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sonos-cache-'));
+    });
+
+    afterEach(() => {
+        fs.rmSync(dir, { recursive: true, force: true });
+    });
+
+    const cover = (name, ageMs) => {
+        const file = path.join(dir, name);
+        fs.writeFileSync(file, 'cover');
+        const time = new Date(Date.now() - ageMs);
+        fs.utimesSync(file, time, time);
+        return file;
+    };
+
+    it('removes covers older than the maximum age and keeps the others', async () => {
+        cover('old', COVER_CACHE_MAX_AGE + DAY);
+        cover('recent', DAY);
+
+        expect(await pruneCoverCache(dir)).to.equal(1);
+        expect(fs.readdirSync(dir)).to.deep.equal(['recent']);
+    });
+
+    it('keeps a cover that was used again', async () => {
+        const file = cover('station', COVER_CACHE_MAX_AGE + DAY);
+        touchCoverFile(file);
+
+        expect(await pruneCoverCache(dir)).to.equal(0);
+        expect(fs.existsSync(file)).to.be.true;
+    });
+
+    it('leaves sub-directories alone', async () => {
+        const sub = path.join(dir, 'sub');
+        fs.mkdirSync(sub);
+        const time = new Date(Date.now() - COVER_CACHE_MAX_AGE - DAY);
+        fs.utimesSync(sub, time, time);
+
+        expect(await pruneCoverCache(dir)).to.equal(0);
+        expect(fs.existsSync(sub)).to.be.true;
+    });
+
+    it('does not fail on a cover that cannot be touched', () => {
+        expect(() => touchCoverFile(path.join(dir, 'missing'))).to.not.throw();
+    });
+});

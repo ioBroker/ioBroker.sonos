@@ -26,6 +26,8 @@ import type {
 
 import { TTS } from './lib/tts';
 import { UsedResources } from './lib/used-resources';
+import { isReachable } from './lib/reachability';
+import { pruneCoverCache, touchCoverFile } from './lib/cover-cache';
 import { getChannelStates } from './lib/states';
 import {
     getMediaRoot,
@@ -92,6 +94,15 @@ const RECENT_TRACKS_MAX = 25;
 const TV_FORMAT_POLL_MS = 5000;
 /** Debounce for {@link Sonos.resolveTvFormat}, so an event burst does not hit the speaker repeatedly */
 const TV_FORMAT_CACHE_MS = 2000;
+
+/** How often every speaker is checked for reachability, which drives `alive` */
+const ALIVE_INTERVAL_MS = 30_000;
+/** A speaker that does not accept a connection on its control port within this time counts as unreachable */
+const ALIVE_TIMEOUT_MS = 3_000;
+/** Failed checks in a row before `alive` turns false, so that one lost packet on Wi-Fi does not flip it */
+const ALIVE_MAX_FAILURES = 2;
+/** How often unused covers are removed from the cache */
+const COVER_CACHE_PRUNE_MS = 24 * 3600 * 1000;
 
 /** Grouping URI used when a player is a slave (`x-rincon:RINCON_...`) */
 function isGroupingUri(uri: string | undefined): boolean {
@@ -188,6 +199,9 @@ function getPlaybackState(playbackState: string): PlaybackState {
 class Sonos extends utils.Adapter {
     /** IDs of all "alive" states, that must be set to false by unload */
     private readonly aliveIds: string[] = [];
+    /** Failed reachability checks in a row, keyed by channel */
+    private readonly aliveFailures: Record<string, number> = {};
+    private aliveCheckRunning = false;
     /** True after playlists were loaded at least once */
     private playlistsLoaded = false;
     /** All known devices with the IP address (dots replaced by underscores) as key */
@@ -1996,6 +2010,10 @@ class Sonos extends utils.Adapter {
 
         if (fs.existsSync(filePath)) {
             this.log.debug('Cover exists. Try reading from fs');
+            if (albumArtUri) {
+                // keep it in the cache, see cleanCoverCache(); without a URI it is the default image
+                touchCoverFile(filePath);
+            }
             await this.syncCoverFileToStorage(filePath, ip);
             return;
         }
@@ -2314,12 +2332,13 @@ class Sonos extends utils.Adapter {
             return;
         }
 
+        // `alive` is not taken from the groups: they still list a speaker that has gone away for a
+        // while, with @svrooij/sonos even for good. checkAlive() decides it.
         for (const group of data.groups) {
             const ip = this.getIpOfPlayer(group.uuid);
 
             if (ip) {
                 this.channels[ip].uuid = group.uuid;
-                await this.setState({ device: 'root', channel: ip, state: 'alive' }, { val: true, ack: true });
             }
 
             const members: string[] = [];
@@ -2498,6 +2517,9 @@ class Sonos extends utils.Adapter {
             fs.mkdirSync(this.cacheDir);
         }
 
+        void this.cleanCoverCache();
+        this.setInterval(() => void this.cleanCoverCache(), COVER_CACHE_PRUNE_MS);
+
         await this.restoreMissingCovers();
 
         // Two client libraries are shipped side by side while the new one is being proven out.
@@ -2555,7 +2577,63 @@ class Sonos extends utils.Adapter {
             this.log.error(`Cannot start the SONOS backend: ${e}`);
         }
 
+        await this.checkAlive();
+        this.setInterval(() => void this.checkAlive(), ALIVE_INTERVAL_MS);
+
         this.subscribeStates('*');
+    }
+
+    /**
+     * Update `alive` of every speaker from whether its control port 1400 accepts a connection (#252)
+     *
+     * `true` is set at the first successful check, `false` only after {@link ALIVE_MAX_FAILURES}
+     * failed ones in a row. The state is written only when it changes.
+     */
+    private async checkAlive(): Promise<void> {
+        if (this.aliveCheckRunning) {
+            return;
+        }
+        this.aliveCheckRunning = true;
+
+        try {
+            await Promise.all(
+                Object.keys(this.channels).map(async channel => {
+                    const ip = (this.channels[channel].obj?.native?.ip as string) || channel.replace(/_/g, '.');
+                    const reachable = await isReachable(ip, 1400, ALIVE_TIMEOUT_MS);
+
+                    // unload has set everything to false meanwhile
+                    if (!this.backend) {
+                        return;
+                    }
+
+                    if (reachable) {
+                        this.aliveFailures[channel] = 0;
+                        await this.setStateChangedAsync(`root.${channel}.alive`, true, true);
+                    } else {
+                        this.aliveFailures[channel] = (this.aliveFailures[channel] || 0) + 1;
+                        if (this.aliveFailures[channel] >= ALIVE_MAX_FAILURES) {
+                            await this.setStateChangedAsync(`root.${channel}.alive`, false, true);
+                        }
+                    }
+                }),
+            );
+        } catch (e) {
+            this.log.warn(`Cannot check whether the speakers are reachable: ${e}`);
+        } finally {
+            this.aliveCheckRunning = false;
+        }
+    }
+
+    /** Remove the covers that were not used for a month from the cache (#222) */
+    private async cleanCoverCache(): Promise<void> {
+        try {
+            const removed = await pruneCoverCache(this.cacheDir);
+            if (removed) {
+                this.log.info(`Removed ${removed} unused covers from ${this.cacheDir}`);
+            }
+        } catch (e: any) {
+            this.log.warn(`Cannot clean up the cover cache: ${e.message}`);
+        }
     }
 }
 
