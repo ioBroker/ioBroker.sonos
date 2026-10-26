@@ -98,28 +98,70 @@ function transportState(state: string | undefined): string {
     return String(state || 'STOPPED').toUpperCase();
 }
 
-/** A parsed track of the library into the adapter's shape */
-export function toTrack(track: Track | string | undefined, uri?: string): SonosTrack {
-    if (!track || typeof track === 'string') {
-        return { uri: uri || '', duration: 0 };
+/** URIs of streams; the speakers often report these with a plain `object.item` class */
+const RADIO_URI = /^(x-sonosapi-stream:|x-sonosapi-radio:|x-rincon-mp3radio:|x-sonosapi-hls:|aac:|hls-radio:|x-sonosprog-http:)/i;
+
+/** The library keeps `r:streamContent` on the parsed track when the DIDL carries it */
+type StreamTrack = Track & { StreamContent?: string };
+
+/** The parsed track out of a metadata field, which is the raw DIDL when parsing failed */
+function parsedTrack(track: Track | string | undefined): StreamTrack | undefined {
+    return track && typeof track !== 'string' ? track : undefined;
+}
+
+function isBroadcast(track: Track | undefined): boolean {
+    return String(track?.UpnpClass || '')
+        .toLowerCase()
+        .includes('audiobroadcast');
+}
+
+/**
+ * A parsed track of the library into the adapter's shape.
+ *
+ * Streams are recognised the way the other backend does it: by the class of the track or of
+ * the transport metadata, or by the transport URI, because SONOS often reports the current
+ * track of a stream as a plain `object.item`.
+ */
+export function toTrack(
+    track: Track | string | undefined,
+    uri?: string,
+    transportUri?: string,
+    transportMeta?: Track | string,
+): SonosTrack {
+    const parsed = parsedTrack(track);
+    const transport = parsedTrack(transportMeta);
+    const trackUri = parsed?.TrackUri || uri || '';
+
+    let type = 'track';
+    if (trackUri.startsWith('x-rincon-stream:') || trackUri.startsWith('x-sonos-htastream:')) {
+        type = 'line_in';
+    } else if (
+        isBroadcast(parsed) ||
+        isBroadcast(transport) ||
+        RADIO_URI.test(transportUri || '') ||
+        RADIO_URI.test(trackUri)
+    ) {
+        type = 'radio';
     }
 
-    const upnpClass = String(track.UpnpClass || '').toLowerCase();
-    const trackUri = track.TrackUri || uri || '';
-    let type = 'track';
-    if (upnpClass.includes('audiobroadcast')) {
-        type = 'radio';
-    } else if (trackUri.startsWith('x-rincon-stream:') || trackUri.startsWith('x-sonos-htastream:')) {
-        type = 'line_in';
+    if (!parsed && type !== 'radio') {
+        return { uri: trackUri, duration: 0 };
+    }
+
+    // for a stream, the station is the title of the transport, the title is the stream content
+    let streamContent = '';
+    if (type === 'radio') {
+        streamContent = typeof track === 'string' ? streamContentFromDidl(track) : parsed?.StreamContent || '';
     }
 
     return {
         uri: trackUri,
-        title: track.Title || '',
-        artist: track.Artist || '',
-        album: track.Album || '',
-        albumArtUri: track.AlbumArtUri || '',
-        duration: toSeconds(track.Duration),
+        title: streamContent || parsed?.Title || '',
+        artist: parsed?.Artist || '',
+        album: parsed?.Album || '',
+        albumArtUri: parsed?.AlbumArtUri || '',
+        stationName: type === 'radio' ? transport?.Title || '' : '',
+        duration: toSeconds(parsed?.Duration),
         type,
     };
 }
@@ -166,6 +208,11 @@ export class SvrooijDevice implements SonosDevice {
 
     private lastTransportUri = '';
     private lastTransportMetadata = '';
+    /** Parsed transport metadata; for a stream it names the station */
+    private lastTransportTrack?: Track;
+    /** Kept so that the type can be decided again when only the transport changes */
+    private lastTrackMetadata?: Track | string;
+    private lastTrackUri?: string;
     /** The hardware does not change, so the probe is answered once */
     private homeTheater?: boolean;
 
@@ -237,12 +284,27 @@ export class SvrooijDevice implements SonosDevice {
                 typeof data.AVTransportURIMetaData === 'string'
                     ? data.AVTransportURIMetaData
                     : MetaDataHelper.TrackToMetaData(data.AVTransportURIMetaData, true);
+            this.lastTransportTrack = parsedTrack(data.AVTransportURIMetaData);
         }
 
         const next: SonosDeviceState = { ...this.cached };
 
         if (data.CurrentTrackMetaData !== undefined || data.CurrentTrackURI !== undefined) {
-            next.currentTrack = toTrack(data.CurrentTrackMetaData, data.CurrentTrackURI);
+            this.lastTrackMetadata = data.CurrentTrackMetaData;
+            this.lastTrackUri = data.CurrentTrackURI;
+        }
+        if (
+            data.CurrentTrackMetaData !== undefined ||
+            data.CurrentTrackURI !== undefined ||
+            data.AVTransportURI !== undefined ||
+            data.AVTransportURIMetaData !== undefined
+        ) {
+            next.currentTrack = toTrack(
+                this.lastTrackMetadata,
+                this.lastTrackUri,
+                this.lastTransportUri,
+                this.lastTransportTrack,
+            );
         }
         if (data.NextTrackMetaData !== undefined) {
             next.nextTrack = toTrack(data.NextTrackMetaData);
@@ -306,6 +368,13 @@ export class SvrooijDevice implements SonosDevice {
         try {
             const info = await this.device.AVTransportService.GetPositionInfo();
             const elapsed = toSeconds(info.RelTime);
+            // the events do not always carry the stream content, the position info does
+            let streamContent = '';
+            if (this.cached.currentTrack.type === 'radio') {
+                const meta = info.TrackMetaData;
+                streamContent =
+                    typeof meta === 'string' ? streamContentFromDidl(meta) : parsedTrack(meta)?.StreamContent || '';
+            }
 
             this.cached = {
                 ...this.cached,
@@ -314,6 +383,7 @@ export class SvrooijDevice implements SonosDevice {
                 trackNo: info.Track ?? this.cached.trackNo,
                 currentTrack: {
                     ...this.cached.currentTrack,
+                    title: streamContent || this.cached.currentTrack.title,
                     duration: toSeconds(info.TrackDuration) || this.cached.currentTrack.duration,
                 },
             };

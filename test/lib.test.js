@@ -282,6 +282,35 @@ describe('svrooij backend: track mapping', () => {
         expect(track.title).to.equal('Some Station');
     });
 
+    it('recognises a radio stream by its transport URI when the track is a plain item', () => {
+        const track = toTrack(
+            { Title: 'x-sonosapi-stream:s24896?sid=254', UpnpClass: 'object.item', StreamContent: 'Kontakt zu SWR3' },
+            'x-sonosapi-stream:s24896?sid=254',
+            'x-sonosapi-stream:s24896?sid=254&flags=8224&sn=0',
+            { Title: 'SWR3', UpnpClass: 'object.item.audioItem.audioBroadcast' },
+        );
+        expect(track.type).to.equal('radio');
+        expect(track.stationName).to.equal('SWR3');
+        expect(track.title).to.equal('Kontakt zu SWR3');
+    });
+
+    it('reads the stream content out of an unparsed radio track', () => {
+        const didl =
+            '<DIDL-Lite xmlns:r="urn:schemas-rinconnetworks-com:metadata-1-0/"><item><r:streamContent>Artist - Song</r:streamContent></item></DIDL-Lite>';
+        const track = toTrack(didl, 'aac://example.com/stream', 'x-rincon-mp3radio://example.com/stream');
+        expect(track.type).to.equal('radio');
+        expect(track.title).to.equal('Artist - Song');
+    });
+
+    it('keeps line_in before radio and a normal track as track', () => {
+        const lineIn = toTrack({ TrackUri: 'x-rincon-stream:RINCON_1' }, undefined, 'x-sonosapi-stream:s24896?sid=254');
+        expect(lineIn.type).to.equal('line_in');
+
+        const song = toTrack({ Title: 'Song', TrackUri: 'x-file-cifs://nas/a.mp3', UpnpClass: 'object.item' });
+        expect(song.type).to.equal('track');
+        expect(song.stationName).to.equal('');
+    });
+
     it('recognises the TV input as line_in', () => {
         expect(toTrack({ TrackUri: 'x-sonos-htastream:RINCON_1:spdif' }).type).to.equal('line_in');
         expect(toTrack({ TrackUri: 'x-rincon-stream:RINCON_1' }).type).to.equal('line_in');
@@ -389,5 +418,21 @@ describe('svrooij backend: partial events', () => {
         });
         expect(d.transportUri).to.equal('x-sonosapi-stream:s25111?sid=254');
         expect(d.transportUriMetadata).to.be.a('string').and.to.contain('Some Station');
+    });
+
+    it('decides the type again when only the transport changes', () => {
+        const d = device();
+        d.applyTransportEvent({
+            CurrentTrackURI: 'http://stream.example/swr3.mp3',
+            CurrentTrackMetaData: { Title: 'Kontakt zu SWR3', UpnpClass: 'object.item' },
+        });
+        expect(d.state.currentTrack.type).to.equal('track');
+
+        d.applyTransportEvent({ AVTransportURI: 'x-sonosapi-stream:s24896?sid=254' });
+        expect(d.state.currentTrack.type).to.equal('radio');
+
+        d.applyTransportEvent({ AVTransportURIMetaData: { Title: 'SWR3', UpnpClass: 'object.item' } });
+        expect(d.state.currentTrack.stationName).to.equal('SWR3');
+        expect(d.state.currentTrack.title).to.equal('Kontakt zu SWR3');
     });
 });
