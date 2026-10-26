@@ -319,6 +319,9 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
+### **WORK IN PROGRESS**
+* (@GermanBluefox) The Control tab and the ioBroker.devices widgets are built again with the current GUI components and React, as before 4.2.13
+
 ### 4.2.13 (2026-10-26)
 * (@GermanBluefox) Fixed detection of radio streams (current_type, current_station, current_title) in the new backend (#363)
 * (@GermanBluefox) The adapter no longer stops with "Cannot read properties of undefined (reading 'members')" when a speaker leaves or rejoins the network (#170, #192, #269, #272)
