@@ -317,9 +317,9 @@ export default class SonosControlComponent extends ConfigGeneric<ConfigGenericPr
 
     /**
      * `current_cover` of the room as URL for admin. The adapter stores a path in its file storage
-     * (`/sonos/coverImage/<ip>.png`), which only the web adapter serves from its root - admin serves the
-     * storage below `files/`, the same way the file fields of JsonConfig read it. The `ts` of the state
-     * is appended, because the file name is the same for every track.
+     * (`/sonos/coverImage/<ip>.png?v=...`), which only the web adapter serves from its root - admin serves
+     * the storage below `files/`, the same way the file fields of JsonConfig read it. The `ts` of the
+     * state is appended as well, so that a cover that did not load is tried again.
      */
     private cover(room: string): string {
         const cover = this.str(room, 'current_cover');
@@ -327,7 +327,8 @@ export default class SonosControlComponent extends ConfigGeneric<ConfigGenericPr
             return cover;
         }
         const ts = this.state.sonos[`${this.stateId(room, 'current_cover')}.ts`];
-        return `${this.props.oContext.imagePrefix ?? './files'}${cover}${ts ? `?ts=${ts}` : ''}`;
+        const url = `${this.props.oContext.imagePrefix ?? './files'}${cover}`;
+        return ts ? `${url}${url.includes('?') ? '&' : '?'}ts=${ts}` : url;
     }
 
     private num(room: string, name: string): number {

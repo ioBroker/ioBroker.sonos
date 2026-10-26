@@ -123,7 +123,7 @@ interface SonosPlayerComponentState extends WidgetGenericState {
     playerOpen: boolean;
     /** The source selection is a second dialog - the player is far too small for the lists. */
     sourceOpen: boolean;
-    /** `ts` of `current_cover`: the file name is the same for every track, this tells the covers apart. */
+    /** `ts` of `current_cover`: appended to the URL, so that a cover that did not load is tried again. */
     coverTs: number;
     /** Cover URL that did not load (404, for example) - the placeholder is drawn instead. */
     brokenCover: string;
@@ -442,7 +442,7 @@ export class SonosPlayerComponent extends WidgetGeneric<SonosPlayerComponentStat
         // adapter serves the storage from its root - admin, where ioBroker.devices usually runs, needs
         // `/files/`. The host knows its own prefix.
         const url = this.props.stateContext.getImagePath(cover) || cover;
-        return this.state.coverTs ? `${url}?ts=${this.state.coverTs}` : url;
+        return this.state.coverTs ? `${url}${url.includes('?') ? '&' : '?'}ts=${this.state.coverTs}` : url;
     }
 
     /** The widget colour if the user set one, otherwise the SONOS red. */

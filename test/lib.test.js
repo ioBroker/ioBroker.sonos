@@ -602,3 +602,19 @@ describe('cover cache (#222)', () => {
         expect(() => touchCoverFile(path.join(dir, 'missing'))).to.not.throw();
     });
 });
+
+describe('cover version (#204, #205)', () => {
+    const { coverVersion } = require('../build/lib/cover-cache');
+
+    it('changes with the cover', () => {
+        expect(coverVersion(Buffer.from('station A'))).to.not.equal(coverVersion(Buffer.from('station B')));
+    });
+
+    it('stays the same for the same cover, so the browser cache still works', () => {
+        expect(coverVersion(Buffer.from('station A'))).to.equal(coverVersion(Buffer.from('station A')));
+    });
+
+    it('is short and fits into a URL', () => {
+        expect(coverVersion(Buffer.from('station A'))).to.match(/^[0-9a-f]{8}$/);
+    });
+});

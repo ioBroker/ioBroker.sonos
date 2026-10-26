@@ -7,6 +7,7 @@
  * not used for {@link COVER_CACHE_MAX_AGE} are removed now; a cache hit refreshes the modification
  * time of the file, so covers in use stay.
  */
+import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -59,4 +60,18 @@ export function touchCoverFile(file: string, now = new Date()): void {
     } catch {
         // the cover is delivered anyway; at worst it is downloaded again after a month
     }
+}
+
+/**
+ * Version of a cover for its URL in `current_cover` (#204, #205).
+ *
+ * The cover of a speaker is always stored as `coverImage/<ip>.png`. With the same URL for every track,
+ * vis does not notice a new cover - switching back to a radio station showed the logo of the other
+ * one - and the browser keeps the old image from its cache. The URL gets the hash of the content as
+ * query: it changes with the cover, but stays the same for the same image, so the cache still works.
+ *
+ * @param data content of the cover
+ */
+export function coverVersion(data: Buffer): string {
+    return crypto.createHash('md5').update(data).digest('hex').substring(0, 8);
 }

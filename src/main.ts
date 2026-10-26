@@ -27,7 +27,7 @@ import type {
 import { TTS } from './lib/tts';
 import { UsedResources } from './lib/used-resources';
 import { isReachable } from './lib/reachability';
-import { pruneCoverCache, touchCoverFile } from './lib/cover-cache';
+import { coverVersion, pruneCoverCache, touchCoverFile } from './lib/cover-cache';
 import { getChannelStates } from './lib/states';
 import {
     getMediaRoot,
@@ -2090,9 +2090,10 @@ class Sonos extends utils.Adapter {
         if (fileData) {
             const storagePath = `coverImage/${ip}.png`;
             await this.writeFileAsync(this.name, storagePath, fileData);
+            // the file name is the same for every track, the query tells the covers apart (#204, #205)
             await this.setState(
                 { device: 'root', channel: ip, state: 'current_cover' },
-                { val: `/${this.name}/${storagePath}`, ack: true },
+                { val: `/${this.name}/${storagePath}?v=${coverVersion(fileData)}`, ack: true },
             );
         }
     }
