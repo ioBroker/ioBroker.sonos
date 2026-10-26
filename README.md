@@ -319,7 +319,7 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
-### **WORK IN PROGRESS**
+### 4.2.14 (2026-10-26)
 * (@GermanBluefox) The Control tab and the ioBroker.devices widgets are built again with the current GUI components and React, as before 4.2.13
 
 ### 4.2.13 (2026-10-26)
@@ -336,9 +336,6 @@ adapter to get a working state back.
 
 ### 4.2.10 (2026-10-13)
 * (@GermanBluefox) Small repo-checker fixes
-
-### 4.2.9 (2026-09-15)
-* (@GermanBluefox) SONOS player widget for ioBroker.devices: the tile looks like the media player of `ioBroker.devices`, and a click opens the full player with shuffle, repeat, seek, volume and the source selection
 
 ## License
 
