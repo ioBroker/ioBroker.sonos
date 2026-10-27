@@ -325,6 +325,7 @@ adapter to get a working state back.
 * (@GermanBluefox) Fixed the column widths of the settings on large screens and the German text for fade-in
 * (@GermanBluefox) The objects of the speakers are created without the deprecated `createChannel`/`createState`, so js-controller no longer logs them as deprecated (#238)
 * (@GermanBluefox) Fixed `current_elapsed_s`: a time like `1:02:03` jumped to second 3 instead of 1 h 2 min 3 s
+* (@GermanBluefox) An adapter stopped while it was still starting no longer starts the SONOS library and its timers afterwards (warning "setInterval called, but adapter is shutting down")
 
 ### 4.2.16 (2026-10-26)
 * (@GermanBluefox) `current_cover` changes with every new cover (`/sonos/coverImage/<ip>.png?v=<hash>`), so vis, Lovelace and the browser show the new cover instead of the old one - for example when switching back to a radio station (#204, #205)
