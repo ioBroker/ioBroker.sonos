@@ -33,7 +33,7 @@ interface FadeOptions {
 
 interface WaitPlayerStarted {
     resolve: () => void;
-    timer: NodeJS.Timeout | null;
+    timer: ioBroker.Timeout | undefined | null;
 }
 
 interface StoredState extends SonosDeviceState {
@@ -55,7 +55,7 @@ export class TTS {
     private lastAddedTrack: number | null = null;
     private waitPlayerStarted: WaitPlayerStarted | null = null;
     private playStopped = 0;
-    private playStoppedTimeout: NodeJS.Timeout | null = null;
+    private playStoppedTimeout: ioBroker.Timeout | undefined | null = null;
 
     constructor(adapter: ioBroker.Adapter, player: SonosDevice) {
         this.adapter = adapter;
@@ -81,7 +81,7 @@ export class TTS {
 
         // stop wait for "speech end timeout"
         if (this.playStoppedTimeout) {
-            clearTimeout(this.playStoppedTimeout);
+            this.adapter.clearTimeout(this.playStoppedTimeout);
             this.playStoppedTimeout = null;
         }
 
@@ -97,7 +97,7 @@ export class TTS {
         this.adapter.log.debug('[TTS] playing started');
         if ((this.restoring || this.ttsPlaying) && this.waitPlayerStarted) {
             if (this.waitPlayerStarted.timer) {
-                clearTimeout(this.waitPlayerStarted.timer);
+                this.adapter.clearTimeout(this.waitPlayerStarted.timer);
                 this.waitPlayerStarted.timer = null;
             }
             setImmediate(() => this.waitPlayerStarted?.resolve());
@@ -112,11 +112,11 @@ export class TTS {
 
     destroy(): void {
         if (this.playStoppedTimeout) {
-            clearTimeout(this.playStoppedTimeout);
+            this.adapter.clearTimeout(this.playStoppedTimeout);
             this.playStoppedTimeout = null;
         }
         if (this.waitPlayerStarted?.timer) {
-            clearTimeout(this.waitPlayerStarted.timer);
+            this.adapter.clearTimeout(this.waitPlayerStarted.timer);
             this.waitPlayerStarted = null;
         }
     }
@@ -161,10 +161,10 @@ export class TTS {
                 // if not radio
                 // Set old track number
                 await this.player.seekTrack(storedState.trackNo);
-                await this.wait(200);
+                await this.adapter.delay(200);
                 // Set elapsed time
                 await this.player.seekTime(storedState.elapsedTime);
-                await this.wait(200);
+                await this.adapter.delay(200);
             }
 
             if (storedState.playbackState === 'PLAYING') {
@@ -279,7 +279,7 @@ export class TTS {
 
         // remember start of playing
         this.playStopped = Date.now();
-        this.playStoppedTimeout = setTimeout(() => {
+        this.playStoppedTimeout = this.adapter.setTimeout(() => {
             this.playStoppedTimeout = null;
             this.afterPlayingStopped();
         }, 40_000);
@@ -303,7 +303,7 @@ export class TTS {
         return new Promise<void>(resolve => {
             this.waitPlayerStarted = {
                 resolve,
-                timer: setTimeout(() => {
+                timer: this.adapter.setTimeout(() => {
                     if (this.waitPlayerStarted) {
                         this.waitPlayerStarted.timer = null;
                     }
@@ -316,7 +316,7 @@ export class TTS {
     private clearWaitPlayerStarted(): void {
         if (this.waitPlayerStarted) {
             if (this.waitPlayerStarted.timer) {
-                clearTimeout(this.waitPlayerStarted.timer);
+                this.adapter.clearTimeout(this.waitPlayerStarted.timer);
                 this.waitPlayerStarted.timer = null;
             }
             this.waitPlayerStarted = null;
@@ -344,7 +344,7 @@ export class TTS {
 
         // stop wait for "speech end timeout"
         if (this.playStoppedTimeout) {
-            clearTimeout(this.playStoppedTimeout);
+            this.adapter.clearTimeout(this.playStoppedTimeout);
             this.playStoppedTimeout = null;
         }
 
@@ -383,12 +383,6 @@ export class TTS {
      */
     private isPlayerMuted(): boolean {
         return this.player.state?.mute ?? this.player.muted ?? false;
-    }
-
-    private wait(ms: number): Promise<void> {
-        return new Promise<void>(resolve => {
-            setTimeout(() => resolve(), ms);
-        });
     }
 
     private static toVolume(volume: number | string | null): number {
@@ -448,7 +442,7 @@ export class TTS {
         }
 
         await this.player.setVolume(options.actual);
-        await this.wait(FADE_STEP_MS);
+        await this.adapter.delay(FADE_STEP_MS);
         return this.fadeIn(volume, options);
     }
 
@@ -479,7 +473,7 @@ export class TTS {
         if (options.actual > 0) {
             await this.player.setVolume(options.actual);
             this.adapter.log.debug(`[TTS / fadeOut] >> fadeOut: setVolume: ${options.actual}`);
-            await this.wait(FADE_STEP_MS);
+            await this.adapter.delay(FADE_STEP_MS);
             return this.fadeOut(options);
         }
 
