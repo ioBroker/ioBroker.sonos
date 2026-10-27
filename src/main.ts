@@ -189,6 +189,8 @@ class Sonos extends utils.Adapter {
     /** Failed reachability checks in a row, keyed by channel */
     private readonly aliveFailures: Record<string, number> = {};
     private aliveCheckRunning = false;
+    /** Set by unload. The start may still be running then and must not start timers or the backend any more */
+    private unloading = false;
     /** True after playlists were loaded at least once */
     private playlistsLoaded = false;
     /** All known devices with the IP address (dots replaced by underscores) as key */
@@ -246,6 +248,7 @@ class Sonos extends utils.Adapter {
     }
 
     private onUnload(callback: () => void): void {
+        this.unloading = true;
         try {
             this.aliveIds.forEach(id => this.setState(id, false, true));
 
@@ -1044,7 +1047,7 @@ class Sonos extends utils.Adapter {
             // A slave gets its elapsed time from the coordinator's tick, so only the
             // coordinator (or a standalone player) needs a timer.
             if (ps.playing && this.channels[ip].duration > 0 && !this.isGroupSlave(ip)) {
-                if (!this.channels[ip].elapsedTimer) {
+                if (!this.channels[ip].elapsedTimer && !this.unloading) {
                     this.channels[ip].elapsedTimer = this.setInterval(
                         () => this.updateElapsed(ip),
                         this.config.elapsedInterval || 5000,
@@ -1233,7 +1236,7 @@ class Sonos extends utils.Adapter {
 
     private startTvFormatWatch(ip: string): void {
         const channel = this.channels[ip];
-        if (!channel || channel.tvFormatTimer) {
+        if (!channel || channel.tvFormatTimer || this.unloading) {
             return;
         }
         channel.tvFormatTimer = this.setInterval(() => {
@@ -2506,6 +2509,9 @@ class Sonos extends utils.Adapter {
         this.config.fadeOut = parseInt(String(this.config.fadeOut), 10) || 0;
 
         await this.syncConfig();
+        if (this.unloading) {
+            return;
+        }
 
         this.cacheDir = path.join(utils.getAbsoluteDefaultDataDir(), 'sonosCache') + path.sep;
 
@@ -2518,6 +2524,9 @@ class Sonos extends utils.Adapter {
         this.setInterval(() => void this.cleanCoverCache(), COVER_CACHE_PRUNE_MS);
 
         await this.restoreMissingCovers();
+        if (this.unloading) {
+            return;
+        }
 
         // Two client libraries are shipped side by side while the new one is being proven out.
         // A tester who hits a problem flips this setting instead of downgrading the adapter.
@@ -2533,9 +2542,16 @@ class Sonos extends utils.Adapter {
                 listenerPort,
                 'the speakers cannot send events. Stop the other instance or change the event port in the settings',
             );
+            // the check waits up to 5 seconds for the host, the adapter could be stopped meanwhile
+            if (this.unloading) {
+                return;
+            }
             this.backend = new SvrooijBackend({ tokenFile, listenerPort, log: this.log });
         } else {
             await this.usedResources.check(3500, 'sonos-discovery will listen on the next free port');
+            if (this.unloading) {
+                return;
+            }
             this.backend = new DiscoveryBackend({
                 log: this.log,
                 cacheDir: this.cacheDir,
@@ -2573,8 +2589,14 @@ class Sonos extends utils.Adapter {
         } catch (e) {
             this.log.error(`Cannot start the SONOS backend: ${e}`);
         }
+        if (this.unloading) {
+            return;
+        }
 
         await this.checkAlive();
+        if (this.unloading) {
+            return;
+        }
         this.setInterval(() => void this.checkAlive(), ALIVE_INTERVAL_MS);
 
         this.subscribeStates('*');

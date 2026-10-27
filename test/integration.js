@@ -58,5 +58,23 @@ tests.integration(path.join(__dirname, '..'), {
                 expect(harness.hasLog(/Method "(createChannel|createState|deleteChannel)" is deprecated/)).to.be.false;
             });
         });
+
+        suite('Stop during the start', getHarness => {
+            let harness;
+
+            before(() => {
+                harness = getHarness();
+            });
+
+            it('does not start timers or the backend after the stop', async function () {
+                this.timeout(30000);
+                await harness.startAdapterAndWait();
+                // the start is still running: the port check waits for the host, which the test environment does not have
+                await harness.stopAdapter();
+
+                expect(harness.hasLog(/called, but adapter is shutting down/)).to.be.false;
+                expect(harness.hasLog('Listening for SONOS events')).to.be.false;
+            });
+        });
     },
 });
