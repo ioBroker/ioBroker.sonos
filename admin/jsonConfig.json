@@ -41,8 +41,8 @@
           "xs": 12,
           "sm": 12,
           "md": 8,
-          "lg": 9,
-          "xl": 9
+          "lg": 8,
+          "xl": 8
         },
         "fadeIn": {
           "newLine": true,
@@ -66,8 +66,8 @@
           "xs": 12,
           "sm": 12,
           "md": 8,
-          "lg": 9,
-          "xl": 9
+          "lg": 8,
+          "xl": 8
         },
         "fadeOut": {
           "newLine": true,
@@ -91,8 +91,8 @@
           "xs": 12,
           "sm": 12,
           "md": 8,
-          "lg": 9,
-          "xl": 9
+          "lg": 8,
+          "xl": 8
         },
         "backend": {
           "newLine": true,
@@ -110,6 +110,20 @@
             }
           ],
           "default": "discovery",
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 3,
+          "xl": 3
+        },
+        "listenerPort": {
+          "type": "port",
+          "label": "Event port",
+          "help": "listenerPort_help",
+          "hidden": "data.backend !== \"svrooij\"",
+          "min": 1,
+          "max": 65535,
+          "default": 6329,
           "xs": 12,
           "sm": 12,
           "md": 6,

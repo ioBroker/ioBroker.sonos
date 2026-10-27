@@ -54,9 +54,8 @@ interface ChannelInfo {
     duration: number;
     elapsed: number;
     obj: ioBroker.Object | null;
-    elapsedTimer?: NodeJS.Timeout | null;
-    tvFormatTimer?: NodeJS.Timeout | null;
-    timerVolume?: NodeJS.Timeout | null;
+    elapsedTimer?: ioBroker.Interval | null;
+    tvFormatTimer?: ioBroker.Interval | null;
 }
 
 /** Playback state of a player, extracted from the sonos playbackState */
@@ -264,17 +263,12 @@ class Sonos extends utils.Adapter {
 
             Object.keys(this.channels).forEach(ip => {
                 if (this.channels[ip]?.elapsedTimer) {
-                    clearInterval(this.channels[ip].elapsedTimer);
+                    this.clearInterval(this.channels[ip].elapsedTimer);
                     this.channels[ip].elapsedTimer = null;
                 }
                 if (this.channels[ip]?.tvFormatTimer) {
-                    clearInterval(this.channels[ip].tvFormatTimer);
+                    this.clearInterval(this.channels[ip].tvFormatTimer);
                     this.channels[ip].tvFormatTimer = null;
-                }
-
-                if (this.channels[ip]?.timerVolume) {
-                    clearTimeout(this.channels[ip].timerVolume);
-                    this.channels[ip].timerVolume = null;
                 }
             });
 
@@ -558,7 +552,8 @@ class Sonos extends utils.Adapter {
             return;
         }
 
-        let wait = false;
+        // the command sends its own answer
+        let answered = false;
 
         switch (obj.command) {
             case 'send':
@@ -569,7 +564,7 @@ class Sonos extends utils.Adapter {
 
             case 'browse':
                 if (obj.callback) {
-                    wait = true;
+                    answered = true;
                     this.browseDevices(obj).catch(e => this.log.error(`Cannot browse: ${e}`));
                 }
                 break;
@@ -581,7 +576,7 @@ class Sonos extends utils.Adapter {
                     // `value` is the channel name (the IP with underscores), because every state
                     // of a player lives under `sonos.<instance>.root.<value>`.
                     this.sendTo(obj.from, obj.command, this.getRoomList(), obj.callback);
-                    wait = true;
+                    answered = true;
                 }
                 break;
 
@@ -590,7 +585,7 @@ class Sonos extends utils.Adapter {
                 break;
         }
 
-        if (!wait && obj.callback) {
+        if (!answered && obj.callback) {
             this.sendTo(obj.from, obj.command, obj.message, obj.callback);
         }
     }
@@ -953,7 +948,7 @@ class Sonos extends utils.Adapter {
      * @param volume volume to play with
      */
     private playOnAllPlayers(uri: string, sonosIp: string | undefined, volume: string | null): void {
-        this.forEachPlayer(sonosIp, player => setTimeout(() => this.playOnSonos(uri, player.uuid, volume), 100));
+        this.forEachPlayer(sonosIp, player => this.setTimeout(() => this.playOnSonos(uri, player.uuid, volume), 100));
     }
 
     /**
@@ -1049,7 +1044,7 @@ class Sonos extends utils.Adapter {
             // coordinator (or a standalone player) needs a timer.
             if (ps.playing && this.channels[ip].duration > 0 && !this.isGroupSlave(ip)) {
                 if (!this.channels[ip].elapsedTimer) {
-                    this.channels[ip].elapsedTimer = setInterval(
+                    this.channels[ip].elapsedTimer = this.setInterval(
                         () => this.updateElapsed(ip),
                         this.config.elapsedInterval || 5000,
                     );
@@ -1240,7 +1235,7 @@ class Sonos extends utils.Adapter {
         if (!channel || channel.tvFormatTimer) {
             return;
         }
-        channel.tvFormatTimer = setInterval(() => {
+        channel.tvFormatTimer = this.setInterval(() => {
             void this.refreshTvFormat(ip);
         }, TV_FORMAT_POLL_MS);
     }
@@ -1248,7 +1243,7 @@ class Sonos extends utils.Adapter {
     private stopTvFormatWatch(ip: string): void {
         const channel = this.channels[ip];
         if (channel?.tvFormatTimer) {
-            clearInterval(channel.tvFormatTimer);
+            this.clearInterval(channel.tvFormatTimer);
             channel.tvFormatTimer = null;
         }
     }
@@ -1945,7 +1940,7 @@ class Sonos extends utils.Adapter {
     private stopElapsedTimer(ip: string): void {
         const channel = this.channels[ip];
         if (channel?.elapsedTimer) {
-            clearInterval(channel.elapsedTimer);
+            this.clearInterval(channel.elapsedTimer);
             channel.elapsedTimer = null;
         }
     }
@@ -2532,12 +2527,12 @@ class Sonos extends utils.Adapter {
 
         if (this.config.backend === 'svrooij') {
             this.log.info('Using the @svrooij/sonos backend (experimental)');
-            const port = parseInt(process.env.SONOS_LISTENER_PORT || '', 10) || 6329;
+            const listenerPort = Number(this.config.listenerPort) || 6329;
             await this.usedResources.check(
-                port,
-                'the speakers cannot send events. Stop the other instance or set SONOS_LISTENER_PORT',
+                listenerPort,
+                'the speakers cannot send events. Stop the other instance or change the event port in the settings',
             );
-            this.backend = new SvrooijBackend({ tokenFile, log: this.log });
+            this.backend = new SvrooijBackend({ tokenFile, listenerPort, log: this.log });
         } else {
             await this.usedResources.check(3500, 'sonos-discovery will listen on the next free port');
             this.backend = new DiscoveryBackend({

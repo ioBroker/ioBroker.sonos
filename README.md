@@ -292,6 +292,7 @@ at a time.
 - Fade in (text2speech) - Interval in ms over which the volume is raised at the start of an announcement. 0 disables the fade in. (Default 0)
 - Fade out (text2speech) - Interval in ms over which the volume is lowered at the end of an announcement. 0 disables the fade out. (Default 0)
 - Sonos library - which client library talks to the speakers, see below
+- Event port - only for `@svrooij/sonos`: the TCP port the speakers send their events to. Change it only if another program already uses it. (Default 6329)
 
 ### Sonos library
 
@@ -319,6 +320,10 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
+### **WORK IN PROGRESS**
+* (@GermanBluefox) The event port of the new backend (`@svrooij/sonos`) is set in the instance settings instead of the environment variable `SONOS_LISTENER_PORT`
+* (@GermanBluefox) Fixed the column widths of the settings on large screens and the German text for fade-in
+
 ### 4.2.16 (2026-10-26)
 * (@GermanBluefox) `current_cover` changes with every new cover (`/sonos/coverImage/<ip>.png?v=<hash>`), so vis, Lovelace and the browser show the new cover instead of the old one - for example when switching back to a radio station (#204, #205)
 
@@ -336,6 +341,8 @@ adapter to get a working state back.
 
 ### 4.2.12 (2026-10-17)
 * (@GermanBluefox) Updated packages
+
+Older changes can be found in [CHANGELOG_OLD.md](CHANGELOG_OLD.md)
 
 ## License
 

@@ -19,6 +19,8 @@ declare namespace ioBroker {
          * setting exists so that a tester can switch back without downgrading the adapter.
          */
         backend?: 'discovery' | 'svrooij';
+        /** Port, on which `@svrooij/sonos` receives the events of the speakers */
+        listenerPort?: number;
         /** Interval in ms, how often the elapsed time will be updated while playing */
         elapsedInterval: number;
         /** Fade in time in ms. The values are read from the admin as string */

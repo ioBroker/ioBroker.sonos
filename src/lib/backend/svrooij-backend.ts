@@ -9,7 +9,7 @@
 import * as os from 'node:os';
 
 import type { SonosDevice as SvrDevice } from '@svrooij/sonos';
-import { MetaDataHelper, SonosManager } from '@svrooij/sonos';
+import { MetaDataHelper, SonosEventListener, SonosManager } from '@svrooij/sonos';
 import { PlayMode } from '@svrooij/sonos/lib/models';
 import type { BrowseResponse, Track } from '@svrooij/sonos/lib/models';
 import type { AVTransportServiceEvent, RenderingControlServiceEvent } from '@svrooij/sonos/lib/services';
@@ -688,7 +688,9 @@ export class SvrooijBackend implements SonosBackend {
      * It stays because it reads the accounts the user already linked in the SONOS app out of
      * the speaker, which `@svrooij/sonos` documents that it cannot do.
      */
-    constructor(private readonly options: { localEndpoint?: string; tokenFile: string; log: SmapiLog }) {
+    constructor(
+        private readonly options: { localEndpoint?: string; listenerPort?: number; tokenFile: string; log: SmapiLog },
+    ) {
         this.smapi = new SmapiHub(options.log, options.tokenFile);
 
         const anyBaseUrl = (): string => this.devices[0]?.baseUrl || '';
@@ -702,6 +704,16 @@ export class SvrooijBackend implements SonosBackend {
 
     /** Discover the household and start listening. Must be awaited before anything else. */
     async start(): Promise<void> {
+        // The library reads the port from SONOS_LISTENER_PORT, an environment variable is no setting for
+        // an adapter (and the same for all adapters in compact mode). It must be set before the first
+        // subscription opens the listener.
+        const listener = SonosEventListener.DefaultInstance;
+        const port = this.options.listenerPort;
+        if (port && !listener.UpdateSettings({ port }) && listener.GetStatus().port !== port) {
+            this.options.log.warn(
+                `The event port ${port} is not used: another instance in this process listens on ${listener.GetStatus().port} already`,
+            );
+        }
         await this.manager.InitializeWithDiscovery(10);
         this.known.forEach(device => this.attach(device));
         this.manager.OnNewDevice(device => this.attach(device));
