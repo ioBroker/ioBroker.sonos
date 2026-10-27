@@ -28,7 +28,8 @@ import { TTS } from './lib/tts';
 import { UsedResources } from './lib/used-resources';
 import { isReachable } from './lib/reachability';
 import { coverVersion, pruneCoverCache, touchCoverFile } from './lib/cover-cache';
-import { getChannelStates } from './lib/states';
+import { getChannelStates, type StateDefinition } from './lib/states';
+import { parseFormattedTime, toFormattedTime } from './lib/time';
 import {
     getMediaRoot,
     isDirectPlayUri,
@@ -124,19 +125,6 @@ const TV_NO_TRANSPORT = new Set([
     'crossfade',
     'state_simple',
 ]);
-
-/**
- * Convert seconds into "[h:]mm:ss"
- *
- * @param time time in seconds
- */
-function toFormattedTime(time: number): string {
-    const hours = Math.floor(time / 3600);
-    const min = Math.floor(time / 60) % 60;
-    const sec = time % 60;
-
-    return `${hours ? `${hours}:` : ''}${min < 10 ? `0${min}` : min}:${sec < 10 ? `0${sec}` : sec}`;
-}
 
 /**
  * Find the ID of an enum (room) by its name
@@ -404,18 +392,8 @@ class Sonos extends utils.Adapter {
         } else if (id.state === 'current_elapsed') {
             promise = media.seekTime(parseInt(value, 10));
         } else if (id.state === 'current_elapsed_s') {
-            const parts = value.toString().split(':');
-            let seconds;
-            if (parts.length === 3) {
-                seconds = parseInt(parts[0]) * 3600;
-                seconds += parseInt(parts[1]) * 60;
-                seconds = parseInt(parts[2]);
-            } else if (parts.length === 2) {
-                seconds = parseInt(parts[0]) * 60;
-                seconds += parseInt(parts[1]);
-            } else if (parts.length === 1) {
-                seconds = parseInt(parts[0]);
-            } else {
+            const seconds = parseFormattedTime(String(value));
+            if (seconds === null) {
                 this.log.error(`Invalid elapsed time: ${value}`);
                 return;
             }
@@ -673,31 +651,50 @@ class Sonos extends utils.Adapter {
         }
     }
 
-    private async createSonosChannel(name: string | undefined, ip: string, room?: string): Promise<{ id: string }> {
+    /**
+     * Create the channel of a speaker with all its states, if it does not exist
+     *
+     * @returns ID of the channel, e.g. "root.192_168_1_10"
+     */
+    private async createSonosChannel(name: string | undefined, ip: string, room?: string): Promise<string> {
         const states = getChannelStates();
         const id = ip.replace(/[.\s]+/g, '_');
 
-        const obj = await this.createChannelAsync(
-            'root',
-            id,
-            {
+        await this.setObjectNotExistsAsync(`root.${id}`, {
+            type: 'channel',
+            common: {
                 role: 'media.music',
                 name: name || ip,
             },
-            {
+            native: {
                 ip,
             },
-        );
+        });
 
         if (room) {
             await this.addChannelToEnumAsync('room', room, 'root', id);
         }
 
         for (const state of Object.keys(states)) {
-            await this.createStateAsync('root', id, state, states[state]);
+            await this.createSonosState(id, state, states[state]);
         }
 
-        return obj;
+        return `root.${id}`;
+    }
+
+    /**
+     * Create a state of a speaker, if it does not exist. js-controller sets the default value (#238)
+     *
+     * @param channelId ID of the channel (IP address with underscores)
+     * @param state name of the state
+     * @param definition common part of the state
+     */
+    private async createSonosState(channelId: string, state: string, definition: StateDefinition): Promise<void> {
+        await this.setObjectNotExistsAsync(`root.${channelId}.${state}`, {
+            type: 'state',
+            common: { name: state, ...definition } as ioBroker.StateCommon,
+            native: {},
+        });
     }
 
     /**
@@ -725,7 +722,7 @@ class Sonos extends utils.Adapter {
             this.log.info(`Create missing states of root.${id}: ${missingIds.join(', ')}`);
 
             for (const state of missingIds) {
-                await this.createStateAsync('root', id, state, states[state]);
+                await this.createSonosState(id, state, states[state]);
             }
         }
     }
@@ -742,8 +739,8 @@ class Sonos extends utils.Adapter {
                 if (!device.ip) {
                     continue;
                 }
-                const obj = await this.createSonosChannel(device.name, device.ip, device.room);
-                const _obj = await this.getObjectAsync(obj.id);
+                const channelId = await this.createSonosChannel(device.name, device.ip, device.room);
+                const _obj = await this.getObjectAsync(channelId);
 
                 if (_obj) {
                     this.channels[(_obj.native.ip as string).replace(/[.\s]+/g, '_')] = {
@@ -826,8 +823,12 @@ class Sonos extends utils.Adapter {
 
             for (const configDevice of this.config.devices || []) {
                 if (configDevice.ip && configToAdd.includes(configDevice.ip)) {
-                    const obj = await this.createSonosChannel(configDevice.name, configDevice.ip, configDevice.room);
-                    const _obj = await this.getObjectAsync(obj.id);
+                    const channelId = await this.createSonosChannel(
+                        configDevice.name,
+                        configDevice.ip,
+                        configDevice.room,
+                    );
+                    const _obj = await this.getObjectAsync(channelId);
 
                     if (_obj) {
                         const sId = (_obj.native.ip as string).replace(/[.\s]+/g, '_');
@@ -848,7 +849,7 @@ class Sonos extends utils.Adapter {
                 if (ip) {
                     const _id = ip.replace(/[.\s]+/g, '_');
                     await this.deleteChannelFromEnumAsync('room', 'root', _id);
-                    await this.deleteChannelAsync('root', _id);
+                    await this.delObjectAsync(`root.${_id}`, { recursive: true });
                 }
             }
         }

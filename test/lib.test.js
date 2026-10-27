@@ -618,3 +618,31 @@ describe('cover version (#204, #205)', () => {
         expect(coverVersion(Buffer.from('station A'))).to.match(/^[0-9a-f]{8}$/);
     });
 });
+
+describe('elapsed time', () => {
+    const { parseFormattedTime, toFormattedTime } = require('../build/lib/time');
+
+    it('reads hours, minutes and seconds', () => {
+        expect(parseFormattedTime('1:02:03')).to.equal(3723);
+    });
+
+    it('reads minutes and seconds', () => {
+        expect(parseFormattedTime('02:03')).to.equal(123);
+    });
+
+    it('reads plain seconds', () => {
+        expect(parseFormattedTime('75')).to.equal(75);
+    });
+
+    it('reads its own output', () => {
+        for (const seconds of [0, 59, 61, 3599, 3600, 3723, 36000]) {
+            expect(parseFormattedTime(toFormattedTime(seconds))).to.equal(seconds);
+        }
+    });
+
+    it('rejects text that is not a time', () => {
+        for (const text of ['', 'abc', '1:xx', '1:2:3:4', '-5']) {
+            expect(parseFormattedTime(text), text).to.be.null;
+        }
+    });
+});
