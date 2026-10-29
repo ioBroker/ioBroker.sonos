@@ -157,6 +157,44 @@ In admin the page also appears as a tile on the overview, next to the tiles of t
 
 *) These states will be updated if changes are made in the SONOS app.
 
+## Alarms
+The alarms of the SONOS app are under `sonos.0.alarms`, one channel per alarm, named by the ID that
+SONOS gave it, e.g. `sonos.0.alarms.17`. Changes made in the SONOS app show up within a minute.
+
+Every alarm has these states, all but `next_start` can be written:
+* **`enabled`**: switches the alarm on or off
+* **`time`**: start time as `hh:mm`, in the local time of the SONOS household
+* **`recurrence`**: `ONCE`, `DAILY`, `WEEKDAYS`, `WEEKENDS` or `ON_` followed by the days, 0 is Sunday: `ON_135` rings on Monday, Wednesday and Friday
+* **`duration`**: how long the alarm plays, `hh:mm`
+* **`volume`**: 0 to 100
+* **`room`**: the room that plays the alarm; write the name or the IP address of another speaker to move the alarm there
+* **`source`**: what the alarm plays; write the title of a SONOS favorite, a URI or `SONOS Chime`
+* **`play_mode`**: `NORMAL`, `REPEAT_ALL`, `SHUFFLE_NOREPEAT` or `SHUFFLE` (shuffle and repeat)
+* **`include_grouped`**: the rooms grouped with the room play the alarm too
+* **`next_start`**: when the alarm rings next, as a timestamp in ms; `null` while it is disabled
+* **`delete`**: deletes the alarm
+
+To create an alarm, write JSON to `sonos.0.alarms.create`. Only `room` and `time` are required, the
+other settings are named like the states above:
+```json
+{"room": "Bedroom", "time": "06:45", "recurrence": "WEEKDAYS", "volume": 15, "source": "Radio Bob"}
+```
+Settings that are left out start as daily, for one hour, with the SONOS chime at volume 20.
+
+Every speaker also has **`alarm_next`**: when the next enabled alarm of its room rings. A script can
+use it, for example, to switch on a wake-up light ten minutes before the music starts:
+```js
+let timer;
+on({ id: 'sonos.0.root.192_168_1_50.alarm_next' }, obj => {
+    clearTimeout(timer);
+    if (obj.state.val) {
+        timer = setTimeout(() => setState('hue.0.Bedroom.on', true), obj.state.val - 10 * 60000 - Date.now());
+    }
+});
+```
+`next_start` and `alarm_next` are calculated in the time zone of the ioBroker host, which has to be
+the one of the SONOS household.
+
 ## Using it with the sayIt adapter
 To use the [sayit adapter](https://github.com/ioBroker/ioBroker.sayit) with this SONOS adapter, ensure that the [web adapter](https://github.com/ioBroker/ioBroker.web) is instantiated and running too. The web adapter is required to allow the SONOS adapter to read the generated MP3 file from the sayit adapter.
 
@@ -326,6 +364,7 @@ adapter to get a working state back.
 * (@GermanBluefox) The objects of the speakers are created without the deprecated `createChannel`/`createState`, so js-controller no longer logs them as deprecated (#238)
 * (@GermanBluefox) Fixed `current_elapsed_s`: a time like `1:02:03` jumped to second 3 instead of 1 h 2 min 3 s
 * (@GermanBluefox) An adapter stopped while it was still starting no longer starts the SONOS library and its timers afterwards (warning "setInterval called, but adapter is shutting down")
+* (@GermanBluefox) Added the alarms: every alarm of the SONOS app is under `alarms` and can be switched, changed and deleted, `alarms.create` creates new ones, and `alarm_next` of every speaker tells when its next alarm rings (#65, #325)
 
 ### 4.2.16 (2026-10-26)
 * (@GermanBluefox) `current_cover` changes with every new cover (`/sonos/coverImage/<ip>.png?v=<hash>`), so vis, Lovelace and the browser show the new cover instead of the old one - for example when switching back to a radio station (#204, #205)

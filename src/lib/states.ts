@@ -515,6 +515,15 @@ export function getChannelStates(): Record<string, StateDefinition> {
             desc: 'Play a browsed media item as JSON {uri, metadata, favorite, playlist, tv}',
             name: 'Play browsed media',
         },
+        alarm_next: {
+            // e.g. to switch on a wake-up light a few minutes before (#65)
+            type: 'number',
+            read: true,
+            write: false,
+            role: 'value.time',
+            desc: 'When the next enabled alarm of this room rings, null if there is none',
+            name: 'Next alarm',
+        },
     };
 
     for (const g in newGroupStates) {
@@ -522,4 +531,102 @@ export function getChannelStates(): Record<string, StateDefinition> {
     }
 
     return states;
+}
+
+/** States of every alarm under `alarms.<ID>` (#65, #325) */
+export function getAlarmStates(): Record<string, StateDefinition> {
+    return {
+        enabled: {
+            type: 'boolean',
+            read: true,
+            write: true,
+            role: 'switch.enable',
+            name: 'Enabled',
+        },
+        time: {
+            type: 'string',
+            read: true,
+            write: true,
+            role: 'text',
+            desc: 'Start time as hh:mm, local time of the household',
+            name: 'Start time',
+        },
+        recurrence: {
+            type: 'string',
+            read: true,
+            write: true,
+            role: 'text',
+            desc: 'ONCE, DAILY, WEEKDAYS, WEEKENDS or ON_ followed by the days, 0 is Sunday: ON_135 is Monday, Wednesday and Friday',
+            name: 'Recurrence',
+        },
+        duration: {
+            type: 'string',
+            read: true,
+            write: true,
+            role: 'text',
+            desc: 'How long the alarm plays, hh:mm',
+            name: 'Duration',
+        },
+        volume: {
+            type: 'number',
+            read: true,
+            write: true,
+            role: 'level.volume',
+            min: 0,
+            max: 100,
+            name: 'Volume',
+        },
+        room: {
+            type: 'string',
+            read: true,
+            write: true,
+            role: 'text',
+            desc: 'Room that plays the alarm; write the name or IP address of another speaker to move the alarm there',
+            name: 'Room',
+        },
+        source: {
+            type: 'string',
+            read: true,
+            write: true,
+            role: 'text',
+            desc: 'What the alarm plays; write the title of a favorite, a URI or "SONOS Chime"',
+            name: 'Source',
+        },
+        play_mode: {
+            type: 'string',
+            read: true,
+            write: true,
+            role: 'text',
+            states: {
+                NORMAL: 'Normal',
+                REPEAT_ALL: 'Repeat all',
+                SHUFFLE_NOREPEAT: 'Shuffle',
+                SHUFFLE: 'Shuffle and repeat',
+            },
+            name: 'Play mode',
+        },
+        include_grouped: {
+            type: 'boolean',
+            read: true,
+            write: true,
+            role: 'switch',
+            desc: 'The rooms grouped with the room play the alarm too',
+            name: 'Include grouped rooms',
+        },
+        next_start: {
+            type: 'number',
+            read: true,
+            write: false,
+            role: 'value.time',
+            desc: 'When the alarm rings next, null while it is disabled',
+            name: 'Next start',
+        },
+        delete: {
+            type: 'boolean',
+            read: false,
+            write: true,
+            role: 'button',
+            name: 'Delete the alarm',
+        },
+    };
 }

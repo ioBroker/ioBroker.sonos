@@ -288,6 +288,51 @@
         "name": "root"
       },
       "native": {}
+    },
+    {
+      "_id": "alarms",
+      "type": "folder",
+      "common": {
+        "name": {
+          "en": "Alarms",
+          "de": "Wecker",
+          "ru": "Будильники",
+          "pt": "Alarmes",
+          "nl": "Wekkers",
+          "fr": "Réveils",
+          "it": "Sveglie",
+          "es": "Alarmas",
+          "pl": "Budziki",
+          "uk": "Будильники",
+          "zh-cn": "闹钟"
+        }
+      },
+      "native": {}
+    },
+    {
+      "_id": "alarms.create",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Create an alarm",
+          "de": "Wecker anlegen",
+          "ru": "Создать будильник",
+          "pt": "Criar um alarme",
+          "nl": "Wekker aanmaken",
+          "fr": "Créer un réveil",
+          "it": "Crea una sveglia",
+          "es": "Crear una alarma",
+          "pl": "Utwórz budzik",
+          "uk": "Створити будильник",
+          "zh-cn": "创建闹钟"
+        },
+        "desc": "JSON like {\"room\": \"Bedroom\", \"time\": \"07:00\", \"recurrence\": \"WEEKDAYS\", \"volume\": 15, \"source\": \"title of a favorite\"}",
+        "type": "string",
+        "role": "json",
+        "read": false,
+        "write": true
+      },
+      "native": {}
     }
   ]
 }

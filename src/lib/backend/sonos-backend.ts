@@ -1,6 +1,7 @@
 import type {
     MediaBrowseItem,
     SmapiResult,
+    SonosAlarm,
     SonosBackendEvent,
     SonosBackendEventMap,
     SonosDeviceState,
@@ -9,6 +10,23 @@ import type {
     SonosMusicService,
     SonosQueueEntry,
 } from './types';
+
+/**
+ * The alarms of the household (#65, #325).
+ *
+ * Like the music service accounts they belong to the household, so any speaker answers for all
+ * of them.
+ */
+export interface AlarmClockAccess {
+    list(): Promise<SonosAlarm[]>;
+    /** @returns the ID SONOS assigned to the new alarm */
+    create(alarm: SonosAlarm): Promise<number>;
+    /** Replace all settings of the alarm with {@link SonosAlarm.id} */
+    update(alarm: SonosAlarm): Promise<void>;
+    destroy(id: number): Promise<void>;
+    /** URI and metadata of a favorite, found by its title; an alarm needs both to play a service */
+    findFavorite(title: string): Promise<{ uri: string; metadata: string } | undefined>;
+}
 
 /**
  * Catalog access to the music services of the household.
@@ -140,6 +158,8 @@ export interface SonosBackend {
     readonly localEndpoint: string;
     /** Catalog access to the music services */
     readonly music: MusicServiceAccess;
+    /** The alarms of the household */
+    readonly alarms: AlarmClockAccess;
 
     /** Discover the household. Must be awaited before anything else is used. */
     start(): Promise<void>;

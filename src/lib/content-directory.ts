@@ -11,11 +11,11 @@ import type { MediaBrowseItem, MediaBrowseResult } from './backend/types';
 
 const BROWSE_LIMIT = 200;
 
-function xmlEscape(value: string): string {
+export function xmlEscape(value: string): string {
     return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function decodeXml(value: string): string {
+export function decodeXml(value: string): string {
     return String(value)
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>')

@@ -646,3 +646,361 @@ describe('elapsed time', () => {
         }
     });
 });
+
+describe('alarms (#65, #325)', () => {
+    const http = require('node:http');
+    const {
+        alarmStateValues,
+        applyAlarmSetting,
+        createAlarmClock,
+        newAlarm,
+        nextAlarmStart,
+        normalizeRecurrence,
+        parseAlarmTime,
+    } = require('../build/lib/alarm-clock');
+
+    const esc = text =>
+        String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    // an alarm as the reporter of #65 has it: a TuneIn station on weekdays
+    const RADIO_URI = 'x-sonosapi-stream:s17488?sid=254&flags=8224&sn=0';
+    const RADIO_DIDL =
+        '<DIDL-Lite xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/" xmlns:r="urn:schemas-rinconnetworks-com:metadata-1-0/" xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/"><item id="R:0/0/0" parentID="R:0/0" restricted="true"><dc:title>95.5 Charivari</dc:title><upnp:class>object.item.audioItem.audioBroadcast</upnp:class><desc id="cdudn" nameSpace="urn:schemas-rinconnetworks-com:metadata-1-0/">SA_RINCON65031_</desc></item></DIDL-Lite>';
+    const ROOM = 'RINCON_5CAAFD798FBE01400';
+
+    const ALARM_LIST =
+        '<Alarms>' +
+        `<Alarm ID="1713" StartTime="07:10:00" Duration="02:00:00" Recurrence="WEEKDAYS" Enabled="1" RoomUUID="${ROOM}" ProgramURI="${esc(RADIO_URI)}" ProgramMetaData="${esc(RADIO_DIDL)}" PlayMode="SHUFFLE" Volume="10" IncludeLinkedZones="1"/>` +
+        `<Alarm ID="51" StartTime="09:00:00" Duration="01:00:00" Recurrence="ON_06" Enabled="0" RoomUUID="${ROOM}" ProgramURI="x-rincon-buzzer:0" ProgramMetaData="" PlayMode="NORMAL" Volume="12" IncludeLinkedZones="0"/>` +
+        '</Alarms>';
+
+    const FAVORITES =
+        '<DIDL-Lite xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:r="urn:schemas-rinconnetworks-com:metadata-1-0/">' +
+        `<item id="FV:2/3" parentID="FV:2" restricted="false"><dc:title>95.5 Charivari</dc:title><res protocolInfo="x-sonosapi-stream:*:*:*">${esc(RADIO_URI)}</res><r:resMD>${esc(RADIO_DIDL)}</r:resMD></item>` +
+        '</DIDL-Lite>';
+
+    const envelope = (action, body) =>
+        `<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body><u:${action}Response xmlns:u="urn:schemas-upnp-org:service:AlarmClock:1">${body}</u:${action}Response></s:Body></s:Envelope>`;
+
+    let server;
+    let baseUrl;
+    let requests;
+    let refuse;
+
+    before(async () => {
+        server = http.createServer((req, res) => {
+            let body = '';
+            req.on('data', chunk => (body += chunk));
+            req.on('end', () => {
+                const action = String(req.headers.soapaction).replace(/^"[^#]*#|"$/g, '');
+                requests.push({ path: req.url, action, body });
+
+                if (refuse) {
+                    res.writeHead(500);
+                    res.end(
+                        '<s:Envelope><s:Body><s:Fault><detail><UPnPError><errorCode>801</errorCode></UPnPError></detail></s:Fault></s:Body></s:Envelope>',
+                    );
+                } else if (action === 'ListAlarms') {
+                    res.end(
+                        envelope(
+                            'ListAlarms',
+                            `<CurrentAlarmList>${esc(ALARM_LIST)}</CurrentAlarmList><CurrentAlarmListVersion>${ROOM}:39</CurrentAlarmListVersion>`,
+                        ),
+                    );
+                } else if (action === 'CreateAlarm') {
+                    res.end(envelope('CreateAlarm', '<AssignedID>1714</AssignedID>'));
+                } else if (action === 'Browse') {
+                    res.end(envelope('Browse', `<Result>${esc(FAVORITES)}</Result>`));
+                } else {
+                    res.end(envelope(action, ''));
+                }
+            });
+        });
+        await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+        baseUrl = `http://127.0.0.1:${server.address().port}`;
+    });
+
+    after(() => server.close());
+
+    beforeEach(() => {
+        requests = [];
+        refuse = false;
+    });
+
+    const clock = () => createAlarmClock(() => baseUrl);
+
+    const lookup = {
+        roomUuid: room => ({ bedroom: ROOM, '192.168.1.50': 'RINCON_KITCHEN' })[room.toLowerCase()],
+        findFavorite: async title =>
+            title.toLowerCase() === '95.5 charivari' ? { uri: RADIO_URI, metadata: RADIO_DIDL } : undefined,
+    };
+
+    describe('AlarmClock service', () => {
+        it('lists the alarms with every setting', async () => {
+            const alarms = await clock().list();
+
+            expect(requests[0].path).to.equal('/AlarmClock/Control');
+            expect(alarms).to.have.length(2);
+            expect(alarms[0]).to.deep.equal({
+                id: 1713,
+                startTime: '07:10:00',
+                duration: '02:00:00',
+                recurrence: 'WEEKDAYS',
+                enabled: true,
+                roomUuid: ROOM,
+                programUri: RADIO_URI,
+                programMetadata: RADIO_DIDL,
+                playMode: 'SHUFFLE',
+                volume: 10,
+                includeLinkedZones: true,
+            });
+            expect(alarms[1]).to.include({
+                id: 51,
+                enabled: false,
+                recurrence: 'ON_06',
+                programUri: 'x-rincon-buzzer:0',
+            });
+        });
+
+        it('sends back what it read, with every argument in the order of the service', async () => {
+            const [alarm] = await clock().list();
+            await clock().update(alarm);
+
+            const update = requests.pop();
+            expect(update.action).to.equal('UpdateAlarm');
+            expect(update.body).to.include(
+                '<u:UpdateAlarm xmlns:u="urn:schemas-upnp-org:service:AlarmClock:1">' +
+                    '<ID>1713</ID><StartLocalTime>07:10:00</StartLocalTime><Duration>02:00:00</Duration>' +
+                    `<Recurrence>WEEKDAYS</Recurrence><Enabled>1</Enabled><RoomUUID>${ROOM}</RoomUUID>` +
+                    `<ProgramURI>${esc(RADIO_URI)}</ProgramURI><ProgramMetaData>${esc(RADIO_DIDL)}</ProgramMetaData>` +
+                    '<PlayMode>SHUFFLE</PlayMode><Volume>10</Volume><IncludeLinkedZones>1</IncludeLinkedZones>' +
+                    '</u:UpdateAlarm>',
+            );
+        });
+
+        it('creates an alarm and returns its ID', async () => {
+            const id = await clock().create(await newAlarm({ room: 'Bedroom', time: '6:45' }, lookup));
+
+            expect(id).to.equal(1714);
+            expect(requests[0].action).to.equal('CreateAlarm');
+            expect(requests[0].body).to.include('<StartLocalTime>06:45:00</StartLocalTime>');
+            expect(requests[0].body).to.not.include('<ID>');
+        });
+
+        it('deletes an alarm', async () => {
+            await clock().destroy(51);
+
+            expect(requests[0].action).to.equal('DestroyAlarm');
+            expect(requests[0].body).to.include('<ID>51</ID>');
+        });
+
+        it('reports the UPnP error of a refused action', async () => {
+            refuse = true;
+
+            const error = await clock()
+                .destroy(51)
+                .catch(e => e);
+            expect(error.message).to.equal('DestroyAlarm failed: HTTP 500, UPnP error 801');
+        });
+
+        it('fails without a known speaker', async () => {
+            const error = await createAlarmClock(() => '')
+                .list()
+                .catch(e => e);
+            expect(error.message).to.equal('no speaker is known yet');
+        });
+
+        it('finds a favorite with the metadata an alarm needs', async () => {
+            expect(await clock().findFavorite('95.5 CHARIVARI')).to.deep.equal({
+                uri: RADIO_URI,
+                metadata: RADIO_DIDL,
+            });
+            expect(requests[0].path).to.equal('/MediaServer/ContentDirectory/Control');
+            expect(await clock().findFavorite('unknown station')).to.be.undefined;
+        });
+    });
+
+    describe('next start', () => {
+        // Thursday, 29 October 2026, 08:00 local time
+        const now = new Date(2026, 9, 29, 8, 0, 0);
+        const expectStart = (alarm, from, expected) => {
+            const settings = { enabled: true, startTime: '07:10:00', recurrence: 'DAILY', ...alarm };
+            expect(nextAlarmStart(settings, from)).to.equal(expected.getTime());
+        };
+
+        it('is today while the time is still ahead', () => {
+            expectStart({ startTime: '09:30:00' }, now, new Date(2026, 9, 29, 9, 30, 0));
+        });
+
+        it('is tomorrow once the time has passed', () => {
+            expectStart({}, now, new Date(2026, 9, 30, 7, 10, 0));
+        });
+
+        it('skips the weekend on weekdays', () => {
+            expectStart({ recurrence: 'WEEKDAYS' }, now, new Date(2026, 9, 30, 7, 10, 0));
+            expectStart({ recurrence: 'WEEKDAYS' }, new Date(2026, 9, 30, 8, 0, 0), new Date(2026, 10, 2, 7, 10, 0));
+        });
+
+        it('waits for the weekend on weekends', () => {
+            expectStart({ recurrence: 'WEEKENDS' }, now, new Date(2026, 9, 31, 7, 10, 0));
+        });
+
+        it('takes the listed days, 0 is Sunday', () => {
+            expectStart({ recurrence: 'ON_03' }, now, new Date(2026, 10, 1, 7, 10, 0));
+        });
+
+        it('rings once at the next occurrence of the time', () => {
+            expectStart({ recurrence: 'ONCE' }, now, new Date(2026, 9, 30, 7, 10, 0));
+        });
+
+        it('is a week ahead when only today is listed and the time has passed', () => {
+            expectStart({ recurrence: 'ON_4' }, now, new Date(2026, 10, 5, 7, 10, 0));
+        });
+
+        it('is null while the alarm is disabled', () => {
+            expect(nextAlarmStart({ enabled: false, startTime: '07:10:00', recurrence: 'DAILY' }, now)).to.be.null;
+        });
+    });
+
+    describe('settings', () => {
+        const alarm = () => ({
+            id: 51,
+            startTime: '09:00:00',
+            duration: '01:00:00',
+            recurrence: 'ON_06',
+            enabled: false,
+            roomUuid: ROOM,
+            programUri: 'x-rincon-buzzer:0',
+            programMetadata: '',
+            playMode: 'NORMAL',
+            volume: 12,
+            includeLinkedZones: false,
+        });
+
+        it('reads times as the user writes them', () => {
+            expect(parseAlarmTime('7:30')).to.equal('07:30:00');
+            expect(parseAlarmTime(' 07:30:15 ')).to.equal('07:30:15');
+            for (const text of ['', '7', '7:5', '24:00', '12:60', '1:2:3:4', 'noon']) {
+                expect(parseAlarmTime(text), text).to.be.null;
+            }
+        });
+
+        it('reads recurrences as the user writes them', () => {
+            expect(normalizeRecurrence('weekdays')).to.equal('WEEKDAYS');
+            expect(normalizeRecurrence('on_5313')).to.equal('ON_135');
+            for (const text of ['', 'ON_', 'ON_7', 'sometimes']) {
+                expect(normalizeRecurrence(text), text).to.be.null;
+            }
+        });
+
+        it('changes each setting named like its state', async () => {
+            const changed = alarm();
+            const settings = {
+                enabled: 'true',
+                time: '6:15',
+                duration: '0:30',
+                recurrence: 'daily',
+                volume: '25',
+                play_mode: 'shuffle_norepeat',
+                include_grouped: true,
+                room: '192.168.1.50',
+                source: '95.5 Charivari',
+            };
+            for (const [setting, value] of Object.entries(settings)) {
+                await applyAlarmSetting(changed, setting, value, lookup);
+            }
+
+            expect(changed).to.deep.equal({
+                id: 51,
+                startTime: '06:15:00',
+                duration: '00:30:00',
+                recurrence: 'DAILY',
+                enabled: true,
+                roomUuid: 'RINCON_KITCHEN',
+                programUri: RADIO_URI,
+                programMetadata: RADIO_DIDL,
+                playMode: 'SHUFFLE_NOREPEAT',
+                volume: 25,
+                includeLinkedZones: true,
+            });
+        });
+
+        it('reads "false" as false', async () => {
+            const changed = { ...alarm(), enabled: true };
+            await applyAlarmSetting(changed, 'enabled', 'false', lookup);
+            expect(changed.enabled).to.be.false;
+        });
+
+        it('takes a URI or the chime as source', async () => {
+            const changed = alarm();
+            await applyAlarmSetting(changed, 'source', 'x-rincon-mp3radio://example.com/stream', lookup);
+            expect(changed.programUri).to.equal('x-rincon-mp3radio://example.com/stream');
+
+            await applyAlarmSetting(changed, 'source', 'sonos chime', lookup);
+            expect(changed.programUri).to.equal('x-rincon-buzzer:0');
+        });
+
+        it('rejects invalid values and leaves the alarm as it was', async () => {
+            const invalid = [
+                ['time', '25:00'],
+                ['duration', 'long'],
+                ['recurrence', 'sometimes'],
+                ['volume', '101'],
+                ['volume', ''],
+                ['play_mode', 'LOUD'],
+                ['room', 'Garage'],
+                ['source', 'unknown station'],
+                ['color', 'red'],
+            ];
+            for (const [setting, value] of invalid) {
+                const changed = alarm();
+                const error = await applyAlarmSetting(changed, setting, value, lookup).catch(e => e);
+                expect(error, `${setting}=${value}`).to.be.an('error');
+                expect(changed).to.deep.equal(alarm());
+            }
+        });
+
+        it('creates an alarm from room and time, the rest with defaults', async () => {
+            expect(await newAlarm({ room: 'bedroom', time: '6:45', recurrence: 'weekdays' }, lookup)).to.deep.equal({
+                id: 0,
+                startTime: '06:45:00',
+                duration: '01:00:00',
+                recurrence: 'WEEKDAYS',
+                enabled: true,
+                roomUuid: ROOM,
+                programUri: 'x-rincon-buzzer:0',
+                programMetadata: '',
+                playMode: 'NORMAL',
+                volume: 20,
+                includeLinkedZones: false,
+            });
+
+            const error = await newAlarm({ time: '6:45' }, lookup).catch(e => e);
+            expect(error.message).to.equal('"room" and "time" are required');
+        });
+
+        it('shows the alarm in the states', () => {
+            const radio = {
+                ...alarm(),
+                enabled: true,
+                programUri: RADIO_URI,
+                programMetadata: RADIO_DIDL,
+                startTime: '07:10:30',
+            };
+
+            expect(alarmStateValues(radio, 'Bedroom', new Date(2026, 9, 29, 8, 0, 0))).to.deep.equal({
+                enabled: true,
+                time: '07:10:30',
+                recurrence: 'ON_06',
+                duration: '01:00',
+                volume: 12,
+                room: 'Bedroom',
+                source: '95.5 Charivari',
+                play_mode: 'NORMAL',
+                include_grouped: false,
+                next_start: new Date(2026, 9, 31, 7, 10, 30).getTime(),
+            });
+            expect(alarmStateValues(alarm(), 'Bedroom', new Date()).source).to.equal('SONOS Chime');
+        });
+    });
+});

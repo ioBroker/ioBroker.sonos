@@ -59,6 +59,39 @@ tests.integration(path.join(__dirname, '..'), {
             });
         });
 
+        suite('Alarms (#65, #325)', getHarness => {
+            let harness;
+
+            before(async function () {
+                this.timeout(60000);
+                harness = getHarness();
+                await harness.startAdapterAndWait();
+            });
+
+            it('creates the objects to create an alarm', async () => {
+                const folder = await harness.objects.getObjectAsync('sonos.0.alarms');
+                const create = await harness.objects.getObjectAsync('sonos.0.alarms.create');
+
+                expect(folder?.type).to.equal('folder');
+                expect(create?.type).to.equal('state');
+                expect(create.common.write).to.be.true;
+            });
+
+            it('refuses an alarm for an unknown room', async function () {
+                this.timeout(30000);
+                // the states are subscribed at the end of the start, which waits for the port check
+                for (let i = 0; i < 25 && !harness.hasLog(/Cannot change the alarm create/); i++) {
+                    await harness.states.setStateAsync('sonos.0.alarms.create', {
+                        val: '{"room": "Garage", "time": "07:00"}',
+                        ack: false,
+                    });
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+
+                expect(harness.hasLog('Cannot change the alarm create: Unknown room "Garage"', 'error')).to.be.true;
+            });
+        });
+
         suite('Stop during the start', getHarness => {
             let harness;
 
