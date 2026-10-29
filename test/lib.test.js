@@ -1004,3 +1004,88 @@ describe('alarms (#65, #325)', () => {
         });
     });
 });
+
+describe('battery (#116, #211)', () => {
+    const http = require('node:http');
+    const { parseBatteryStatus, readBatteryStatus } = require('../build/lib/battery');
+
+    // the page of a Move on its charging ring, as soco documents it
+    const page = (level, powerSource) =>
+        '<?xml version="1.0" ?><ZPSupportInfo><LocalBatteryStatus>' +
+        '<Data name="Health">GREEN</Data>' +
+        `<Data name="Level">${level}</Data>` +
+        '<Data name="Temperature">NORMAL</Data>' +
+        `<Data name="PowerSource">${powerSource}</Data>` +
+        '</LocalBatteryStatus></ZPSupportInfo>';
+
+    it('reads level and power source', () => {
+        expect(parseBatteryStatus(page(100, 'SONOS_CHARGING_RING'))).to.deep.equal({
+            level: 100,
+            powerSource: 'SONOS_CHARGING_RING',
+            charging: true,
+        });
+    });
+
+    it('is charging on USB power and not on the battery', () => {
+        expect(parseBatteryStatus(page(40, 'USB_POWER')).charging).to.be.true;
+        expect(parseBatteryStatus(page(87, 'BATTERY')).charging).to.be.false;
+    });
+
+    it('is null for a speaker without battery and for S1 firmware', () => {
+        expect(parseBatteryStatus('<?xml version="1.0" ?><ZPSupportInfo></ZPSupportInfo>')).to.be.null;
+        expect(parseBatteryStatus('')).to.be.null;
+        expect(parseBatteryStatus(page('', 'BATTERY'))).to.be.null;
+    });
+
+    describe('from the speaker', () => {
+        let server;
+        let port;
+        let answer;
+
+        before(async () => {
+            server = http.createServer((req, res) => {
+                if (req.url !== '/status/batterystatus') {
+                    res.writeHead(404);
+                    res.end();
+                    return;
+                }
+                res.writeHead(answer.status);
+                res.end(answer.body);
+            });
+            await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+            port = server.address().port;
+        });
+
+        after(() => server.close());
+
+        it('reads the status page', async () => {
+            answer = { status: 200, body: page(87, 'BATTERY') };
+            expect(await readBatteryStatus('127.0.0.1', port)).to.deep.equal({
+                level: 87,
+                powerSource: 'BATTERY',
+                charging: false,
+            });
+        });
+
+        it('is null for a speaker without the page', async () => {
+            answer = { status: 404, body: '' };
+            expect(await readBatteryStatus('127.0.0.1', port)).to.be.null;
+        });
+
+        it('fails while the speaker cannot answer, so that it is asked again', async () => {
+            answer = { status: 503, body: '' };
+            const error = await readBatteryStatus('127.0.0.1', port).catch(e => e);
+            expect(error.message).to.equal('HTTP 503');
+        });
+
+        it('fails while the speaker is away', async () => {
+            const closed = http.createServer();
+            await new Promise(resolve => closed.listen(0, '127.0.0.1', resolve));
+            const closedPort = closed.address().port;
+            await new Promise(resolve => closed.close(resolve));
+
+            const error = await readBatteryStatus('127.0.0.1', closedPort).catch(e => e);
+            expect(error).to.be.an('error');
+        });
+    });
+});
