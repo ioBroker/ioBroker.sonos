@@ -1,3 +1,4 @@
+const http = require('node:http');
 const path = require('node:path');
 const { expect } = require('chai');
 const { tests } = require('@iobroker/testing');
@@ -89,6 +90,58 @@ tests.integration(path.join(__dirname, '..'), {
                 }
 
                 expect(harness.hasLog('Cannot change the alarm create: Unknown room "Garage"', 'error')).to.be.true;
+            });
+        });
+
+        suite('Battery of a portable speaker (#116, #211)', getHarness => {
+            const channelId = 'sonos.0.root.127_0_0_1';
+            let harness;
+            let speaker;
+
+            before(async function () {
+                this.timeout(60000);
+                // the status page of a Roam that is off its charger
+                speaker = http.createServer((req, res) => {
+                    if (req.url === '/status/batterystatus') {
+                        res.end(
+                            '<ZPSupportInfo><LocalBatteryStatus><Data name="Health">GREEN</Data><Data name="Level">87</Data>' +
+                                '<Data name="Temperature">NORMAL</Data><Data name="PowerSource">BATTERY</Data></LocalBatteryStatus></ZPSupportInfo>',
+                        );
+                    } else {
+                        res.writeHead(404);
+                        res.end();
+                    }
+                });
+                await new Promise((resolve, reject) =>
+                    speaker.once('error', reject).listen(1400, '127.0.0.1', resolve),
+                );
+
+                harness = getHarness();
+                await harness.changeAdapterConfig('sonos', {
+                    native: { devices: [{ ip: '127.0.0.1', name: 'Roam' }] },
+                });
+                await harness.startAdapterAndWait();
+
+                // the battery is read after the port check, which waits for the host
+                for (let i = 0; i < 40 && !(await harness.states.getStateAsync(`${channelId}.battery_level`)); i++) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+            });
+
+            after(() => speaker?.close());
+
+            it('creates the battery states and fills them', async () => {
+                const level = await harness.objects.getObjectAsync(`${channelId}.battery_level`);
+                expect(level?.common.role).to.equal('value.battery');
+                expect(level.common.unit).to.equal('%');
+
+                const levelState = await harness.states.getStateAsync(`${channelId}.battery_level`);
+                expect(levelState?.val).to.equal(87);
+                expect(levelState?.ack).to.be.true;
+
+                const charging = await harness.states.getStateAsync(`${channelId}.battery_charging`);
+                expect(charging?.val).to.equal(false);
+                expect(charging?.ack).to.be.true;
             });
         });
 

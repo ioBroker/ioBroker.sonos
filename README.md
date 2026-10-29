@@ -157,6 +157,14 @@ In admin the page also appears as a tile on the overview, next to the tiles of t
 
 *) These states will be updated if changes are made in the SONOS app.
 
+## Battery
+Speakers with a battery - Move and Roam - get two more states as soon as they report it:
+* **`battery_level`**: the charge in percent
+* **`battery_charging`**: `true` while the speaker is on its charging base or on USB power
+
+The battery is read every 5 minutes. A speaker that is asleep keeps its last values, `alive`
+shows whether they are current. Only S2 firmware reports the battery this way.
+
 ## Alarms
 The alarms of the SONOS app are under `sonos.0.alarms`, one channel per alarm, named by the ID that
 SONOS gave it, e.g. `sonos.0.alarms.17`. Changes made in the SONOS app show up within a minute.
@@ -365,6 +373,7 @@ adapter to get a working state back.
 * (@GermanBluefox) Fixed `current_elapsed_s`: a time like `1:02:03` jumped to second 3 instead of 1 h 2 min 3 s
 * (@GermanBluefox) An adapter stopped while it was still starting no longer starts the SONOS library and its timers afterwards (warning "setInterval called, but adapter is shutting down")
 * (@GermanBluefox) Added the alarms: every alarm of the SONOS app is under `alarms` and can be switched, changed and deleted, `alarms.create` creates new ones, and `alarm_next` of every speaker tells when its next alarm rings (#65, #325)
+* (@GermanBluefox) Added the battery of Move and Roam: `battery_level` and `battery_charging` (#116, #211)
 
 ### 4.2.16 (2026-10-26)
 * (@GermanBluefox) `current_cover` changes with every new cover (`/sonos/coverImage/<ip>.png?v=<hash>`), so vis, Lovelace and the browser show the new cover instead of the old one - for example when switching back to a radio station (#204, #205)
