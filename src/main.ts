@@ -17,6 +17,7 @@ import { DiscoveryBackend } from './lib/backend/discovery-backend';
 import { SvrooijBackend } from './lib/backend/svrooij-backend';
 import type { SonosBackend, SonosDevice } from './lib/backend/sonos-backend';
 import type {
+    SonosAlarm,
     SonosBackendEvent,
     SonosDeviceState,
     SonosMediaEntry,
@@ -28,7 +29,8 @@ import { TTS } from './lib/tts';
 import { UsedResources } from './lib/used-resources';
 import { isReachable } from './lib/reachability';
 import { coverVersion, pruneCoverCache, touchCoverFile } from './lib/cover-cache';
-import { getChannelStates, type StateDefinition } from './lib/states';
+import { getAlarmStates, getChannelStates, type StateDefinition } from './lib/states';
+import { alarmStateValues, applyAlarmSetting, newAlarm, nextAlarmStart, type AlarmLookup } from './lib/alarm-clock';
 import { parseFormattedTime, toFormattedTime } from './lib/time';
 import {
     getMediaRoot,
@@ -103,6 +105,8 @@ const ALIVE_TIMEOUT_MS = 3_000;
 const ALIVE_MAX_FAILURES = 2;
 /** How often unused covers are removed from the cache */
 const COVER_CACHE_PRUNE_MS = 24 * 3600 * 1000;
+/** How often the alarms are read: `sonos-discovery` does not subscribe to their changes, so they are polled */
+const ALARM_POLL_MS = 60_000;
 
 /** Grouping URI used when a player is a slave (`x-rincon:RINCON_...`) */
 function isGroupingUri(uri: string | undefined): boolean {
@@ -208,6 +212,15 @@ class Sonos extends utils.Adapter {
     private readonly queues: Record<string, SonosQueueEntry[]> = {};
     /** Running announcement per device uuid. It used to be attached to the player object itself. */
     private readonly tts: Record<string, TTS> = {};
+    /** IDs of the alarms that have objects; null until the alarms were read once */
+    private alarmIds: Set<number> | null = null;
+    /** Name of every alarm channel, so that it is only rewritten when the room or the time changed */
+    private readonly alarmNames: Record<number, string> = {};
+    /** Alarm commands and refreshes run one after another: an update always writes the whole alarm */
+    private alarmTask: Promise<void> = Promise.resolve();
+    private alarmRefreshQueued = false;
+    /** Last error of reading the alarms, so that a speaker that is away is not reported every minute */
+    private alarmError = '';
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
@@ -291,6 +304,12 @@ class Sonos extends utils.Adapter {
         }
 
         this.log.info(`try to control id ${_id} with ${JSON.stringify(state)}`);
+
+        const alarmPrefix = `${this.namespace}.alarms.`;
+        if (_id.startsWith(alarmPrefix)) {
+            void this.controlAlarm(_id.substring(alarmPrefix.length), state.val);
+            return;
+        }
 
         // Try to find the object
         const id = this.idToDCS(_id);
@@ -2380,6 +2399,11 @@ class Sonos extends utils.Adapter {
         if (!this.playlistsLoaded && this.backend?.devices?.length) {
             await this.updateMediaLists();
         }
+
+        // the first speakers are known now, so the alarms need not wait for the next poll
+        if (!this.alarmIds && this.backend?.devices?.length) {
+            void this.refreshAlarms();
+        }
     }
 
     private async takeSonosQueue(ip: string, player: SonosDevice, queue: SonosQueueEntry[]): Promise<void> {
@@ -2599,7 +2623,217 @@ class Sonos extends utils.Adapter {
         }
         this.setInterval(() => void this.checkAlive(), ALIVE_INTERVAL_MS);
 
+        void this.refreshAlarms();
+        this.setInterval(() => void this.refreshAlarms(), ALARM_POLL_MS);
+
         this.subscribeStates('*');
+    }
+
+    /**
+     * Run an alarm task after the ones before it, see {@link alarmTask}
+     *
+     * @param task the task
+     */
+    private queueAlarmTask(task: () => Promise<void>): Promise<void> {
+        const run = this.alarmTask.then(task);
+        this.alarmTask = run.catch(() => {
+            // the caller reports it
+        });
+        return run;
+    }
+
+    /** Read the alarms of the household into the objects, unless a read is waiting already */
+    private refreshAlarms(): Promise<void> {
+        if (this.alarmRefreshQueued) {
+            return this.alarmTask;
+        }
+        this.alarmRefreshQueued = true;
+
+        return this.queueAlarmTask(async () => {
+            this.alarmRefreshQueued = false;
+            try {
+                await this.updateAlarms();
+                this.alarmError = '';
+            } catch (e) {
+                // unload has closed the databases meanwhile
+                if (this.unloading) {
+                    return;
+                }
+                const message = `Cannot read the alarms: ${e}`;
+                if (message !== this.alarmError) {
+                    this.log.warn(message);
+                    this.alarmError = message;
+                } else {
+                    this.log.debug(message);
+                }
+            }
+        });
+    }
+
+    /** Reflect the alarms of the household in `alarms.<ID>` and in `alarm_next` of every speaker (#65, #325) */
+    private async updateAlarms(): Promise<void> {
+        const backend = this.backend;
+        if (!backend?.devices.length) {
+            return;
+        }
+
+        const alarms = await backend.alarms.list();
+        if (!this.backend || this.unloading) {
+            return;
+        }
+
+        if (!this.alarmIds) {
+            // the alarms of the last run, some of them may have been deleted meanwhile
+            const channels = await this.getObjectViewAsync('system', 'channel', {
+                startkey: `${this.namespace}.alarms.`,
+                endkey: `${this.namespace}.alarms.香`,
+            });
+            this.alarmIds = new Set(
+                channels.rows.map(row => parseInt(row.id.split('.').pop()!, 10)).filter(id => !isNaN(id)),
+            );
+        }
+
+        const now = new Date();
+        for (const alarm of alarms) {
+            await this.takeSonosAlarm(alarm, now);
+        }
+
+        const ids = new Set(alarms.map(alarm => alarm.id));
+        for (const id of this.alarmIds) {
+            if (!ids.has(id)) {
+                await this.delObjectAsync(`alarms.${id}`, { recursive: true });
+                delete this.alarmNames[id];
+            }
+        }
+        this.alarmIds = ids;
+
+        for (const device of backend.devices) {
+            if (device.channel && this.channels[device.channel]) {
+                const starts = alarms
+                    .filter(alarm => alarm.roomUuid === device.uuid)
+                    .map(alarm => nextAlarmStart(alarm, now))
+                    .filter((start): start is number => start !== null);
+
+                await this.setStateChangedAsync(
+                    `root.${device.channel}.alarm_next`,
+                    starts.length ? Math.min(...starts) : null,
+                    true,
+                );
+            }
+        }
+    }
+
+    /**
+     * Write one alarm to `alarms.<ID>`, creating the objects the first time
+     *
+     * @param alarm the alarm
+     * @param now the time to calculate `next_start` from
+     */
+    private async takeSonosAlarm(alarm: SonosAlarm, now: Date): Promise<void> {
+        const channelId = `alarms.${alarm.id}`;
+        const roomName = this.backend?.getDeviceByUuid(alarm.roomUuid)?.roomName || alarm.roomUuid;
+        const values = alarmStateValues(alarm, roomName, now);
+        const name = `${roomName} ${values.time}`;
+
+        if (this.alarmNames[alarm.id] !== name) {
+            await this.extendObjectAsync(channelId, { type: 'channel', common: { name }, native: {} });
+        }
+
+        if (this.alarmNames[alarm.id] === undefined) {
+            // the first time in this run: the alarm is new, or its objects are from an older version
+            const definitions = getAlarmStates();
+            for (const state of Object.keys(definitions)) {
+                await this.setObjectNotExistsAsync(`${channelId}.${state}`, {
+                    type: 'state',
+                    common: { name: state, ...definitions[state] } as ioBroker.StateCommon,
+                    native: {},
+                });
+            }
+        }
+        this.alarmNames[alarm.id] = name;
+
+        for (const [state, val] of Object.entries(values)) {
+            await this.setStateChangedAsync(`${channelId}.${state}`, val, true);
+        }
+    }
+
+    /**
+     * Change, delete or create an alarm (#325), then show the alarms as SONOS has them
+     *
+     * @param path `create` or `<ID>.<state>`
+     * @param value the written value
+     */
+    private controlAlarm(path: string, value: ioBroker.StateValue): Promise<void> {
+        return this.queueAlarmTask(async () => {
+            try {
+                await this.changeAlarm(path, value);
+            } catch (e) {
+                this.log.error(`Cannot change the alarm ${path}: ${e instanceof Error ? e.message : e}`);
+            }
+
+            // this also restores the value a refused command left behind
+            try {
+                await this.updateAlarms();
+            } catch (e) {
+                this.log.warn(`Cannot read the alarms: ${e}`);
+            }
+        });
+    }
+
+    /**
+     * Send one command to the alarms, see {@link controlAlarm}
+     *
+     * @param path `create` or `<ID>.<state>`
+     * @param value the written value
+     */
+    private async changeAlarm(path: string, value: ioBroker.StateValue): Promise<void> {
+        const backend = this.backend;
+        if (!backend) {
+            throw new Error('the adapter is not connected to SONOS yet');
+        }
+
+        const lookup: AlarmLookup = {
+            roomUuid: room => this.findRoomUuid(room),
+            findFavorite: title => backend.alarms.findFavorite(title),
+        };
+
+        if (path === 'create') {
+            const settings = typeof value === 'string' ? JSON.parse(value) : value;
+            if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
+                throw new Error('expected a JSON object like {"room": "Bedroom", "time": "07:00"}');
+            }
+            const id = await backend.alarms.create(await newAlarm(settings, lookup));
+            this.log.info(`Created the alarm ${id}`);
+            return;
+        }
+
+        const [idText, setting] = path.split('.');
+        const alarm = (await backend.alarms.list()).find(item => String(item.id) === idText);
+        if (!alarm) {
+            throw new Error('the alarm does not exist any more');
+        }
+
+        if (setting === 'delete') {
+            if (value) {
+                await backend.alarms.destroy(alarm.id);
+            }
+            return;
+        }
+
+        await applyAlarmSetting(alarm, setting, value, lookup);
+        await backend.alarms.update(alarm);
+    }
+
+    /**
+     * uuid of the speaker with this room name, IP address or channel name
+     *
+     * @param room as written by the user
+     */
+    private findRoomUuid(room: string): string | undefined {
+        const wanted = room.trim().toLowerCase();
+        return this.backend?.devices.find(
+            device => device.ip === wanted || device.channel === wanted || device.roomName.toLowerCase() === wanted,
+        )?.uuid;
     }
 
     /**

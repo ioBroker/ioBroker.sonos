@@ -80,6 +80,30 @@ export interface SonosMusicService {
     capabilities?: number;
 }
 
+/** One alarm of the household, as the AlarmClock service of the speakers describes it */
+export interface SonosAlarm {
+    /** Assigned by SONOS; 0 for an alarm that is not created yet */
+    id: number;
+    /** `hh:mm:ss`, local time of the household */
+    startTime: string;
+    /** How long the alarm plays, `hh:mm:ss` */
+    duration: string;
+    /** `ONCE`, `DAILY`, `WEEKDAYS`, `WEEKENDS` or `ON_` followed by the days, 0 is Sunday: `ON_135` */
+    recurrence: string;
+    enabled: boolean;
+    /** uuid of the speaker that plays the alarm */
+    roomUuid: string;
+    /** What is played; `x-rincon-buzzer:0` is the SONOS chime */
+    programUri: string;
+    /** DIDL metadata of {@link programUri}, may be empty */
+    programMetadata: string;
+    /** `NORMAL`, `REPEAT_ALL`, `SHUFFLE_NOREPEAT` or `SHUFFLE` */
+    playMode: string;
+    volume: number;
+    /** Whether the speakers grouped with the room play the alarm too */
+    includeLinkedZones: boolean;
+}
+
 /**
  * Events the adapter reacts to. The names are the adapter's own - the backend translates
  * whatever its library emits into these.

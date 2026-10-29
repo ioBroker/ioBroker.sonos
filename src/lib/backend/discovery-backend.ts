@@ -21,9 +21,10 @@ import {
     streamContentFromDidl,
     tvAudioFormat,
 } from '../content-directory';
+import { createAlarmClock } from '../alarm-clock';
 import { SmapiHub } from '../smapi';
 
-import type { MusicServiceAccess, SonosBackend, SonosDevice } from './sonos-backend';
+import type { AlarmClockAccess, MusicServiceAccess, SonosBackend, SonosDevice } from './sonos-backend';
 import type {
     MediaBrowseItem,
     SonosBackendEvent,
@@ -353,6 +354,7 @@ export class DiscoveryBackend implements SonosBackend {
     private readonly discovery: SonosDiscovery;
     private readonly smapi: SmapiHub;
     public readonly music: MusicServiceAccess;
+    public readonly alarms: AlarmClockAccess;
     /** One wrapper per player, so that identity and the bookkeeping survive */
     private readonly wrappers = new Map<string, DiscoveryDevice>();
 
@@ -376,6 +378,7 @@ export class DiscoveryBackend implements SonosBackend {
             search: (name, term, german) => this.smapi.search(anyBaseUrl(), name, term, german),
             completeLogin: name => this.smapi.completeLogin(anyBaseUrl(), name),
         };
+        this.alarms = createAlarmClock(anyBaseUrl);
     }
 
     get devices(): SonosDevice[] {

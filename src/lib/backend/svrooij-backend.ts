@@ -15,9 +15,10 @@ import type { BrowseResponse, Track } from '@svrooij/sonos/lib/models';
 import type { AVTransportServiceEvent, RenderingControlServiceEvent } from '@svrooij/sonos/lib/services';
 
 import { htAudioInLabel, isHtAudioSilent, mediaItem, streamContentFromDidl, tvAudioFormat } from '../content-directory';
+import { createAlarmClock } from '../alarm-clock';
 import { SmapiHub } from '../smapi';
 
-import type { MusicServiceAccess, SonosBackend, SonosDevice } from './sonos-backend';
+import type { AlarmClockAccess, MusicServiceAccess, SonosBackend, SonosDevice } from './sonos-backend';
 import type {
     MediaBrowseItem,
     SonosBackendEvent,
@@ -669,6 +670,7 @@ export class SvrooijBackend implements SonosBackend {
     private endpoint = '';
     private readonly smapi: SmapiHub;
     public readonly music: MusicServiceAccess;
+    public readonly alarms: AlarmClockAccess;
 
     /**
      * `SonosManager.Devices` throws while nothing has been discovered yet, and the adapter asks
@@ -700,6 +702,7 @@ export class SvrooijBackend implements SonosBackend {
             search: (name, term, german) => this.smapi.search(anyBaseUrl(), name, term, german),
             completeLogin: name => this.smapi.completeLogin(anyBaseUrl(), name),
         };
+        this.alarms = createAlarmClock(anyBaseUrl);
     }
 
     /** Discover the household and start listening. Must be awaited before anything else. */
