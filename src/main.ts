@@ -28,8 +28,9 @@ import type {
 import { TTS } from './lib/tts';
 import { UsedResources } from './lib/used-resources';
 import { isReachable } from './lib/reachability';
+import { readBatteryStatus } from './lib/battery';
 import { coverVersion, pruneCoverCache, touchCoverFile } from './lib/cover-cache';
-import { getAlarmStates, getChannelStates, type StateDefinition } from './lib/states';
+import { batteryStates, getAlarmStates, getChannelStates, type StateDefinition } from './lib/states';
 import { alarmStateValues, applyAlarmSetting, newAlarm, nextAlarmStart, type AlarmLookup } from './lib/alarm-clock';
 import { parseFormattedTime, toFormattedTime } from './lib/time';
 import {
@@ -107,6 +108,8 @@ const ALIVE_MAX_FAILURES = 2;
 const COVER_CACHE_PRUNE_MS = 24 * 3600 * 1000;
 /** How often the alarms are read: `sonos-discovery` does not subscribe to their changes, so they are polled */
 const ALARM_POLL_MS = 60_000;
+/** How often the battery of the portable speakers is read */
+const BATTERY_POLL_MS = 5 * 60_000;
 
 /** Grouping URI used when a player is a slave (`x-rincon:RINCON_...`) */
 function isGroupingUri(uri: string | undefined): boolean {
@@ -221,6 +224,8 @@ class Sonos extends utils.Adapter {
     private alarmRefreshQueued = false;
     /** Last error of reading the alarms, so that a speaker that is away is not reported every minute */
     private alarmError = '';
+    /** Per channel: whether the speaker has a battery; missing while that is not known yet */
+    private readonly hasBattery: Record<string, boolean> = {};
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
@@ -2626,6 +2631,9 @@ class Sonos extends utils.Adapter {
         void this.refreshAlarms();
         this.setInterval(() => void this.refreshAlarms(), ALARM_POLL_MS);
 
+        void this.checkBatteries();
+        this.setInterval(() => void this.checkBatteries(), BATTERY_POLL_MS);
+
         this.subscribeStates('*');
     }
 
@@ -2851,8 +2859,7 @@ class Sonos extends utils.Adapter {
         try {
             await Promise.all(
                 Object.keys(this.channels).map(async channel => {
-                    const ip = (this.channels[channel].obj?.native?.ip as string) || channel.replace(/_/g, '.');
-                    const reachable = await isReachable(ip, 1400, ALIVE_TIMEOUT_MS);
+                    const reachable = await isReachable(this.channelIp(channel), 1400, ALIVE_TIMEOUT_MS);
 
                     // unload has set everything to false meanwhile
                     if (!this.backend) {
@@ -2875,6 +2882,60 @@ class Sonos extends utils.Adapter {
         } finally {
             this.aliveCheckRunning = false;
         }
+    }
+
+    /**
+     * IP address of a channel
+     *
+     * @param channel the IP address with underscores
+     */
+    private channelIp(channel: string): string {
+        return (this.channels[channel].obj?.native?.ip as string) || channel.replace(/_/g, '.');
+    }
+
+    /**
+     * Read the battery of the portable speakers, Move and Roam (#116, #211)
+     *
+     * The states are created when a speaker reports a battery for the first time, so the other
+     * speakers do not get them. A speaker that is asleep is asked again at the next check.
+     */
+    private async checkBatteries(): Promise<void> {
+        await Promise.all(
+            Object.keys(this.channels)
+                .filter(channel => this.hasBattery[channel] !== false)
+                .map(async channel => {
+                    let battery;
+                    try {
+                        battery = await readBatteryStatus(this.channelIp(channel));
+                    } catch (e) {
+                        this.log.debug(`Cannot read the battery of ${this.channelIp(channel)}: ${e}`);
+                        return;
+                    }
+
+                    if (this.unloading) {
+                        return;
+                    }
+
+                    try {
+                        if (!battery) {
+                            this.hasBattery[channel] = false;
+                            return;
+                        }
+
+                        if (!this.hasBattery[channel]) {
+                            for (const [state, definition] of Object.entries(batteryStates)) {
+                                await this.createSonosState(channel, state, definition);
+                            }
+                            this.hasBattery[channel] = true;
+                        }
+
+                        await this.setStateChangedAsync(`root.${channel}.battery_level`, battery.level, true);
+                        await this.setStateChangedAsync(`root.${channel}.battery_charging`, battery.charging, true);
+                    } catch (e) {
+                        this.log.warn(`Cannot write the battery of ${this.channelIp(channel)}: ${e}`);
+                    }
+                }),
+        );
     }
 
     /** Remove the covers that were not used for a month from the cache (#222) */

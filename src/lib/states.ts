@@ -5,6 +5,29 @@
 /** Definition of one state. Some entries use additional attributes, like `values`, so an index signature is required */
 export type StateDefinition = Partial<ioBroker.StateCommon> & Record<string, unknown>;
 
+/** States of the speakers with a battery, Move and Roam; only those get them (#116, #211) */
+export const batteryStates: Record<string, StateDefinition> = {
+    battery_level: {
+        type: 'number',
+        read: true,
+        write: false,
+        role: 'value.battery',
+        unit: '%',
+        min: 0,
+        max: 100,
+        desc: 'Charge of the battery',
+        name: 'Battery level',
+    },
+    battery_charging: {
+        type: 'boolean',
+        read: true,
+        write: false,
+        role: 'indicator',
+        desc: 'The speaker is on its charging base or on USB power',
+        name: 'Battery charging',
+    },
+};
+
 /** States, that were added after the first version of the adapter */
 export const newGroupStates: Record<string, StateDefinition> = {
     add_to_group: {
