@@ -5,12 +5,12 @@
     "type": "module",
     "dependencies": {
         "@iobroker/socket-client": "^5.5.0",
-        "@vitejs/plugin-react": "^6.1.2"
+        "@vitejs/plugin-react": "^6.2.1"
     },
     "devDependencies": {
         "@emotion/react": "^11.14.0",
         "@emotion/styled": "^11.14.1",
-        "@iobroker/gui-components": "^10.3.11",
+        "@iobroker/gui-components": "^10.3.14",
         "@iobroker/types": "^7.2.5",
         "@mui/icons-material": "^9.5.0",
         "@mui/material": "^9.5.0",
@@ -18,7 +18,7 @@
         "@types/react-dom": "^19.3.0",
         "react": "^19.3.1",
         "react-dom": "^19.3.1",
-        "vite": "^8.3.4"
+        "vite": "^8.3.5"
     },
     "scripts": {
         "start": "vite --port 3000",
