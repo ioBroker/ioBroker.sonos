@@ -507,7 +507,7 @@ export class SvrooijDevice implements SonosDevice {
      * up, then either point the player at it or put it into the queue - the same decision
      * `replaceWithFavorite` made in the other library.
      */
-    private async playEntry(entry: SonosMediaEntry | undefined, what: string): Promise<void> {
+    private async playEntry(entry: SonosMediaEntry | undefined, what: string, autoplay: boolean): Promise<void> {
         if (!entry?.uri) {
             throw new Error(`Unknown ${what}`);
         }
@@ -521,22 +521,26 @@ export class SvrooijDevice implements SonosDevice {
             await this.addToQueue(uri, entry.metadata);
             await this.device.SwitchToQueue();
         }
-        await this.play();
+        if (autoplay) {
+            await this.play();
+        }
     }
 
-    async playFavorite(title: string): Promise<void> {
+    async playFavorite(title: string, autoplay = true): Promise<void> {
         const favorites = await this.backend.getFavorites();
         await this.playEntry(
             favorites.find(item => item.title === title),
             `favorite "${title}"`,
+            autoplay,
         );
     }
 
-    async playPlaylist(title: string): Promise<void> {
+    async playPlaylist(title: string, autoplay = true): Promise<void> {
         const playlists = await this.backend.getPlaylists();
         await this.playEntry(
             playlists.find(item => item.title === title),
             `playlist "${title}"`,
+            autoplay,
         );
     }
 

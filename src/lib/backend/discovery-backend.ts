@@ -133,7 +133,8 @@ function toList(items: Record<string, SonosFavorite> | SonosFavorite[] | null | 
         .filter((item): item is SonosFavorite => Boolean(item));
 }
 
-class DiscoveryDevice implements SonosDevice {
+/** Exported for the tests */
+export class DiscoveryDevice implements SonosDevice {
     /** Bookkeeping of this adapter, the library does not maintain it */
     public volume = 0;
     /** Bookkeeping of this adapter, the library does not maintain it */
@@ -276,14 +277,18 @@ class DiscoveryDevice implements SonosDevice {
         await this.player.setAVTransport(uri, metadata);
     }
 
-    async playFavorite(title: string): Promise<void> {
+    async playFavorite(title: string, autoplay = true): Promise<void> {
         await this.player.replaceWithFavorite(title);
-        await this.player.play();
+        if (autoplay) {
+            await this.player.play();
+        }
     }
 
-    async playPlaylist(title: string): Promise<void> {
+    async playPlaylist(title: string, autoplay = true): Promise<void> {
         await this.player.replaceWithPlaylist(title);
-        await this.player.play();
+        if (autoplay) {
+            await this.player.play();
+        }
     }
 
     // queue ---------------------------------------------------------------
