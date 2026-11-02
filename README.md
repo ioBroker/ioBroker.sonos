@@ -383,6 +383,7 @@ adapter to get a working state back.
 -->
 ## Changelog
 ### **WORK IN PROGRESS**
+- (copilot) Adapter requires node.js >= 22.19.0 now
 * (@GermanBluefox) The event port of the new backend (`@svrooij/sonos`) is set in the instance settings instead of the environment variable `SONOS_LISTENER_PORT`
 * (@GermanBluefox) Fixed the column widths of the settings on large screens and the German text for fade-in
 * (@GermanBluefox) The objects of the speakers are created without the deprecated `createChannel`/`createState`, so js-controller no longer logs them as deprecated (#238)

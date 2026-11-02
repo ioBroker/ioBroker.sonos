@@ -3,7 +3,7 @@
   "description": "The adapter lets control SONOS from ioBroker",
   "version": "4.2.16",
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.19.0"
   },
   "contributors": [
     "bluefox <dogafox@gmail.com>",
