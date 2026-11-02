@@ -165,6 +165,19 @@ Speakers with a battery - Move and Roam - get two more states as soon as they re
 The battery is read every 5 minutes. A speaker that is asleep keeps its last values, `alive`
 shows whether they are current. Only S2 firmware reports the battery this way.
 
+## Status LED, button lock and sleep timer
+* **`led`**: switches the status LED of the speaker on or off
+* **`button_lock`**: `true` locks the buttons on the speaker
+* **`sleep_timer`**: minutes until the group stops playing. Write the minutes to set the sleep
+  timer, `0` to cancel it. It belongs to the group, so every speaker of the group shows the same
+  time, and writing it on any of them sets it for the whole group.
+
+`led` and `button_lock` are created as soon as a device reports them, so a device without buttons
+gets no `button_lock`. They are read every 5 minutes, `sleep_timer` every minute.
+
+A Boost or a Bridge is no player, so the search does not find it. To switch its status LED, add its
+IP address to the devices in the settings; `led` then appears under its channel.
+
 ## Alarms
 The alarms of the SONOS app are under `sonos.0.alarms`, one channel per alarm, named by the ID that
 SONOS gave it, e.g. `sonos.0.alarms.17`. Changes made in the SONOS app show up within a minute.
@@ -374,6 +387,7 @@ adapter to get a working state back.
 * (@GermanBluefox) An adapter stopped while it was still starting no longer starts the SONOS library and its timers afterwards (warning "setInterval called, but adapter is shutting down")
 * (@GermanBluefox) Added the alarms: every alarm of the SONOS app is under `alarms` and can be switched, changed and deleted, `alarms.create` creates new ones, and `alarm_next` of every speaker tells when its next alarm rings (#65, #325)
 * (@GermanBluefox) Added the battery of Move and Roam: `battery_level` and `battery_charging` (#116, #211)
+* (@GermanBluefox) Added `led` for the status LED - also of a Boost - `button_lock` and `sleep_timer` (#253, #66)
 
 ### 4.2.16 (2026-10-26)
 * (@GermanBluefox) `current_cover` changes with every new cover (`/sonos/coverImage/<ip>.png?v=<hash>`), so vis, Lovelace and the browser show the new cover instead of the old one - for example when switching back to a radio station (#204, #205)

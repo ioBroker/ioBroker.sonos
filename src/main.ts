@@ -29,8 +29,15 @@ import { TTS } from './lib/tts';
 import { UsedResources } from './lib/used-resources';
 import { isReachable } from './lib/reachability';
 import { readBatteryStatus } from './lib/battery';
+import { getButtonLock, getLed, getSleepTimer, setButtonLock, setLed, setSleepTimer } from './lib/speaker-settings';
 import { coverVersion, pruneCoverCache, touchCoverFile } from './lib/cover-cache';
-import { batteryStates, getAlarmStates, getChannelStates, type StateDefinition } from './lib/states';
+import {
+    getAlarmStates,
+    getChannelStates,
+    optionalStates,
+    type OptionalFeature,
+    type StateDefinition,
+} from './lib/states';
 import { alarmStateValues, applyAlarmSetting, newAlarm, nextAlarmStart, type AlarmLookup } from './lib/alarm-clock';
 import { parseFormattedTime, toFormattedTime } from './lib/time';
 import {
@@ -108,8 +115,32 @@ const ALIVE_MAX_FAILURES = 2;
 const COVER_CACHE_PRUNE_MS = 24 * 3600 * 1000;
 /** How often the alarms are read: `sonos-discovery` does not subscribe to their changes, so they are polled */
 const ALARM_POLL_MS = 60_000;
-/** How often the battery of the portable speakers is read */
-const BATTERY_POLL_MS = 5 * 60_000;
+/** How often the optional features of the speakers are read: battery, status LED and button lock */
+const DEVICE_POLL_MS = 5 * 60_000;
+/** How often the sleep timers are read; they count down, so this is how exact `sleep_timer` is */
+const SLEEP_TIMER_POLL_MS = 60_000;
+
+/**
+ * How each {@link OptionalFeature} is read from a speaker
+ *
+ * Each returns the values of its states, or null if the speaker does not have the feature, and
+ * throws if the speaker cannot be reached, so that it is asked again later.
+ */
+const OPTIONAL_FEATURES: Record<OptionalFeature, (ip: string) => Promise<Record<string, ioBroker.StateValue> | null>> =
+    {
+        battery: async ip => {
+            const battery = await readBatteryStatus(ip);
+            return battery && { battery_level: battery.level, battery_charging: battery.charging };
+        },
+        led: async ip => {
+            const on = await getLed(`http://${ip}:1400`);
+            return on === null ? null : { led: on };
+        },
+        button_lock: async ip => {
+            const locked = await getButtonLock(`http://${ip}:1400`);
+            return locked === null ? null : { button_lock: locked };
+        },
+    };
 
 /** Grouping URI used when a player is a slave (`x-rincon:RINCON_...`) */
 function isGroupingUri(uri: string | undefined): boolean {
@@ -224,8 +255,8 @@ class Sonos extends utils.Adapter {
     private alarmRefreshQueued = false;
     /** Last error of reading the alarms, so that a speaker that is away is not reported every minute */
     private alarmError = '';
-    /** Per channel: whether the speaker has a battery; missing while that is not known yet */
-    private readonly hasBattery: Record<string, boolean> = {};
+    /** Per channel: which optional features the speaker has; a feature is missing while that is not known yet */
+    private readonly features: Record<string, Partial<Record<OptionalFeature, boolean>>> = {};
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
@@ -333,6 +364,15 @@ class Sonos extends utils.Adapter {
         }
         if (parseInt(value) === value) {
             value = parseInt(value);
+        }
+
+        // settings of the device itself: they also work for a Boost or a Bridge, which no library lists as player
+        if (id.state === 'led' || id.state === 'button_lock') {
+            const { channel, state: setting } = id;
+            this.setDeviceSwitch(channel, setting, !!value)
+                .then(() => this.log.debug(`command done: ${setting} on ${channel}`))
+                .catch(e => this.log.error(`Cannot execute command ${setting} on ${channel}: ${e}`));
+            return;
         }
 
         let player = this.channels[id.channel].player;
@@ -542,6 +582,8 @@ class Sonos extends utils.Adapter {
             promise = this.handleMediaBrowse(media, mediaIp, String(value || ''), player);
         } else if (id.state === 'media_play') {
             promise = this.handleMediaPlay(media, String(value || ''), player);
+        } else if (id.state === 'sleep_timer') {
+            promise = this.setGroupSleepTimer(media, value);
         } else {
             this.log.warn(`try to control unknown id ${JSON.stringify(id)}`);
         }
@@ -2631,8 +2673,11 @@ class Sonos extends utils.Adapter {
         void this.refreshAlarms();
         this.setInterval(() => void this.refreshAlarms(), ALARM_POLL_MS);
 
-        void this.checkBatteries();
-        this.setInterval(() => void this.checkBatteries(), BATTERY_POLL_MS);
+        void this.checkDevices();
+        this.setInterval(() => void this.checkDevices(), DEVICE_POLL_MS);
+
+        void this.checkSleepTimers();
+        this.setInterval(() => void this.checkSleepTimers(), SLEEP_TIMER_POLL_MS);
 
         this.subscribeStates('*');
     }
@@ -2894,21 +2939,29 @@ class Sonos extends utils.Adapter {
     }
 
     /**
-     * Read the battery of the portable speakers, Move and Roam (#116, #211)
+     * Read the optional features of every speaker: battery (#116, #211), status LED (#253) and button lock (#66)
      *
-     * The states are created when a speaker reports a battery for the first time, so the other
-     * speakers do not get them. A speaker that is asleep is asked again at the next check.
+     * The states of a feature are created when a speaker reports it for the first time, so the
+     * other speakers do not get them, and a speaker that does not have it is not asked again.
+     * A speaker that is asleep or away is asked again at the next check.
      */
-    private async checkBatteries(): Promise<void> {
+    private async checkDevices(): Promise<void> {
         await Promise.all(
-            Object.keys(this.channels)
-                .filter(channel => this.hasBattery[channel] !== false)
-                .map(async channel => {
-                    let battery;
+            Object.keys(this.channels).map(async channel => {
+                const ip = this.channelIp(channel);
+                const known = (this.features[channel] ||= {});
+
+                for (const feature of Object.keys(OPTIONAL_FEATURES) as OptionalFeature[]) {
+                    if (known[feature] === false) {
+                        continue;
+                    }
+
+                    let values;
                     try {
-                        battery = await readBatteryStatus(this.channelIp(channel));
+                        values = await OPTIONAL_FEATURES[feature](ip);
                     } catch (e) {
-                        this.log.debug(`Cannot read the battery of ${this.channelIp(channel)}: ${e}`);
+                        // the other features would wait for the same timeout
+                        this.log.debug(`Cannot read the ${feature} of ${ip}: ${e}`);
                         return;
                     }
 
@@ -2917,25 +2970,94 @@ class Sonos extends utils.Adapter {
                     }
 
                     try {
-                        if (!battery) {
-                            this.hasBattery[channel] = false;
-                            return;
+                        if (!values) {
+                            known[feature] = false;
+                            continue;
                         }
 
-                        if (!this.hasBattery[channel]) {
-                            for (const [state, definition] of Object.entries(batteryStates)) {
+                        if (!known[feature]) {
+                            for (const [state, definition] of Object.entries(optionalStates[feature])) {
                                 await this.createSonosState(channel, state, definition);
                             }
-                            this.hasBattery[channel] = true;
+                            known[feature] = true;
                         }
 
-                        await this.setStateChangedAsync(`root.${channel}.battery_level`, battery.level, true);
-                        await this.setStateChangedAsync(`root.${channel}.battery_charging`, battery.charging, true);
+                        for (const [state, val] of Object.entries(values)) {
+                            await this.setStateChangedAsync(`root.${channel}.${state}`, val, true);
+                        }
                     } catch (e) {
-                        this.log.warn(`Cannot write the battery of ${this.channelIp(channel)}: ${e}`);
+                        this.log.warn(`Cannot write the ${feature} of ${ip}: ${e}`);
                     }
-                }),
+                }
+            }),
         );
+    }
+
+    /**
+     * Switch the status LED or the button lock of a speaker (#253, #66)
+     *
+     * @param channel channel of the speaker
+     * @param setting `led` or `button_lock`
+     * @param on true to switch the LED on or to lock the buttons
+     */
+    private async setDeviceSwitch(channel: string, setting: string, on: boolean): Promise<void> {
+        const baseUrl = `http://${this.channelIp(channel)}:1400`;
+        if (setting === 'led') {
+            await setLed(baseUrl, on);
+        } else {
+            await setButtonLock(baseUrl, on);
+        }
+        await this.setStateAsync(`root.${channel}.${setting}`, on, true);
+    }
+
+    /** Show the remaining time of the sleep timer of every group in `sleep_timer` of its speakers (#66) */
+    private async checkSleepTimers(): Promise<void> {
+        const backend = this.backend;
+        if (!backend) {
+            return;
+        }
+
+        // the sleep timer belongs to the group, so each coordinator is asked once
+        const remaining = new Map<string, Promise<number | null>>();
+
+        await Promise.all(
+            backend.devices.map(async device => {
+                const channel = device.channel;
+                if (!channel || !this.channels[channel]) {
+                    return;
+                }
+
+                const coordinator = device.coordinator;
+                if (!remaining.has(coordinator.uuid)) {
+                    remaining.set(coordinator.uuid, getSleepTimer(coordinator.baseUrl));
+                }
+
+                try {
+                    const seconds = await remaining.get(coordinator.uuid);
+                    if (typeof seconds === 'number' && !this.unloading) {
+                        await this.setStateChangedAsync(`root.${channel}.sleep_timer`, Math.ceil(seconds / 60), true);
+                    }
+                } catch (e) {
+                    this.log.debug(`Cannot read the sleep timer of ${coordinator.roomName}: ${e}`);
+                }
+            }),
+        );
+    }
+
+    /**
+     * Set or cancel the sleep timer of a group (#66)
+     *
+     * @param coordinator coordinator of the group; the other speakers refuse the sleep timer
+     * @param minutes minutes until the group stops, 0 cancels
+     */
+    private async setGroupSleepTimer(coordinator: SonosDevice, minutes: number | string): Promise<void> {
+        const value = Number(minutes);
+        if (!(value >= 0 && value < 24 * 60)) {
+            throw new Error(`Invalid sleep timer "${minutes}", expected minutes from 0 to 1439`);
+        }
+
+        await setSleepTimer(coordinator.baseUrl, Math.round(value) * 60);
+        await this.checkSleepTimers();
     }
 
     /** Remove the covers that were not used for a month from the cache (#222) */
