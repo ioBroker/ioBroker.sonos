@@ -366,6 +366,12 @@ class Sonos extends utils.Adapter {
             value = parseInt(value);
         }
 
+        // a setting of this adapter, there is nothing to send to the speaker
+        if (id.state === 'autoplay') {
+            void this.setStateAsync(`root.${id.channel}.autoplay`, !!value, true);
+            return;
+        }
+
         // settings of the device itself: they also work for a Boost or a Bridge, which no library lists as player
         if (id.state === 'led' || id.state === 'button_lock') {
             const { channel, state: setting } = id;
@@ -515,8 +521,8 @@ class Sonos extends utils.Adapter {
             if (!favorite) {
                 this.log.warn('favorites_set called without valid favorite name - ignored');
             } else {
-                promise = media
-                    .playFavorite(favorite)
+                promise = this.isAutoplay(id.channel)
+                    .then(autoplay => media.playFavorite(favorite, autoplay))
                     .then(async () => {
                         await this.setState(
                             { device: 'root', channel: mediaIp, state: 'current_album' },
@@ -535,8 +541,8 @@ class Sonos extends utils.Adapter {
             if (!playlist) {
                 this.log.warn('playlist_set called without valid playlist name - ignored');
             } else {
-                promise = media
-                    .playPlaylist(playlist)
+                promise = this.isAutoplay(id.channel)
+                    .then(autoplay => media.playPlaylist(playlist, autoplay))
                     .then(async () => {
                         await this.setState(
                             { device: 'root', channel: mediaIp, state: 'current_album' },
@@ -3008,6 +3014,15 @@ class Sonos extends utils.Adapter {
             await setButtonLock(baseUrl, on);
         }
         await this.setStateAsync(`root.${channel}.${setting}`, on, true);
+    }
+
+    /**
+     * Whether `favorites_set` and `playlist_set` start playing on this speaker (#173)
+     *
+     * @param channel channel of the speaker the favorite was set on
+     */
+    private async isAutoplay(channel: string): Promise<boolean> {
+        return (await this.getStateAsync(`root.${channel}.autoplay`))?.val !== false;
     }
 
     /** Show the remaining time of the sleep timer of every group in `sleep_timer` of its speakers (#66) */

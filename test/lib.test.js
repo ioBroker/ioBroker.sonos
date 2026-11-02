@@ -1219,3 +1219,86 @@ describe('status LED, button lock and sleep timer (#253, #66)', () => {
         expect(requests[2].body).to.include('<NewSleepTimerDuration></NewSleepTimerDuration>');
     });
 });
+
+describe('favorite without autoplay (#173)', () => {
+    const { DiscoveryDevice } = require('../build/lib/backend/discovery-backend');
+    const { SvrooijDevice } = require('../build/lib/backend/svrooij-backend');
+
+    let calls;
+    beforeEach(() => (calls = []));
+
+    describe('sonos-discovery', () => {
+        const device = () =>
+            new DiscoveryDevice(
+                {
+                    uuid: 'RINCON_1',
+                    baseUrl: 'http://192.168.1.50:1400',
+                    roomName: 'Kitchen',
+                    replaceWithFavorite: async title => calls.push(`favorite ${title}`),
+                    replaceWithPlaylist: async title => calls.push(`playlist ${title}`),
+                    play: async () => calls.push('play'),
+                },
+                {},
+            );
+
+        it('plays a favorite or a playlist by default', async () => {
+            await device().playFavorite('Radio Bob');
+            await device().playPlaylist('Morning');
+            expect(calls).to.deep.equal(['favorite Radio Bob', 'play', 'playlist Morning', 'play']);
+        });
+
+        it('only loads them without autoplay', async () => {
+            await device().playFavorite('Radio Bob', false);
+            await device().playPlaylist('Morning', false);
+            expect(calls).to.deep.equal(['favorite Radio Bob', 'playlist Morning']);
+        });
+    });
+
+    describe('@svrooij/sonos', () => {
+        const backend = {
+            getFavorites: async () => [{ title: 'Radio Bob', uri: 'x-sonosapi-stream:s1?sid=254', metadata: '' }],
+            getPlaylists: async () => [{ title: 'Morning', uri: 'file:///jffs/settings/savedqueues.rsq#3', metadata: '' }],
+        };
+        const device = () =>
+            new SvrooijDevice(
+                {
+                    Uuid: 'RINCON_1',
+                    Host: '192.168.1.50',
+                    Port: 1400,
+                    Name: 'Kitchen',
+                    Play: async () => calls.push('play'),
+                    SwitchToQueue: async () => calls.push('queue'),
+                    AVTransportService: {
+                        SetAVTransportURI: async input => calls.push(`uri ${input.CurrentURI}`),
+                        RemoveAllTracksFromQueue: async () => calls.push('clear'),
+                        AddURIToQueue: async input => {
+                            calls.push(`add ${input.EnqueuedURI}`);
+                            return { FirstTrackNumberEnqueued: 1 };
+                        },
+                    },
+                },
+                backend,
+            );
+
+        it('plays a favorite or a playlist by default', async () => {
+            await device().playFavorite('Radio Bob');
+            await device().playPlaylist('Morning');
+            expect(calls).to.deep.equal([
+                'uri x-sonosapi-stream:s1?sid=254',
+                'play',
+                'clear',
+                'add file:///jffs/settings/savedqueues.rsq#3',
+                'queue',
+                'play',
+            ]);
+        });
+
+        it('only loads them without autoplay', async () => {
+            await device().playFavorite('Radio Bob', false);
+            await device().playPlaylist('Morning', false);
+            expect(calls).to.not.include('play');
+            expect(calls).to.include('uri x-sonosapi-stream:s1?sid=254');
+            expect(calls).to.include('queue');
+        });
+    });
+});

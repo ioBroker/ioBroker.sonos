@@ -453,6 +453,16 @@ export function getChannelStates(): Record<string, StateDefinition> {
             desc: 'Set favorite from the list to play',
             name: 'Favorites set',
         },
+        autoplay: {
+            // #173
+            def: true,
+            type: 'boolean',
+            read: true,
+            write: true,
+            role: 'switch',
+            desc: 'Start playing after favorites_set and playlist_set; false only loads the favorite or playlist',
+            name: 'Play after setting a favorite',
+        },
         tts: {
             // play text to speech mp3 file
             def: '',

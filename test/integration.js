@@ -55,6 +55,24 @@ tests.integration(path.join(__dirname, '..'), {
                 expect(state?.ack).to.be.true;
             });
 
+            it('has autoplay on by default and acknowledges a change (#173)', async function () {
+                this.timeout(30000);
+                const id = `${channelId}.autoplay`;
+                expect((await harness.states.getStateAsync(id))?.val).to.equal(true);
+
+                // the states are subscribed at the end of the start, which waits for the port check
+                let state;
+                for (let i = 0; i < 25 && !(state?.ack && state.val === false); i++) {
+                    await harness.states.setStateAsync(id, { val: false, ack: false });
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    state = await harness.states.getStateAsync(id);
+                }
+
+                expect(state?.val).to.equal(false);
+                expect(state?.ack).to.be.true;
+                expect(harness.hasLog('try to control unknown id')).to.be.false;
+            });
+
             it('does not use the deprecated methods', () => {
                 expect(harness.hasLog(/Method "(createChannel|createState|deleteChannel)" is deprecated/)).to.be.false;
             });

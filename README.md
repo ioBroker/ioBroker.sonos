@@ -229,6 +229,9 @@ Workaround for text to speech is to use the [SONOS HTTP API](https://github.com/
 ## Favorites & Queue in VIS
 Use states `favorites_list_html` and `queue_html` to show playlists and current queue with basic HTML widget in VIS. By clicking on a row, the playlist or track will be played immediately.
 
+Writing `favorites_set` or `playlist_set` starts the favorite or playlist. Set **`autoplay`** of
+the speaker to `false` to only load it without starting playback (default `true`).
+
 For an own UI the same lists are available as JSON: `favorites_list_array`, `playlist_list_array`
 and `queue_array`. `queue` joins the tracks with a comma and cannot be split back reliably, so use
 `queue_array` - it carries one `{ artist, title, album, cover }` entry per track, and the index of
@@ -388,6 +391,7 @@ adapter to get a working state back.
 * (@GermanBluefox) Added the alarms: every alarm of the SONOS app is under `alarms` and can be switched, changed and deleted, `alarms.create` creates new ones, and `alarm_next` of every speaker tells when its next alarm rings (#65, #325)
 * (@GermanBluefox) Added the battery of Move and Roam: `battery_level` and `battery_charging` (#116, #211)
 * (@GermanBluefox) Added `led` for the status LED - also of a Boost - `button_lock` and `sleep_timer` (#253, #66)
+* (@GermanBluefox) Added `autoplay`: set it to `false` to only load a favorite or playlist with `favorites_set`/`playlist_set` without starting playback (#173)
 
 ### 4.2.16 (2026-10-26)
 * (@GermanBluefox) `current_cover` changes with every new cover (`/sonos/coverImage/<ip>.png?v=<hash>`), so vis, Lovelace and the browser show the new cover instead of the old one - for example when switching back to a radio station (#204, #205)

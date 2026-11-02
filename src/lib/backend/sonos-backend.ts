@@ -109,10 +109,18 @@ export interface SonosDevice {
     // sources -------------------------------------------------------------
     /** Point the player at a URI without starting it */
     setTransportUri(uri: string, metadata?: string): Promise<void>;
-    /** Start a saved favorite by its title */
-    playFavorite(title: string): Promise<void>;
-    /** Start a saved playlist by its title */
-    playPlaylist(title: string): Promise<void>;
+    /**
+     * Start a saved favorite by its title
+     *
+     * @param autoplay false only loads the favorite, without starting playback (#173)
+     */
+    playFavorite(title: string, autoplay?: boolean): Promise<void>;
+    /**
+     * Start a saved playlist by its title
+     *
+     * @param autoplay false only loads the playlist, without starting playback (#173)
+     */
+    playPlaylist(title: string, autoplay?: boolean): Promise<void>;
 
     // queue ---------------------------------------------------------------
     getQueue(): Promise<SonosQueueEntry[]>;
