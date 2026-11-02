@@ -4,13 +4,10 @@
  * Neither client library is used for it: `sonos-discovery` does not know the service, and plain
  * SOAP behaves the same under both backends. Any speaker answers for the whole household.
  */
-import * as http from 'node:http';
-
 import type { AlarmClockAccess } from './backend/sonos-backend';
 import type { SonosAlarm } from './backend/types';
 import { browseMedia, decodeXml, xmlEscape } from './content-directory';
-
-const SERVICE = 'urn:schemas-upnp-org:service:AlarmClock:1';
+import { ALARM_CLOCK, soapCall, soapValue } from './soap';
 
 /** The SONOS chime: the program of an alarm that plays nothing else */
 export const CHIME_URI = 'x-rincon-buzzer:0';
@@ -29,65 +26,6 @@ export interface AlarmLookup {
 }
 
 /**
- * Send one action to the AlarmClock service
- *
- * @param baseUrl `http://<ip>:1400` of any speaker
- * @param action name of the action
- * @param args the arguments as XML, in the order the service defines them
- * @returns the SOAP response
- */
-function soapAlarmClock(baseUrl: string, action: string, args = ''): Promise<string> {
-    const body = `<?xml version="1.0" encoding="utf-8"?>
-<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
-  <s:Body>
-    <u:${action} xmlns:u="${SERVICE}">${args}</u:${action}>
-  </s:Body>
-</s:Envelope>`;
-
-    const url = new URL(`${baseUrl.replace(/\/$/, '')}/AlarmClock/Control`);
-    const payload = Buffer.from(body, 'utf8');
-
-    return new Promise((resolve, reject) => {
-        const req = http.request(
-            {
-                hostname: url.hostname,
-                port: url.port || 1400,
-                path: url.pathname,
-                method: 'POST',
-                headers: {
-                    'CONTENT-TYPE': 'text/xml; charset="utf-8"',
-                    SOAPACTION: `"${SERVICE}#${action}"`,
-                    'CONTENT-LENGTH': payload.length,
-                },
-            },
-            res => {
-                const chunks: Buffer[] = [];
-                res.on('data', chunk => chunks.push(chunk as Buffer));
-                res.on('end', () => {
-                    const xml = Buffer.concat(chunks).toString('utf8');
-                    if ((res.statusCode || 500) >= 400) {
-                        // SONOS explains a refused action with a UPnP error code only
-                        const code = xml.match(/<errorCode>(\d+)<\/errorCode>/i)?.[1];
-                        reject(
-                            new Error(`${action} failed: HTTP ${res.statusCode}${code ? `, UPnP error ${code}` : ''}`),
-                        );
-                        return;
-                    }
-                    resolve(xml);
-                });
-            },
-        );
-        req.on('error', reject);
-        req.setTimeout(5000, () => {
-            req.destroy();
-            reject(new Error(`${action} timed out`));
-        });
-        req.write(payload);
-        req.end();
-    });
-}
-
-/**
  * The alarms out of the answer to `ListAlarms`
  *
  * The list is an XML document inside the SOAP answer, and the metadata of every alarm is one
@@ -96,14 +34,14 @@ function soapAlarmClock(baseUrl: string, action: string, args = ''): Promise<str
  * @param soapXml the SOAP answer
  */
 function parseAlarmList(soapXml: string): SonosAlarm[] {
-    const list = soapXml.match(/<CurrentAlarmList>([\s\S]*?)<\/CurrentAlarmList>/i);
+    const list = soapValue(soapXml, 'CurrentAlarmList');
     if (!list) {
         return [];
     }
 
     const alarms: SonosAlarm[] = [];
 
-    for (const element of decodeXml(list[1]).matchAll(/<Alarm\s([^>]*?)\/?>/g)) {
+    for (const element of decodeXml(list).matchAll(/<Alarm\s([^>]*?)\/?>/g)) {
         const attrs: Record<string, string> = {};
         for (const [, name, value] of element[1].matchAll(/(\w+)="([^"]*)"/g)) {
             attrs[name] = decodeXml(value);
@@ -169,16 +107,16 @@ export function createAlarmClock(baseUrl: () => string): AlarmClockAccess {
     };
 
     return {
-        list: async () => parseAlarmList(await soapAlarmClock(speaker(), 'ListAlarms')),
+        list: async () => parseAlarmList(await soapCall(speaker(), ALARM_CLOCK, 'ListAlarms')),
         create: async alarm => {
-            const xml = await soapAlarmClock(speaker(), 'CreateAlarm', alarmArguments(alarm));
-            return parseInt(xml.match(/<AssignedID>(\d+)<\/AssignedID>/i)?.[1] || '', 10) || 0;
+            const xml = await soapCall(speaker(), ALARM_CLOCK, 'CreateAlarm', alarmArguments(alarm));
+            return parseInt(soapValue(xml, 'AssignedID') || '', 10) || 0;
         },
         update: async alarm => {
-            await soapAlarmClock(speaker(), 'UpdateAlarm', `<ID>${alarm.id}</ID>${alarmArguments(alarm)}`);
+            await soapCall(speaker(), ALARM_CLOCK, 'UpdateAlarm', `<ID>${alarm.id}</ID>${alarmArguments(alarm)}`);
         },
         destroy: async id => {
-            await soapAlarmClock(speaker(), 'DestroyAlarm', `<ID>${id}</ID>`);
+            await soapCall(speaker(), ALARM_CLOCK, 'DestroyAlarm', `<ID>${id}</ID>`);
         },
         findFavorite: async title => {
             const wanted = title.trim().toLowerCase();

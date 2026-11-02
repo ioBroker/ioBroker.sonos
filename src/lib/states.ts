@@ -5,26 +5,55 @@
 /** Definition of one state. Some entries use additional attributes, like `values`, so an index signature is required */
 export type StateDefinition = Partial<ioBroker.StateCommon> & Record<string, unknown>;
 
-/** States of the speakers with a battery, Move and Roam; only those get them (#116, #211) */
-export const batteryStates: Record<string, StateDefinition> = {
-    battery_level: {
-        type: 'number',
-        read: true,
-        write: false,
-        role: 'value.battery',
-        unit: '%',
-        min: 0,
-        max: 100,
-        desc: 'Charge of the battery',
-        name: 'Battery level',
+/** Speaker features whose states are created only once a speaker reports the feature */
+export type OptionalFeature = 'battery' | 'led' | 'button_lock';
+
+/**
+ * States of {@link OptionalFeature}: only the speakers that have them get them.
+ * Move and Roam report a battery (#116, #211). The status LED (#253) and the button lock (#66) are
+ * created for every device that answers them, a Boost or a Bridge included.
+ */
+export const optionalStates: Record<OptionalFeature, Record<string, StateDefinition>> = {
+    battery: {
+        battery_level: {
+            type: 'number',
+            read: true,
+            write: false,
+            role: 'value.battery',
+            unit: '%',
+            min: 0,
+            max: 100,
+            desc: 'Charge of the battery',
+            name: 'Battery level',
+        },
+        battery_charging: {
+            type: 'boolean',
+            read: true,
+            write: false,
+            role: 'indicator',
+            desc: 'The speaker is on its charging base or on USB power',
+            name: 'Battery charging',
+        },
     },
-    battery_charging: {
-        type: 'boolean',
-        read: true,
-        write: false,
-        role: 'indicator',
-        desc: 'The speaker is on its charging base or on USB power',
-        name: 'Battery charging',
+    led: {
+        led: {
+            type: 'boolean',
+            read: true,
+            write: true,
+            role: 'switch',
+            desc: 'Status LED of the speaker',
+            name: 'Status LED',
+        },
+    },
+    button_lock: {
+        button_lock: {
+            type: 'boolean',
+            read: true,
+            write: true,
+            role: 'switch',
+            desc: 'The buttons on the speaker are locked',
+            name: 'Button lock',
+        },
     },
 };
 
@@ -537,6 +566,17 @@ export function getChannelStates(): Record<string, StateDefinition> {
             role: 'media',
             desc: 'Play a browsed media item as JSON {uri, metadata, favorite, playlist, tv}',
             name: 'Play browsed media',
+        },
+        sleep_timer: {
+            type: 'number',
+            read: true,
+            write: true,
+            role: 'level.timer',
+            unit: 'min',
+            min: 0,
+            max: 1439,
+            desc: 'Minutes until the group stops playing; write 0 to cancel the sleep timer',
+            name: 'Sleep timer',
         },
         alarm_next: {
             // e.g. to switch on a wake-up light a few minutes before (#65)

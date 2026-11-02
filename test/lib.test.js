@@ -1089,3 +1089,133 @@ describe('battery (#116, #211)', () => {
         });
     });
 });
+
+describe('status LED, button lock and sleep timer (#253, #66)', () => {
+    const http = require('node:http');
+    const {
+        getButtonLock,
+        getLed,
+        getSleepTimer,
+        setButtonLock,
+        setLed,
+        setSleepTimer,
+    } = require('../build/lib/speaker-settings');
+
+    let server;
+    let baseUrl;
+    let requests;
+    /** answer per action: the body of the response, or a number for a refusal with this UPnP error */
+    let answers;
+
+    before(async () => {
+        server = http.createServer((req, res) => {
+            let body = '';
+            req.on('data', chunk => (body += chunk));
+            req.on('end', () => {
+                const action = String(req.headers.soapaction).replace(/^"[^#]*#|"$/g, '');
+                requests.push({ path: req.url, action, body });
+
+                const answer = answers[action];
+                if (typeof answer === 'number') {
+                    res.writeHead(500);
+                    res.end(
+                        `<s:Envelope><s:Body><s:Fault><detail><UPnPError><errorCode>${answer}</errorCode></UPnPError></detail></s:Fault></s:Body></s:Envelope>`,
+                    );
+                } else {
+                    res.end(
+                        `<s:Envelope><s:Body><u:${action}Response>${answer || ''}</u:${action}Response></s:Body></s:Envelope>`,
+                    );
+                }
+            });
+        });
+        await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+        baseUrl = `http://127.0.0.1:${server.address().port}`;
+    });
+
+    after(() => server.close());
+
+    beforeEach(() => {
+        requests = [];
+        answers = {};
+    });
+
+    it('reads the status LED', async () => {
+        answers.GetLEDState = '<CurrentLEDState>On</CurrentLEDState>';
+        expect(await getLed(baseUrl)).to.be.true;
+        expect(requests[0].path).to.equal('/DeviceProperties/Control');
+
+        answers.GetLEDState = '<CurrentLEDState>Off</CurrentLEDState>';
+        expect(await getLed(baseUrl)).to.be.false;
+    });
+
+    it('switches the status LED', async () => {
+        await setLed(baseUrl, false);
+        await setLed(baseUrl, true);
+
+        expect(requests.map(request => request.action)).to.deep.equal(['SetLEDState', 'SetLEDState']);
+        expect(requests[0].body).to.include('<DesiredLEDState>Off</DesiredLEDState>');
+        expect(requests[1].body).to.include('<DesiredLEDState>On</DesiredLEDState>');
+    });
+
+    it('reads and sets the button lock', async () => {
+        answers.GetButtonLockState = '<CurrentButtonLockState>On</CurrentButtonLockState>';
+        expect(await getButtonLock(baseUrl)).to.be.true;
+
+        await setButtonLock(baseUrl, false);
+        expect(requests[1].action).to.equal('SetButtonLockState');
+        expect(requests[1].body).to.include('<DesiredButtonLockState>Off</DesiredButtonLockState>');
+    });
+
+    it('is null for a device without the setting', async () => {
+        answers.GetButtonLockState = 401;
+        expect(await getButtonLock(baseUrl)).to.be.null;
+    });
+
+    it('fails while the device is away, so that it is asked again', async () => {
+        const closed = http.createServer();
+        await new Promise(resolve => closed.listen(0, '127.0.0.1', resolve));
+        const closedPort = closed.address().port;
+        await new Promise(resolve => closed.close(resolve));
+
+        const error = await getLed(`http://127.0.0.1:${closedPort}`).catch(e => e);
+        expect(error).to.be.an('error');
+    });
+
+    it('reports a refused switch', async () => {
+        answers.SetLEDState = 402;
+        const error = await setLed(baseUrl, false).catch(e => e);
+        expect(error.message).to.equal('SetLEDState failed: HTTP 500, UPnP error 402');
+    });
+
+    it('reads the remaining time of the sleep timer', async () => {
+        answers.GetRemainingSleepTimerDuration =
+            '<RemainingSleepTimerDuration>0:29:58</RemainingSleepTimerDuration><CurrentSleepTimerGeneration>3</CurrentSleepTimerGeneration>';
+        expect(await getSleepTimer(baseUrl)).to.equal(1798);
+        expect(requests[0].path).to.equal('/MediaRenderer/AVTransport/Control');
+        expect(requests[0].body).to.include('<InstanceID>0</InstanceID>');
+
+        answers.GetRemainingSleepTimerDuration =
+            '<RemainingSleepTimerDuration></RemainingSleepTimerDuration><CurrentSleepTimerGeneration>3</CurrentSleepTimerGeneration>';
+        expect(await getSleepTimer(baseUrl)).to.equal(0);
+    });
+
+    it('is null for a speaker that is not the coordinator', async () => {
+        answers.GetRemainingSleepTimerDuration = 800;
+        expect(await getSleepTimer(baseUrl)).to.be.null;
+    });
+
+    it('sets the sleep timer as hh:mm:ss and cancels it with an empty duration', async () => {
+        await setSleepTimer(baseUrl, 1800);
+        await setSleepTimer(baseUrl, 5430);
+        await setSleepTimer(baseUrl, 0);
+
+        expect(requests.map(request => request.action)).to.deep.equal([
+            'ConfigureSleepTimer',
+            'ConfigureSleepTimer',
+            'ConfigureSleepTimer',
+        ]);
+        expect(requests[0].body).to.include('<NewSleepTimerDuration>00:30:00</NewSleepTimerDuration>');
+        expect(requests[1].body).to.include('<NewSleepTimerDuration>01:30:30</NewSleepTimerDuration>');
+        expect(requests[2].body).to.include('<NewSleepTimerDuration></NewSleepTimerDuration>');
+    });
+});
