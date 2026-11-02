@@ -1,4 +1,7 @@
 # Older changes
+## 4.2.12 (2026-10-17)
+* (@GermanBluefox) Updated packages
+
 ## 4.2.11 (2026-10-14)
 * (@GermanBluefox) Added the sizes for all screens to the settings. Removed the outdated admin pages
 * (@GermanBluefox) The TCP port for the SONOS events is reported to js-controller 8 as a used resource

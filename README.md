@@ -382,7 +382,7 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
-### **WORK IN PROGRESS**
+### 4.3.0 (2026-11-02)
 - (copilot) Adapter requires node.js >= 22.19.0 now
 * (@GermanBluefox) The event port of the new backend (`@svrooij/sonos`) is set in the instance settings instead of the environment variable `SONOS_LISTENER_PORT`
 * (@GermanBluefox) Fixed the column widths of the settings on large screens and the German text for fade-in
@@ -408,9 +408,6 @@ adapter to get a working state back.
 * (@GermanBluefox) Fixed detection of radio streams (current_type, current_station, current_title) in the new backend (#363)
 * (@GermanBluefox) The adapter no longer stops with "Cannot read properties of undefined (reading 'members')" when a speaker leaves or rejoins the network (#170, #192, #269, #272)
 * (@GermanBluefox) Local TTS files are handed to the speaker under `/sonos/...` of the web adapter; the former `/files/sonos/...` URL does not exist there (#187)
-
-### 4.2.12 (2026-10-17)
-* (@GermanBluefox) Updated packages
 
 Older changes can be found in [CHANGELOG_OLD.md](CHANGELOG_OLD.md)
 
