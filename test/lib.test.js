@@ -1474,3 +1474,30 @@ describe('TTS after a file that cannot be played (#176)', () => {
         tts.destroy();
     });
 });
+
+describe('speakers that left their group (#121)', () => {
+    const { speakersLeftGroup } = require('../build/lib/group-changes');
+
+    it('finds a speaker that followed another one and follows itself now', () => {
+        const before = { kitchen: 'living', living: 'living', bath: 'bath' };
+        const after = { kitchen: 'kitchen', living: 'living', bath: 'bath' };
+        expect(speakersLeftGroup(before, after)).to.deep.equal(['kitchen']);
+    });
+
+    it('finds every member of a dissolved group', () => {
+        const before = { kitchen: 'living', bath: 'living', living: 'living' };
+        const after = { kitchen: 'kitchen', bath: 'bath', living: 'living' };
+        expect(speakersLeftGroup(before, after)).to.have.members(['kitchen', 'bath']);
+    });
+
+    it('ignores a speaker that joins a group or moves into another one', () => {
+        const before = { kitchen: 'kitchen', bath: 'living' };
+        const after = { kitchen: 'living', bath: 'office' };
+        expect(speakersLeftGroup(before, after)).to.deep.equal([]);
+    });
+
+    it('ignores the first topology after the start and unchanged speakers', () => {
+        expect(speakersLeftGroup({}, { kitchen: 'kitchen' })).to.deep.equal([]);
+        expect(speakersLeftGroup({ kitchen: 'kitchen' }, { kitchen: 'kitchen' })).to.deep.equal([]);
+    });
+});

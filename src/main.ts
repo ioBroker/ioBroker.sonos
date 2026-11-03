@@ -31,6 +31,7 @@ import { isReachable } from './lib/reachability';
 import { readBatteryStatus } from './lib/battery';
 import { getButtonLock, getLed, getSleepTimer, setButtonLock, setLed, setSleepTimer } from './lib/speaker-settings';
 import { COVER_MAX_SIZE, coverVersion, isImageData, pruneCoverCache, touchCoverFile } from './lib/cover-cache';
+import { speakersLeftGroup } from './lib/group-changes';
 import {
     getAlarmStates,
     getChannelStates,
@@ -239,6 +240,8 @@ class Sonos extends utils.Adapter {
     private backend: SonosBackend | null = null;
     private usedResources: UsedResources | null = null;
     private lastCover: Record<string, string | null> = {};
+    /** Coordinator of every speaker after the last topology change, to notice who left a group (#121) */
+    private readonly groupCoordinator: Record<string, string> = {};
     private lastTvFormat: Record<string, string> = {};
     private lastTvFormatFetch: Record<string, number> = {};
     /** Last value written to `current_artist` while on the TV input, keyed by channel */
@@ -2461,6 +2464,7 @@ class Sonos extends utils.Adapter {
 
         // `alive` is not taken from the groups: they still list a speaker that has gone away for a
         // while, with @svrooij/sonos even for good. checkAlive() decides it.
+        const coordinators: Record<string, string> = {};
         for (const group of data.groups) {
             const ip = this.getIpOfPlayer(group.uuid);
 
@@ -2477,6 +2481,9 @@ class Sonos extends utils.Adapter {
                 if (memberIp) {
                     this.channels[memberIp].uuid = groupMember.uuid;
                     membersChannels.push(memberIp);
+                    if (ip) {
+                        coordinators[memberIp] = ip;
+                    }
                     await this.setState(
                         { device: 'root', channel: memberIp, state: 'coordinator' },
                         { val: ip, ack: true },
@@ -2501,6 +2508,18 @@ class Sonos extends utils.Adapter {
                     { val: membersChannels.join(','), ack: true },
                 );
                 await this.syncGroupPlayback(ip);
+            }
+        }
+
+        // A speaker that left its group still shows the playback of the group - read its own one (#121).
+        // After all groups, so that its old group has already been told that it is gone.
+        const left = speakersLeftGroup(this.groupCoordinator, coordinators);
+        Object.assign(this.groupCoordinator, coordinators);
+        for (const ip of left) {
+            const device = this.backend?.getDeviceByUuid(this.channels[ip].uuid);
+            if (device?.state) {
+                this.log.debug(`${ip} left its group, take its own playback state`);
+                await this.takeSonosState(ip, device.state);
             }
         }
 
