@@ -1,7 +1,7 @@
 /**
  * Housekeeping of the cover cache (`iobroker-data/sonosCache`, #222).
  *
- * Every cover a speaker reports is downloaded once and kept under the md5 of its URI, so a cover
+ * Every cover a speaker reports is downloaded once and kept under the SHA-256 of its URI, so a cover
  * that comes back - a radio station, a favourite album - is not fetched again. Nothing ever removed a
  * file, and on systems that play many different tracks the folder grew to gigabytes. Covers that were
  * not used for {@link COVER_CACHE_MAX_AGE} are removed now; a cache hit refreshes the modification
@@ -69,7 +69,7 @@ export const COVER_MAX_SIZE = 10 * 1024 * 1024;
  * Whether the downloaded data is an image - JPEG, PNG, GIF, WebP, BMP or SVG.
  *
  * The status code alone does not say it: a speaker or a music service can answer the cover URL with
- * the audio file itself (#64). Cached under the md5 of the URL, it was shown as a broken cover every
+ * the audio file itself (#64). Cached under the hash of the URL, it was shown as a broken cover every
  * time the track came back. The content type is not reliable either - services send covers as
  * `application/octet-stream` - so the first bytes decide.
  *
@@ -109,5 +109,5 @@ export function isImageData(data: Buffer): boolean {
  * @param data content of the cover
  */
 export function coverVersion(data: Buffer): string {
-    return crypto.createHash('md5').update(data).digest('hex').substring(0, 8);
+    return crypto.createHash('sha256').update(data).digest('hex').substring(0, 8);
 }

@@ -2081,8 +2081,8 @@ class Sonos extends utils.Adapter {
         let filePath = DEFAULT_IMAGE;
 
         if (albumArtUri) {
-            const md5url = crypto.createHash('md5').update(albumArtUri).digest('hex');
-            filePath = this.cacheDir + md5url;
+            // The hash is only a file name, but code scanning rates md5 as weak - SHA-256 costs nothing here
+            filePath = this.cacheDir + crypto.createHash('sha256').update(albumArtUri).digest('hex');
         }
 
         if (fs.existsSync(filePath)) {
