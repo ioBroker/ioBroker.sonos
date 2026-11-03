@@ -30,7 +30,7 @@ import { UsedResources } from './lib/used-resources';
 import { isReachable } from './lib/reachability';
 import { readBatteryStatus } from './lib/battery';
 import { getButtonLock, getLed, getSleepTimer, setButtonLock, setLed, setSleepTimer } from './lib/speaker-settings';
-import { coverVersion, pruneCoverCache, touchCoverFile } from './lib/cover-cache';
+import { COVER_MAX_SIZE, coverVersion, isImageData, pruneCoverCache, touchCoverFile } from './lib/cover-cache';
 import {
     getAlarmStates,
     getChannelStates,
@@ -41,6 +41,7 @@ import {
 import { alarmStateValues, applyAlarmSetting, newAlarm, nextAlarmStart, type AlarmLookup } from './lib/alarm-clock';
 import { parseFormattedTime, toFormattedTime } from './lib/time';
 import {
+    albumArtFromDidl,
     getMediaRoot,
     isDirectPlayUri,
     isLineInStreamUri,
@@ -56,6 +57,8 @@ import type { MediaBrowseItem, MediaBrowseResult } from './lib/content-directory
 import { encodeSmapiId, parseSmapiId } from './lib/smapi';
 
 const DEFAULT_IMAGE = `${__dirname}/../img/no-cover.png`;
+/** A cover that does not arrive within this time is not waited for */
+const COVER_TIMEOUT_MS = 15000;
 const TV_IMAGE = `${__dirname}/../img/tv-cover.png`;
 
 /** Information about one sonos device */
@@ -1188,12 +1191,15 @@ class Sonos extends utils.Adapter {
         }
 
         const tvCover = isTvStreamUri(sonosState.currentTrack.uri);
-        const coverKey = tvCover ? 'tv' : sonosState.currentTrack.albumArtUri || '';
+        // A track without a cover of its own shows the one of what was started - the logo of the
+        // station or the art Alexa sends along with Amazon Music and Sonos Radio (#64)
+        const albumArt = sonosState.currentTrack.albumArtUri || albumArtFromDidl(meta);
+        const coverKey = tvCover ? 'tv' : albumArt;
         if (this.lastCover[ip] !== coverKey) {
             if (tvCover) {
                 await this.syncCoverFileToStorage(TV_IMAGE, ip);
             } else {
-                await this.updateCover(ip, sonosState.currentTrack.albumArtUri);
+                await this.updateCover(ip, albumArt);
             }
             this.lastCover[ip] = coverKey || null;
         }
@@ -2110,27 +2116,76 @@ class Sonos extends utils.Adapter {
             return;
         }
 
+        // Exactly one outcome per request: the cover, or - on any failure - the default image
+        let done = false;
+        const finish = (data: Buffer | null, reason?: string): void => {
+            if (done) {
+                return;
+            }
+            done = true;
+            if (!data) {
+                // No image (404, an audio file, ...): show the default image, not the cover of the last track.
+                // Nothing is cached, so the next time the track plays the cover is tried again.
+                if (reason) {
+                    this.log.debug(`No cover from ${url.href}: ${reason}`);
+                }
+                void this.syncCoverFileToStorage(DEFAULT_IMAGE, ip);
+                return;
+            }
+            try {
+                // Only a complete image goes into the cache - before, an aborted download stayed there for good
+                fs.writeFileSync(filePath, data);
+            } catch (e: any) {
+                this.log.warn(`Cannot cache the cover: ${e.message}`);
+            }
+            void this.syncCoverFileToStorage(fs.existsSync(filePath) ? filePath : DEFAULT_IMAGE, ip);
+        };
+
         const onResponse = (res: http.IncomingMessage): void => {
             this.log.debug(`HTTP status code ${res.statusCode}`);
 
-            if (res.statusCode === 200) {
-                const cacheStream = fs.createWriteStream(filePath);
-                res.pipe(cacheStream).on('finish', () => {
-                    void this.syncCoverFileToStorage(filePath, ip);
-                });
-            } else {
-                // No image (404) or it cannot be read: show the default image, not the cover of the last track.
+            if (res.statusCode !== 200) {
                 res.resume();
-                void this.syncCoverFileToStorage(DEFAULT_IMAGE, ip);
+                finish(null, `HTTP status ${res.statusCode}`);
+                return;
+            }
+            const length = Number(res.headers['content-length']);
+            if (length > COVER_MAX_SIZE) {
+                res.destroy();
+                finish(null, `${length} bytes are no cover`);
+                return;
             }
 
-            res.on('end', () => this.log.debug('Response "end" event'));
+            const chunks: Buffer[] = [];
+            let size = 0;
+            res.on('data', (chunk: Buffer) => {
+                size += chunk.length;
+                if (size > COVER_MAX_SIZE) {
+                    // An endless stream - a radio station answers its URL with the audio
+                    res.destroy();
+                    finish(null, `more than ${COVER_MAX_SIZE} bytes`);
+                    return;
+                }
+                chunks.push(chunk);
+            });
+            res.on('end', () => {
+                const data = Buffer.concat(chunks);
+                if (isImageData(data)) {
+                    finish(data);
+                } else {
+                    finish(null, `not an image (${res.headers['content-type'] || 'no content type'})`);
+                }
+            });
+            res.on('error', e => finish(null, e.message));
         };
 
         const request = url.protocol === 'https:' ? https.get(url, onResponse) : http.get(url, onResponse);
+        request.setTimeout(COVER_TIMEOUT_MS, () => request.destroy(new Error('timeout')));
         request.on('error', e => {
-            this.log.warn(`Cannot read the cover ${url.href}: ${e.message}`);
-            void this.syncCoverFileToStorage(DEFAULT_IMAGE, ip);
+            if (!done) {
+                this.log.warn(`Cannot read the cover ${url.href}: ${e.message}`);
+            }
+            finish(null);
         });
     }
 

@@ -62,6 +62,39 @@ export function touchCoverFile(file: string, now = new Date()): void {
     }
 }
 
+/** A cover larger than this is not an album art but a stream or a file that is no image (#64) */
+export const COVER_MAX_SIZE = 10 * 1024 * 1024;
+
+/**
+ * Whether the downloaded data is an image - JPEG, PNG, GIF, WebP, BMP or SVG.
+ *
+ * The status code alone does not say it: a speaker or a music service can answer the cover URL with
+ * the audio file itself (#64). Cached under the md5 of the URL, it was shown as a broken cover every
+ * time the track came back. The content type is not reliable either - services send covers as
+ * `application/octet-stream` - so the first bytes decide.
+ *
+ * @param data the downloaded file
+ */
+export function isImageData(data: Buffer): boolean {
+    if (data.length < 4) {
+        return false;
+    }
+    if (data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff) {
+        return true; // JPEG
+    }
+    const head = data.subarray(0, 512).toString('latin1');
+    if (head.startsWith('\x89PNG') || head.startsWith('GIF8') || head.startsWith('BM')) {
+        return true;
+    }
+    if (head.startsWith('RIFF') && head.substring(8, 12) === 'WEBP') {
+        return true;
+    }
+    // SVG, possibly after a BOM (read as latin1), an XML declaration or a comment
+    return /^(\xEF\xBB\xBF)?\s*(<\?xml[\s\S]*?\?>\s*)?(<!--[\s\S]*?-->\s*)*(<!DOCTYPE svg[^>]*>\s*)?<svg[\s>]/i.test(
+        head,
+    );
+}
+
 /**
  * Version of a cover for its URL in `current_cover` (#204, #205).
  *
