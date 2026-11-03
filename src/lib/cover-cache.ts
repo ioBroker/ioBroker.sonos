@@ -89,10 +89,13 @@ export function isImageData(data: Buffer): boolean {
     if (head.startsWith('RIFF') && head.substring(8, 12) === 'WEBP') {
         return true;
     }
-    // SVG, possibly after a BOM (read as latin1), an XML declaration or a comment
-    return /^(\xEF\xBB\xBF)?\s*(<\?xml[\s\S]*?\?>\s*)?(<!--[\s\S]*?-->\s*)*(<!DOCTYPE svg[^>]*>\s*)?<svg[\s>]/i.test(
-        head,
-    );
+    // SVG: markup from the first character on (after a BOM, read as latin1), and the first element -
+    // after an XML declaration, a comment or a doctype, which start with `<?` and `<!` - is <svg>, so
+    // that an HTML error page with an icon in it does not count. Simple checks instead of one pattern
+    // with nested repetitions, which could backtrack exponentially.
+    const markup = head.replace(/^\xEF\xBB\xBF/, '').trimStart();
+    const firstElement = markup.startsWith('<') ? markup.match(/<([a-zA-Z][\w:.-]*)/) : null;
+    return firstElement?.[1].toLowerCase() === 'svg';
 }
 
 /**

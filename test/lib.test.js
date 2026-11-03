@@ -661,12 +661,24 @@ describe('cover of what was started (#64)', () => {
         );
     });
 
+    it('recognizes an SVG after a comment or a doctype', () => {
+        expect(isImageData(Buffer.from('<!-- logo --><svg xmlns="http://www.w3.org/2000/svg"/>'))).to.equal(true);
+        expect(isImageData(Buffer.from('<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"><svg/>'))).to.equal(true);
+    });
+
+    it('stays fast on input made to backtrack', () => {
+        const start = Date.now();
+        isImageData(Buffer.from(`<!--${'--><!--'.repeat(70)}x`));
+        expect(Date.now() - start).to.be.below(100);
+    });
+
     it('rejects audio and text answered for a cover URL', () => {
         expect(isImageData(Buffer.from('ID3\x04\x00\x00\x00\x00', 'latin1'))).to.equal(false); // MP3
         expect(isImageData(Buffer.from([0xff, 0xfb, 0x90, 0x64]))).to.equal(false); // MPEG frame
         expect(isImageData(Buffer.from('\x00\x00\x00\x20ftypM4A ', 'latin1'))).to.equal(false); // AAC
         expect(isImageData(Buffer.from('#EXTM3U\n#EXT-X-VERSION:3'))).to.equal(false); // HLS
         expect(isImageData(Buffer.from('<html><body>Not found</body></html>'))).to.equal(false);
+        expect(isImageData(Buffer.from('<html><body><svg><path/></svg> Not found</body></html>'))).to.equal(false);
         expect(isImageData(Buffer.alloc(0))).to.equal(false);
     });
 });
