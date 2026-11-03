@@ -18,7 +18,7 @@ import { htAudioInLabel, isHtAudioSilent, mediaItem, streamContentFromDidl, tvAu
 import { createAlarmClock } from '../alarm-clock';
 import { SmapiHub } from '../smapi';
 
-import type { AlarmClockAccess, MusicServiceAccess, SonosBackend, SonosDevice } from './sonos-backend';
+import type { AlarmClockAccess, ChannelResolver, MusicServiceAccess, SonosBackend, SonosDevice } from './sonos-backend';
 import type {
     MediaBrowseItem,
     SonosBackendEvent,
@@ -192,7 +192,8 @@ export class SvrooijDevice implements SonosDevice {
 
     public readonly uuid: string;
     public readonly ip: string | null;
-    public readonly channel: string | null;
+    /** The IP address with underscores - the channel name until the adapter binds the speaker (#140) */
+    private readonly ipChannel: string | null;
 
     /** Assembled from the events; the adapter reads it synchronously */
     private cached: SonosDeviceState = {
@@ -224,7 +225,12 @@ export class SvrooijDevice implements SonosDevice {
     ) {
         this.uuid = device.Uuid;
         this.ip = device.Host;
-        this.channel = device.Host ? device.Host.replace(/[.\s]+/g, '_') : null;
+        this.ipChannel = device.Host ? device.Host.replace(/[.\s]+/g, '_') : null;
+    }
+
+    get channel(): string | null {
+        const resolver = this.backend.channelResolver;
+        return resolver ? resolver(this.uuid, this.ipChannel) : this.ipChannel;
     }
 
     get roomName(): string {
@@ -665,6 +671,7 @@ export class SvrooijDevice implements SonosDevice {
 }
 
 export class SvrooijBackend implements SonosBackend {
+    public channelResolver: ChannelResolver | null = null;
     private readonly manager = new SonosManager();
     private readonly wrappers = new Map<string, SvrooijDevice>();
     private readonly listeners = new Map<SonosBackendEvent, ((data: any) => void)[]>();

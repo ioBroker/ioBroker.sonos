@@ -25,7 +25,7 @@ import {
 import { createAlarmClock } from '../alarm-clock';
 import { SmapiHub } from '../smapi';
 
-import type { AlarmClockAccess, MusicServiceAccess, SonosBackend, SonosDevice } from './sonos-backend';
+import type { AlarmClockAccess, ChannelResolver, MusicServiceAccess, SonosBackend, SonosDevice } from './sonos-backend';
 import type {
     MediaBrowseItem,
     SonosBackendEvent,
@@ -210,7 +210,8 @@ export class DiscoveryDevice implements SonosDevice {
 
     public readonly uuid: string;
     public readonly ip: string | null;
-    public readonly channel: string | null;
+    /** The IP address with underscores - the channel name until the adapter binds the speaker (#140) */
+    private readonly ipChannel: string | null;
 
     constructor(
         private readonly player: SonosPlayer,
@@ -218,7 +219,12 @@ export class DiscoveryDevice implements SonosDevice {
     ) {
         this.uuid = player.uuid;
         this.ip = ipOf(player.baseUrl, false);
-        this.channel = ipOf(player.baseUrl, true);
+        this.ipChannel = ipOf(player.baseUrl, true);
+    }
+
+    get channel(): string | null {
+        const resolver = this.backend.channelResolver;
+        return resolver ? resolver(this.uuid, this.ipChannel) : this.ipChannel;
     }
 
     /** The underlying player, for the backend itself */
@@ -424,6 +430,7 @@ export class DiscoveryDevice implements SonosDevice {
 }
 
 export class DiscoveryBackend implements SonosBackend {
+    public channelResolver: ChannelResolver | null = null;
     private readonly discovery: SonosDiscovery;
     private readonly smapi: SmapiHub;
     public readonly music: MusicServiceAccess;

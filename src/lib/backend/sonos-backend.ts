@@ -59,7 +59,10 @@ export interface SonosDevice {
     readonly baseUrl: string;
     /** IP address with dots, e.g. `192.168.1.50` */
     readonly ip: string | null;
-    /** IP address with underscores - the channel name used by this adapter */
+    /**
+     * Channel name used by this adapter. Initially the IP address with underscores; with a
+     * {@link ChannelResolver} the channel the speaker was bound to, under any address (#140).
+     */
     readonly channel: string | null;
 
     /** The device that coordinates the group this device plays in; the device itself when standalone */
@@ -157,9 +160,20 @@ export interface SonosDevice {
  *
  * Created once at adapter start. `main.ts` knows this interface and nothing below it.
  */
+/**
+ * Decides the channel of a device
+ *
+ * @param uuid UUID of the device
+ * @param ipChannel its current IP address with underscores
+ * @returns the channel name, or null if the device has none
+ */
+export type ChannelResolver = (uuid: string, ipChannel: string | null) => string | null;
+
 export interface SonosBackend {
     /** All known devices */
     readonly devices: SonosDevice[];
+    /** Decides the `channel` of the devices; without it the channel is the IP address with underscores */
+    channelResolver: ChannelResolver | null;
     /** Music services the household reports, keyed by service name */
     readonly musicServices: Record<string, SonosMusicService>;
     /** Address the speakers can reach this adapter at, used for the TTS files */

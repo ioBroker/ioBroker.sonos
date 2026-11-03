@@ -1534,3 +1534,71 @@ describe('log of sonos-discovery in the adapter log (#177)', () => {
         ]);
     });
 });
+
+describe('channel of a speaker under a new address (#140)', () => {
+    const { ChannelRegistry } = require('../build/lib/channel-registry');
+
+    function registry() {
+        const bound = [];
+        const moved = [];
+        const reg = new ChannelRegistry(
+            (channel, uuid) => bound.push(`${channel}=${uuid}`),
+            (channel, uuid, ipChannel) => moved.push(`${channel}->${ipChannel}`),
+        );
+        return { reg, bound, moved };
+    }
+
+    it('binds a configured channel to the speaker found at its address', () => {
+        const { reg, bound } = registry();
+        reg.addChannel('192_168_1_50');
+
+        expect(reg.resolve('RINCON_A', '192_168_1_50')).to.equal('192_168_1_50');
+        expect(reg.resolve('RINCON_A', '192_168_1_50')).to.equal('192_168_1_50');
+        expect(bound).to.deep.equal(['192_168_1_50=RINCON_A']);
+        expect(reg.uuidOf('192_168_1_50')).to.equal('RINCON_A');
+    });
+
+    it('keeps the channel when the speaker gets a new address', () => {
+        const { reg, moved } = registry();
+        reg.addChannel('192_168_1_50');
+        reg.resolve('RINCON_A', '192_168_1_50');
+
+        expect(reg.resolve('RINCON_A', '192_168_1_60')).to.equal('192_168_1_50');
+        expect(reg.resolve('RINCON_A', '192_168_1_60')).to.equal('192_168_1_50');
+        expect(moved).to.deep.equal(['192_168_1_50->192_168_1_60']); // reported once
+    });
+
+    it('does not give the channel to another speaker that got the old address', () => {
+        const { reg } = registry();
+        reg.addChannel('192_168_1_50');
+        reg.resolve('RINCON_A', '192_168_1_50');
+
+        expect(reg.resolve('RINCON_B', '192_168_1_50')).to.equal(null);
+    });
+
+    it('knows the speaker stored with the channel after a restart', () => {
+        const { reg, bound } = registry();
+        reg.addChannel('192_168_1_50', 'RINCON_A');
+
+        expect(reg.resolve('RINCON_A', '192_168_1_60')).to.equal('192_168_1_50');
+        expect(reg.resolve('RINCON_B', '192_168_1_50')).to.equal(null);
+        expect(bound).to.deep.equal([]);
+    });
+
+    it('names a speaker without channel after its address, as before', () => {
+        const { reg, bound } = registry();
+        reg.addChannel('192_168_1_50');
+
+        expect(reg.resolve('RINCON_C', '192_168_1_70')).to.equal('192_168_1_70');
+        expect(reg.resolve('RINCON_C', null)).to.equal(null);
+        expect(bound).to.deep.equal([]);
+    });
+
+    it('forgets everything when the configuration is read again', () => {
+        const { reg } = registry();
+        reg.addChannel('192_168_1_50', 'RINCON_A');
+        reg.clear();
+
+        expect(reg.resolve('RINCON_A', '192_168_1_60')).to.equal('192_168_1_60');
+    });
+});

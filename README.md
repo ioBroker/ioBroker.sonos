@@ -358,6 +358,14 @@ at a time.
 - Sonos library - which client library talks to the speakers, see below
 - Event port - only for `@svrooij/sonos`: the TCP port the speakers send their events to. Change it only if another program already uses it. (Default 6329)
 
+### Speakers with a new IP address
+The channel of a speaker is named after the address it had when it was added (`root.192_168_1_50`).
+The first time the speaker is found at that address, the channel is bound to its serial id
+(`RINCON_...`, stored in `native.uuid` of the channel). If the router gives the speaker another address
+later, it keeps its channel and its states - scripts and views keep working - and the log tells the
+new address once. Another speaker that gets the old address does not take the channel over. The
+search in the settings does not offer a moved speaker a second time.
+
 ### Sonos library
 
 The adapter ships two client libraries and the setting picks one. Nothing else changes:
@@ -385,6 +393,7 @@ adapter to get a working state back.
 -->
 ## Changelog
 ### **WORK IN PROGRESS**
+* (@GermanBluefox) A speaker that gets a new IP address keeps its channel and states: the channel is bound to the serial id of the speaker the first time it is found, and another speaker that gets the old address does not take it over (#140)
 * (@GermanBluefox) Errors of the `sonos-discovery` backend appear in the ioBroker log: the library wrote them to the console, so an event it could not process - which then never reached the states - left no trace (#177)
 * (@GermanBluefox) TTS (sayIt): a file the speaker cannot play no longer leaves the volume at 0 and blocks every further announcement until a restart - the state before TTS is restored and the next announcement is played (#176)
 * (@GermanBluefox) A track without a cover of its own shows the cover of what was started - the station logo or the art Alexa sends along with Amazon Music and Sonos Radio. Only real images are cached as cover: an audio file or a stream answered for the cover URL shows the default cover instead of a broken one, and an aborted download no longer stays in the cache (#64)
