@@ -135,6 +135,13 @@ declare module 'sonos-discovery' {
     }
 }
 
+/** The logger every module of the library shares; `routeLibraryLog` in discovery-backend.ts replaces its functions */
+declare module 'sonos-discovery/lib/helpers/logger' {
+    type LogFunction = (...args: unknown[]) => void;
+    const logger: { trace: LogFunction; debug: LogFunction; info: LogFunction; warn: LogFunction; error: LogFunction };
+    export default logger;
+}
+
 /** The player class of the library. Only the part that `guardLibrary` in discovery-backend.ts patches is described. */
 declare module 'sonos-discovery/lib/models/Player' {
     export interface PlayerInternals {
