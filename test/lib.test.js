@@ -1501,3 +1501,36 @@ describe('speakers that left their group (#121)', () => {
         expect(speakersLeftGroup({ kitchen: 'kitchen' }, { kitchen: 'kitchen' })).to.deep.equal([]);
     });
 });
+
+describe('log of sonos-discovery in the adapter log (#177)', () => {
+    const { libraryLogText, routeLibraryLog } = require('../build/lib/backend/discovery-backend');
+    const libraryLogger = require('sonos-discovery/lib/helpers/logger');
+
+    it('joins messages and error messages', () => {
+        expect(libraryLogText([new Error('EHOSTUNREACH'), 'resubscribing failed'])).to.equal(
+            'resubscribing failed - EHOSTUNREACH',
+        );
+        expect(libraryLogText(['state', { a: 1 }, undefined])).to.equal('state - {"a":1}');
+    });
+
+    it('turns errors of the library into warnings and the rest into debug output', () => {
+        const log = { warn: [], info: [], debug: [] };
+        routeLibraryLog({
+            warn: text => log.warn.push(text),
+            info: text => log.info.push(text),
+            debug: text => log.debug.push(text),
+        });
+
+        // what Player.js does when the metadata of a transport event cannot be processed
+        libraryLogger.error(new Error('Unexpected close tag'));
+        libraryLogger.warn('resubscribing to sid uuid:1 failed', new Error('EHOSTUNREACH'));
+        libraryLogger.error('unsubscribe from sid uuid:1 failed', new Error('ECONNREFUSED'));
+        libraryLogger.debug('Updated playback state in notification handler');
+
+        expect(log.warn).to.deep.equal(['sonos-discovery: Unexpected close tag']);
+        expect(log.debug).to.deep.equal([
+            'sonos-discovery: resubscribing to sid uuid:1 failed - EHOSTUNREACH',
+            'sonos-discovery: unsubscribe from sid uuid:1 failed - ECONNREFUSED',
+        ]);
+    });
+});

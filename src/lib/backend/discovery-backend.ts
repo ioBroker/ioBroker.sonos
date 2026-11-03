@@ -9,6 +9,7 @@ import SonosDiscovery from 'sonos-discovery';
 import type { SonosFavorite, SonosPlayer, SonosPlayerState, SonosQueueItem } from 'sonos-discovery';
 import LibraryPlayer from 'sonos-discovery/lib/models/Player';
 import type { PlayerInternals } from 'sonos-discovery/lib/models/Player';
+import libraryLogger from 'sonos-discovery/lib/helpers/logger';
 
 import {
     browseMedia,
@@ -116,6 +117,73 @@ export function guardLibrary(): void {
             recalculate.call(this);
         }
     };
+}
+
+/** Log of the adapter that created the backend last - in compact mode the instances share the module */
+let libraryLog: SmapiLog | null = null;
+let libraryLogRouted = false;
+
+/** Errors of the library that are expected and need no warning: a speaker that is gone cannot be unsubscribed */
+const HARMLESS_LIBRARY_ERRORS = /^unsubscribe from sid/;
+
+/**
+ * Text of a log call of the library: the messages first, then the error messages.
+ *
+ * @param args the arguments of the call - the library calls e.g. `logger.warn(err, 'message')`
+ */
+export function libraryLogText(args: unknown[]): string {
+    const parts: string[] = [];
+    const errors: string[] = [];
+    for (const arg of args) {
+        if (arg instanceof Error) {
+            errors.push(arg.message || arg.name);
+        } else if (arg && typeof arg === 'object') {
+            try {
+                parts.push(JSON.stringify(arg).substring(0, 500));
+            } catch {
+                parts.push('[object]'); // circular
+            }
+        } else if (typeof arg === 'string' || typeof arg === 'number' || typeof arg === 'boolean') {
+            if (arg !== '') {
+                parts.push(String(arg));
+            }
+        }
+    }
+    return [...parts, ...errors].join(' - ');
+}
+
+/**
+ * Sends the log of `sonos-discovery` to the log of the adapter.
+ *
+ * The library writes it to the console, which ioBroker does not show. Errors it catches itself - a
+ * track whose metadata cannot be read, for example, after which the playback never reaches the
+ * states - disappeared without a trace (#177). They are warnings now; the rest of the library log is
+ * debug output, because a speaker that is offline makes it retry and log every few seconds. Like
+ * `guardLibrary`, the shared logger object is patched once per process.
+ *
+ * @param log the log of the adapter
+ */
+export function routeLibraryLog(log: SmapiLog): void {
+    libraryLog = log;
+    if (libraryLogRouted) {
+        return;
+    }
+    libraryLogRouted = true;
+
+    const debug = (...args: unknown[]): void => libraryLog?.debug(`sonos-discovery: ${libraryLogText(args)}`);
+    libraryLogger.error = (...args: unknown[]): void => {
+        const text = libraryLogText(args);
+        if (HARMLESS_LIBRARY_ERRORS.test(text)) {
+            libraryLog?.debug(`sonos-discovery: ${text}`);
+        } else {
+            libraryLog?.warn(`sonos-discovery: ${text}`);
+        }
+    };
+    libraryLogger.warn = debug;
+    libraryLogger.info = debug;
+    // The library logs every single event at these levels - and filters them out by default as well
+    libraryLogger.debug = (): void => {};
+    libraryLogger.trace = (): void => {};
 }
 
 /** Browse results arrive either as an array or as a dictionary, depending on the call */
@@ -365,6 +433,7 @@ export class DiscoveryBackend implements SonosBackend {
 
     constructor(options: { cacheDir: string; port?: number; log: SmapiLog; tokenFile: string }) {
         guardLibrary();
+        routeLibraryLog(options.log);
 
         this.discovery = new SonosDiscovery({
             household: null,
