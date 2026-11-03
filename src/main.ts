@@ -31,6 +31,7 @@ import { isReachable } from './lib/reachability';
 import { readBatteryStatus } from './lib/battery';
 import { getButtonLock, getLed, getSleepTimer, setButtonLock, setLed, setSleepTimer } from './lib/speaker-settings';
 import { COVER_MAX_SIZE, coverVersion, isImageData, pruneCoverCache, touchCoverFile } from './lib/cover-cache';
+import { ChannelRegistry } from './lib/channel-registry';
 import { speakersLeftGroup } from './lib/group-changes';
 import {
     getAlarmStates,
@@ -237,6 +238,21 @@ class Sonos extends utils.Adapter {
     private playlistsLoaded = false;
     /** All known devices with the IP address (dots replaced by underscores) as key */
     private channels: Record<string, ChannelInfo> = {};
+    /** Binds every channel to the UUID of its speaker, so that it keeps the channel under a new address (#140) */
+    private readonly channelRegistry = new ChannelRegistry(
+        (channel, uuid) => {
+            this.log.debug(`Channel root.${channel} belongs to the speaker ${uuid}`);
+            this.extendObject(`root.${channel}`, { native: { uuid } }, err => {
+                if (err) {
+                    this.log.warn(`Cannot store the speaker of root.${channel}: ${err.message}`);
+                }
+            });
+        },
+        (channel, uuid, ipChannel) =>
+            this.log.info(
+                `The speaker of root.${channel} has the address ${ipChannel.replace(/_/g, '.')} now - it keeps its channel`,
+            ),
+    );
     private backend: SonosBackend | null = null;
     private usedResources: UsedResources | null = null;
     private lastCover: Record<string, string | null> = {};
@@ -712,12 +728,18 @@ class Sonos extends utils.Adapter {
     private browse(): FoundDevice[] {
         const result: FoundDevice[] = [];
 
-        this.backend?.devices.forEach(player =>
+        this.backend?.devices.forEach(player => {
+            // A speaker that moved to another address is configured already, under the address of its
+            // channel - offered with the new one, it would get a second channel (#140)
+            const channel = player.channel;
+            if (channel && this.channels[channel] && player.ip && channel !== player.ip.replace(/[.\s]+/g, '_')) {
+                return;
+            }
             result.push({
                 roomName: player.roomName,
                 ip: player.ip,
-            }),
-        );
+            });
+        });
 
         return result;
     }
@@ -810,7 +832,18 @@ class Sonos extends utils.Adapter {
 
     private async syncConfig(): Promise<void> {
         this.channels = {};
+        this.channelRegistry.clear();
+        try {
+            await this.syncChannels();
+        } finally {
+            // the channels known now, with their speaker if it was bound before (#140)
+            for (const [id, info] of Object.entries(this.channels)) {
+                this.channelRegistry.addChannel(id, (info.obj?.native?.uuid as string) || '');
+            }
+        }
+    }
 
+    private async syncChannels(): Promise<void> {
         const devices = await this.getDevicesAsync();
 
         this.log.debug(`Initialize known devices: ${JSON.stringify(devices)}`);
@@ -2723,6 +2756,9 @@ class Sonos extends utils.Adapter {
             // them. The backend can deliver them, so a later backend can switch them on.
         ];
 
+        // the channel of a speaker is the one it is bound to, not the one of its current address (#140)
+        this.backend.channelResolver = (uuid, ipChannel) => this.channelRegistry.resolve(uuid, ipChannel);
+
         events.forEach(event =>
             this.backend?.on(event, data =>
                 this.processSonosEvents(event, data).catch(e => this.log.error(`Cannot process ${event}: ${e}`)),
@@ -3015,7 +3051,12 @@ class Sonos extends utils.Adapter {
      * @param channel the IP address with underscores
      */
     private channelIp(channel: string): string {
-        return (this.channels[channel].obj?.native?.ip as string) || channel.replace(/_/g, '.');
+        // the speaker may have got a new address meanwhile - the channel keeps the one of its name (#140)
+        return (
+            this.backend?.getDeviceByChannel(channel)?.ip ||
+            (this.channels[channel].obj?.native?.ip as string) ||
+            channel.replace(/_/g, '.')
+        );
     }
 
     /**
