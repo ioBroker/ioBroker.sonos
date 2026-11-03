@@ -10,7 +10,19 @@ import {
     Tooltip,
     Typography,
 } from '@mui/material';
-import { ArrowBack, Clear, Folder, Login, MusicNote, QueueMusic, Search, Speaker, Star, Tv } from '@mui/icons-material';
+import {
+    ArrowBack,
+    Clear,
+    Folder,
+    History,
+    Login,
+    MusicNote,
+    PlaylistPlay,
+    QueueMusic,
+    Search,
+    Star,
+    Tv,
+} from '@mui/icons-material';
 
 import Generic from './Generic';
 import type { LibraryTab, MediaBrowseItem, MediaBrowseResult, RecentTrack } from './types';
@@ -29,12 +41,15 @@ export const LIBRARY_STATES = [
     'media_browse_result',
 ] as const;
 
-/** The sheets the source selection offers, in the order of the tab bar. */
+/**
+ * The sheets the source selection offers, in the order of the tab bar. In a narrow widget the bar
+ * shows the icons only, so each one has to say what the sheet holds.
+ */
 const TABS: { id: LibraryTab; label: string; icon: React.JSX.Element }[] = [
     { id: 'favorites', label: 'favorites', icon: <Star fontSize="small" /> },
-    { id: 'playlists', label: 'playlists', icon: <QueueMusic fontSize="small" /> },
-    { id: 'queue', label: 'queue', icon: <MusicNote fontSize="small" /> },
-    { id: 'recent', label: 'recent', icon: <Speaker fontSize="small" /> },
+    { id: 'playlists', label: 'playlists', icon: <PlaylistPlay fontSize="small" /> },
+    { id: 'queue', label: 'queue', icon: <QueueMusic fontSize="small" /> },
+    { id: 'recent', label: 'recent', icon: <History fontSize="small" /> },
     { id: 'sources', label: 'sources', icon: <Folder fontSize="small" /> },
 ];
 
@@ -77,6 +92,8 @@ interface SourceBrowserState {
     query: string;
     /** Breadcrumb of the `sources` sheet - one entry per folder the user opened */
     path: { id: string; title: string }[];
+    /** The labels do not fit next to the icons, so the tab bar shows the icons only. */
+    compactTabs: boolean;
 }
 
 /**
@@ -87,18 +104,38 @@ interface SourceBrowserState {
  * through `getValue` / `setValue` of the widget that embeds it.
  */
 export default class SourceBrowser extends React.Component<SourceBrowserProps, SourceBrowserState> {
+    /** Box around the tab bar - its width decides whether the labels fit. */
+    private tabBar: HTMLDivElement | null = null;
+
+    private tabBarObserver: ResizeObserver | null = null;
+
+    /** Width the tab bar needs with labels, measured when they did not fit. */
+    private labelsWidth = 0;
+
     constructor(props: SourceBrowserProps) {
         super(props);
-        this.state = { tab: props.defaultTab || '', query: '', path: [] };
+        this.state = { tab: props.defaultTab || '', query: '', path: [], compactTabs: false };
     }
 
     componentDidMount(): void {
         if (this.state.tab === 'sources') {
             this.props.setValue(this.props.ip, 'media_browse', 'root');
         }
+        // Measured before the first paint, so labels that do not fit never show up cut off
+        this.fitTabs();
     }
 
-    componentDidUpdate(prevProps: SourceBrowserProps): void {
+    componentWillUnmount(): void {
+        this.tabBarObserver?.disconnect();
+        this.tabBarObserver = null;
+        this.tabBar = null;
+    }
+
+    componentDidUpdate(prevProps: SourceBrowserProps, prevState: SourceBrowserState): void {
+        // The labels are back - check that they really fit, the fonts may have changed meanwhile
+        if (prevState.compactTabs && !this.state.compactTabs) {
+            this.fitTabs();
+        }
         // Another room shows another library, so the position inside the source tree is void
         if (prevProps.ip !== this.props.ip) {
             this.setState({ query: '', path: [] }, () => {
@@ -161,6 +198,42 @@ export default class SourceBrowser extends React.Component<SourceBrowserProps, S
             .filter(Boolean)
             .map(line => ({ title: line }));
     }
+
+    // ---- tab bar width ------------------------------------------------------
+
+    /** Follows the size of the tab bar: the widget can be resized and the view can be hidden. */
+    private setTabBar = (node: HTMLDivElement | null): void => {
+        if (node === this.tabBar) {
+            return;
+        }
+        this.tabBarObserver?.disconnect();
+        this.tabBar = node;
+        if (node && typeof ResizeObserver !== 'undefined') {
+            this.tabBarObserver ||= new ResizeObserver(() => this.fitTabs());
+            this.tabBarObserver.observe(node);
+        }
+    };
+
+    /**
+     * Shows the labels next to the icons only while all of them fit into one row - five tabs with
+     * labels like "Warteschlange" do not fit into a narrow widget. Measured instead of a fixed
+     * breakpoint, because the labels have a different length in every language.
+     */
+    private fitTabs = (): void => {
+        const bar = this.tabBar;
+        // A hidden view has no width - nothing to measure until it is shown
+        if (!bar?.clientWidth) {
+            return;
+        }
+        if (this.state.compactTabs) {
+            if (bar.clientWidth >= this.labelsWidth) {
+                this.setState({ compactTabs: false });
+            }
+        } else if (bar.scrollWidth > bar.clientWidth) {
+            this.labelsWidth = bar.scrollWidth;
+            this.setState({ compactTabs: true });
+        }
+    };
 
     // ---- actions ------------------------------------------------------------
 
@@ -261,24 +334,51 @@ export default class SourceBrowser extends React.Component<SourceBrowserProps, S
         );
     }
 
+    /**
+     * One row across the whole width. The buttons do not shrink below their content, so labels that
+     * do not fit make the row overflow - `fitTabs()` notices that and switches to the icons.
+     */
     private renderTabs(): React.JSX.Element {
+        const compact = this.state.compactTabs;
+
         return (
-            <ToggleButtonGroup
-                size="small"
-                exclusive
-                value={this.state.tab}
-                onChange={(_e, value: LibraryTab | null) => this.setTab(value || '')}
+            <div
+                ref={this.setTabBar}
+                style={{ flex: '0 0 auto', overflow: 'hidden' }}
             >
-                {TABS.map(entry => (
-                    <ToggleButton
-                        key={entry.id}
-                        value={entry.id}
-                    >
-                        {entry.icon}
-                        <span style={{ marginLeft: 4 }}>{Generic.t(entry.label)}</span>
-                    </ToggleButton>
-                ))}
-            </ToggleButtonGroup>
+                <ToggleButtonGroup
+                    size="small"
+                    exclusive
+                    value={this.state.tab}
+                    onChange={(_e, value: LibraryTab | null) => this.setTab(value || '')}
+                    sx={{ display: 'flex', width: '100%' }}
+                >
+                    {TABS.map(entry => {
+                        const label = Generic.t(entry.label);
+                        return (
+                            <Tooltip
+                                key={entry.id}
+                                title={compact ? label : ''}
+                            >
+                                <ToggleButton
+                                    value={entry.id}
+                                    aria-label={label}
+                                    sx={{
+                                        flex: '1 0 auto',
+                                        gap: 0.5,
+                                        px: compact ? 0.5 : 1,
+                                        whiteSpace: 'nowrap',
+                                        textTransform: 'none',
+                                    }}
+                                >
+                                    {entry.icon}
+                                    {compact ? null : <span>{label}</span>}
+                                </ToggleButton>
+                            </Tooltip>
+                        );
+                    })}
+                </ToggleButtonGroup>
+            </div>
         );
     }
 
@@ -286,8 +386,9 @@ export default class SourceBrowser extends React.Component<SourceBrowserProps, S
         const { ip, coordinator } = this.props;
         const tab = this.state.tab;
 
+        // Always a fragment with the tab bar first, so its box - and the size observer on it - stays
         if (!tab) {
-            return <div>{this.renderTabs()}</div>;
+            return <>{this.renderTabs()}</>;
         }
 
         const query = this.state.query.trim().toLowerCase();
@@ -386,7 +487,7 @@ export default class SourceBrowser extends React.Component<SourceBrowserProps, S
 
         return (
             <>
-                <div>{this.renderTabs()}</div>
+                {this.renderTabs()}
                 <TextField
                     size="small"
                     variant="standard"

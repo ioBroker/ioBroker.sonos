@@ -327,22 +327,40 @@ export default class SonosPlayer extends Generic<SonosPlayerRxData, SonosPlayerS
         );
     }
 
+    /**
+     * Mute toggle. It starts the volume row - only without that row it is appended to the transport,
+     * where it used to wrap into a line of its own next to the cover.
+     */
+    private renderMute(ip: string, size: 'small' | 'medium', edge: 'start' | false): React.JSX.Element {
+        const muted = this.val(ip, 'muted') === true;
+
+        return (
+            <Tooltip title={Generic.t('mute')}>
+                <IconButton
+                    size={size}
+                    edge={edge}
+                    color={muted ? 'primary' : 'default'}
+                    onClick={() => this.set(ip, 'muted', !muted)}
+                >
+                    {muted ? <VolumeOff fontSize={size} /> : <VolumeUp fontSize={size} />}
+                </IconButton>
+            </Tooltip>
+        );
+    }
+
     private renderTransport(ip: string): React.JSX.Element {
         const onTv = this.isOnTv(ip);
         const playing = this.val(ip, 'state_simple') === true;
-        const muted = this.val(ip, 'muted') === true;
         const repeat = this.num(ip, 'repeat');
+        const withMute = !this.state.rxData.showVolume;
 
         if (onTv) {
             return (
                 <div style={styles.buttons}>
-                    <Tooltip title={Generic.t('mute')}>
-                        <IconButton onClick={() => this.set(ip, 'muted', !muted)}>
-                            {muted ? <VolumeOff /> : <VolumeUp />}
-                        </IconButton>
-                    </Tooltip>
+                    {withMute ? this.renderMute(ip, 'medium', 'start') : null}
                     <Tooltip title={Generic.t('night_mode')}>
                         <IconButton
+                            edge={withMute ? false : 'start'}
                             color={this.val(ip, 'night_mode') === true ? 'primary' : 'default'}
                             onClick={() => this.set(ip, 'night_mode', this.val(ip, 'night_mode') !== true)}
                         >
@@ -365,7 +383,10 @@ export default class SonosPlayer extends Generic<SonosPlayerRxData, SonosPlayerS
 
         return (
             <div style={styles.buttons}>
-                <IconButton onClick={() => this.set(ip, 'prev', true)}>
+                <IconButton
+                    edge="start"
+                    onClick={() => this.set(ip, 'prev', true)}
+                >
                     <SkipPreviousRounded fontSize="large" />
                 </IconButton>
                 <IconButton onClick={() => this.set(ip, 'state_simple', !playing)}>
@@ -390,11 +411,7 @@ export default class SonosPlayer extends Generic<SonosPlayerRxData, SonosPlayerS
                         {repeat === 2 ? <RepeatOne /> : <Repeat />}
                     </IconButton>
                 </Tooltip>
-                <Tooltip title={Generic.t('mute')}>
-                    <IconButton onClick={() => this.set(ip, 'muted', !muted)}>
-                        {muted ? <VolumeOff /> : <VolumeUp />}
-                    </IconButton>
-                </Tooltip>
+                {withMute ? this.renderMute(ip, 'medium', false) : null}
             </div>
         );
     }
@@ -439,7 +456,7 @@ export default class SonosPlayer extends Generic<SonosPlayerRxData, SonosPlayerS
 
         return (
             <div style={styles.volume}>
-                <VolumeUp fontSize="small" />
+                {this.renderMute(ip, 'small', 'start')}
                 <Slider
                     size="small"
                     min={0}
@@ -482,13 +499,21 @@ export default class SonosPlayer extends Generic<SonosPlayerRxData, SonosPlayerS
 
         return (
             <div style={styles.groups}>
-                <Typography variant="caption">{Generic.t('group')}</Typography>
+                <Typography
+                    variant="caption"
+                    style={{ opacity: 0.7, marginRight: 4 }}
+                >
+                    {Generic.t('group')}
+                </Typography>
                 {this.state.rooms.map(room => (
                     <FormControlLabel
                         key={room.ip}
+                        // MUI's default margins leave wide gaps that break the row into ragged lines
+                        sx={{ m: 0, mr: 1 }}
                         control={
                             <Checkbox
                                 size="small"
+                                sx={{ p: 0.5 }}
                                 disabled={room.ip === coordinator}
                                 checked={room.ip === coordinator || members.includes(room.ip)}
                                 onChange={(_e, checked) => this.toggleGroupMember(room.ip, checked)}
