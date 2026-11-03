@@ -1,7 +1,7 @@
 /**
  * Housekeeping of the cover cache (`iobroker-data/sonosCache`, #222).
  *
- * Every cover a speaker reports is downloaded once and kept under the md5 of its URI, so a cover
+ * Every cover a speaker reports is downloaded once and kept under the SHA-256 of its URI, so a cover
  * that comes back - a radio station, a favourite album - is not fetched again. Nothing ever removed a
  * file, and on systems that play many different tracks the folder grew to gigabytes. Covers that were
  * not used for {@link COVER_CACHE_MAX_AGE} are removed now; a cache hit refreshes the modification
@@ -62,6 +62,42 @@ export function touchCoverFile(file: string, now = new Date()): void {
     }
 }
 
+/** A cover larger than this is not an album art but a stream or a file that is no image (#64) */
+export const COVER_MAX_SIZE = 10 * 1024 * 1024;
+
+/**
+ * Whether the downloaded data is an image - JPEG, PNG, GIF, WebP, BMP or SVG.
+ *
+ * The status code alone does not say it: a speaker or a music service can answer the cover URL with
+ * the audio file itself (#64). Cached under the hash of the URL, it was shown as a broken cover every
+ * time the track came back. The content type is not reliable either - services send covers as
+ * `application/octet-stream` - so the first bytes decide.
+ *
+ * @param data the downloaded file
+ */
+export function isImageData(data: Buffer): boolean {
+    if (data.length < 4) {
+        return false;
+    }
+    if (data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff) {
+        return true; // JPEG
+    }
+    const head = data.subarray(0, 512).toString('latin1');
+    if (head.startsWith('\x89PNG') || head.startsWith('GIF8') || head.startsWith('BM')) {
+        return true;
+    }
+    if (head.startsWith('RIFF') && head.substring(8, 12) === 'WEBP') {
+        return true;
+    }
+    // SVG: markup from the first character on (after a BOM, read as latin1), and the first element -
+    // after an XML declaration, a comment or a doctype, which start with `<?` and `<!` - is <svg>, so
+    // that an HTML error page with an icon in it does not count. Simple checks instead of one pattern
+    // with nested repetitions, which could backtrack exponentially.
+    const markup = head.replace(/^\xEF\xBB\xBF/, '').trimStart();
+    const firstElement = markup.startsWith('<') ? markup.match(/<([a-zA-Z][\w:.-]*)/) : null;
+    return firstElement?.[1].toLowerCase() === 'svg';
+}
+
 /**
  * Version of a cover for its URL in `current_cover` (#204, #205).
  *
@@ -73,5 +109,5 @@ export function touchCoverFile(file: string, now = new Date()): void {
  * @param data content of the cover
  */
 export function coverVersion(data: Buffer): string {
-    return crypto.createHash('md5').update(data).digest('hex').substring(0, 8);
+    return crypto.createHash('sha256').update(data).digest('hex').substring(0, 8);
 }

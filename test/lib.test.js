@@ -619,6 +619,70 @@ describe('cover version (#204, #205)', () => {
     });
 });
 
+describe('cover of what was started (#64)', () => {
+    const { albumArtFromDidl } = require('../build/lib/content-directory');
+    const { isImageData } = require('../build/lib/cover-cache');
+
+    const ART = 'https://art.example.com/cover.jpg?w=300&h=300';
+    const DIDL =
+        '<DIDL-Lite xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/"><item id="-1">' +
+        '<dc:title>Alexa</dc:title>' +
+        '<upnp:albumArtURI>https://art.example.com/cover.jpg?w=300&amp;h=300</upnp:albumArtURI>' +
+        '</item></DIDL-Lite>';
+
+    it('reads the cover out of raw DIDL', () => {
+        expect(albumArtFromDidl(DIDL)).to.equal(ART);
+    });
+
+    it('reads the cover out of entity encoded DIDL', () => {
+        const encoded = DIDL.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        expect(albumArtFromDidl(encoded)).to.equal(ART);
+    });
+
+    it('accepts the lower case tag and attributes', () => {
+        expect(albumArtFromDidl('<upnp:albumarturi dlna:profileID="JPEG_TN">/getaa?s=1</upnp:albumarturi>')).to.equal(
+            '/getaa?s=1',
+        );
+    });
+
+    it('returns nothing without metadata or cover', () => {
+        expect(albumArtFromDidl(undefined)).to.equal('');
+        expect(albumArtFromDidl('')).to.equal('');
+        expect(albumArtFromDidl('<DIDL-Lite><item><dc:title>x</dc:title></item></DIDL-Lite>')).to.equal('');
+    });
+
+    it('recognizes images by their first bytes', () => {
+        expect(isImageData(Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0x10]))).to.equal(true); // JPEG
+        expect(isImageData(Buffer.from('\x89PNG\r\n\x1a\n', 'latin1'))).to.equal(true);
+        expect(isImageData(Buffer.from('GIF89a....'))).to.equal(true);
+        expect(isImageData(Buffer.from('RIFF\x10\x00\x00\x00WEBPVP8 ', 'latin1'))).to.equal(true);
+        expect(isImageData(Buffer.from('<?xml version="1.0"?>\n<svg xmlns="http://www.w3.org/2000/svg"/>'))).to.equal(
+            true,
+        );
+    });
+
+    it('recognizes an SVG after a comment or a doctype', () => {
+        expect(isImageData(Buffer.from('<!-- logo --><svg xmlns="http://www.w3.org/2000/svg"/>'))).to.equal(true);
+        expect(isImageData(Buffer.from('<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"><svg/>'))).to.equal(true);
+    });
+
+    it('stays fast on input made to backtrack', () => {
+        const start = Date.now();
+        isImageData(Buffer.from(`<!--${'--><!--'.repeat(70)}x`));
+        expect(Date.now() - start).to.be.below(100);
+    });
+
+    it('rejects audio and text answered for a cover URL', () => {
+        expect(isImageData(Buffer.from('ID3\x04\x00\x00\x00\x00', 'latin1'))).to.equal(false); // MP3
+        expect(isImageData(Buffer.from([0xff, 0xfb, 0x90, 0x64]))).to.equal(false); // MPEG frame
+        expect(isImageData(Buffer.from('\x00\x00\x00\x20ftypM4A ', 'latin1'))).to.equal(false); // AAC
+        expect(isImageData(Buffer.from('#EXTM3U\n#EXT-X-VERSION:3'))).to.equal(false); // HLS
+        expect(isImageData(Buffer.from('<html><body>Not found</body></html>'))).to.equal(false);
+        expect(isImageData(Buffer.from('<html><body><svg><path/></svg> Not found</body></html>'))).to.equal(false);
+        expect(isImageData(Buffer.alloc(0))).to.equal(false);
+    });
+});
+
 describe('elapsed time', () => {
     const { parseFormattedTime, toFormattedTime } = require('../build/lib/time');
 

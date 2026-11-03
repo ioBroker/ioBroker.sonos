@@ -289,6 +289,23 @@ export function streamContentFromDidl(xml: string | undefined): string {
     return match ? decodeXml(match[1]).trim() : '';
 }
 
+/**
+ * Cover URI out of DIDL metadata (`upnp:albumArtURI`), raw or entity encoded like `streamContentFromDidl`.
+ *
+ * The transport metadata describes what was started - a radio station, a playlist, an Alexa session -
+ * and carries its cover even when the track itself has none, as with Amazon Music started by Alexa or
+ * Sonos Radio (#64).
+ *
+ * @param xml DIDL metadata
+ */
+export function albumArtFromDidl(xml: string | undefined): string {
+    const source = String(xml || '');
+    if (!source) {
+        return '';
+    }
+    return tagText(source, 'upnp:albumArtURI') || tagText(decodeXml(source), 'upnp:albumArtURI');
+}
+
 /** HTAudioIn values that mean no HDMI/SPDIF audio (SoCo / Sonos community). */
 const HT_AUDIO_SILENT = new Set([0, 21, 22, 33554454]);
 
