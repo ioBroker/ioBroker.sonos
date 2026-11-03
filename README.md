@@ -219,12 +219,14 @@ the one of the SONOS household.
 ## Using it with the sayIt adapter
 To use the [sayit adapter](https://github.com/ioBroker/ioBroker.sayit) with this SONOS adapter, ensure that the [web adapter](https://github.com/ioBroker/ioBroker.web) is instantiated and running too. The web adapter is required to allow the SONOS adapter to read the generated MP3 file from the sayit adapter.
 
-### Warning: Stability problems in combination with sayIt adapter
-Please note: This SONOS adapter has stability issues if using 'text to speech' with the sayIt adapter. Symptoms observed:
-1. Arbitrary change of volume to 0 or 100 %.
-2. No response after a random number of text-to-speech sequences
+sayIt writes the URL of the MP3 file to `sonos.X.root.<speaker>.tts`, and the speaker loads it from
+the web adapter. So the speakers must be able to reach that URL: the web adapter must not require
+authentication, and the address in the URL must be the one of the ioBroker host in your network.
 
-Workaround for text to speech is to use the [SONOS HTTP API](https://github.com/jishi/node-sonos-http-api).
+If the speaker cannot play a file - it cannot load the URL or does not support the format - the
+adapter logs the error, gives the speaker its volume and playback back and goes on with the next
+announcement. Older versions left the volume at 0 and did not play any announcement afterwards
+until the adapter was restarted.
 
 ## Favorites & Queue in VIS
 Use states `favorites_list_html` and `queue_html` to show playlists and current queue with basic HTML widget in VIS. By clicking on a row, the playlist or track will be played immediately.
@@ -383,6 +385,7 @@ adapter to get a working state back.
 -->
 ## Changelog
 ### **WORK IN PROGRESS**
+* (@GermanBluefox) TTS (sayIt): a file the speaker cannot play no longer leaves the volume at 0 and blocks every further announcement until a restart - the state before TTS is restored and the next announcement is played (#176)
 * (@GermanBluefox) vis-2 player: the tabs of the source selection always fit into the widget - without room for the labels they show the icons only - and the mute button moved into the volume row instead of wrapping into a line of its own
 
 ### 4.3.0 (2026-11-02)

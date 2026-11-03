@@ -1302,3 +1302,111 @@ describe('favorite without autoplay (#173)', () => {
         });
     });
 });
+
+describe('TTS after a file that cannot be played (#176)', () => {
+    const { TTS } = require('../build/lib/tts');
+
+    /** Lets the promise chains of the TTS run to their end */
+    const settle = async () => {
+        for (let i = 0; i < 50; i++) {
+            await new Promise(resolve => setImmediate(resolve));
+        }
+    };
+
+    function fakeAdapter() {
+        const errors = [];
+        return {
+            errors,
+            config: { fadeIn: 0, fadeOut: 0 },
+            log: { debug: () => {}, info: () => {}, warn: () => {}, error: text => errors.push(text) },
+            // the 40 s safety timer of a playing file is not needed here
+            setTimeout: () => ({}),
+            clearTimeout: () => {},
+            delay: async () => {},
+        };
+    }
+
+    function fakePlayer(failures) {
+        const calls = [];
+        const player = {
+            state: {
+                playbackState: 'PLAYING',
+                volume: 30,
+                mute: false,
+                currentTrack: { uri: 'x-file-cifs://nas/music/song.mp3' },
+                trackNo: 3,
+                elapsedTime: 42,
+            },
+            volume: 30,
+            muted: false,
+            transportUriMetadata: '',
+            setVolume: async volume => {
+                calls.push(`volume ${volume}`);
+                player.state.volume = volume;
+            },
+            setMute: async mute => calls.push(`mute ${mute}`),
+            addToQueue: async uri => {
+                calls.push(`queue ${uri}`);
+                if (failures.includes(uri)) {
+                    throw new Error('UPnP error 714');
+                }
+                return 7;
+            },
+            seekTrack: async track => calls.push(`track ${track}`),
+            seekTime: async time => calls.push(`time ${time}`),
+            play: async () => calls.push('play'),
+            pause: async () => calls.push('pause'),
+            removeFromQueue: async track => calls.push(`remove ${track}`),
+            setTransportUri: async uri => calls.push(`uri ${uri}`),
+        };
+        return { player, calls };
+    }
+
+    it('gives the volume back when a file fails', async () => {
+        const adapter = fakeAdapter();
+        const { player, calls } = fakePlayer(['http://host/broken.mp3']);
+        const tts = new TTS(adapter, player);
+
+        tts.add('http://host/broken.mp3', 50);
+        await settle();
+
+        expect(calls).to.include('volume 0'); // faded out for the announcement
+        expect(calls[calls.length - 1]).to.equal('volume 30');
+        expect(calls).to.include('track 3');
+        expect(calls).to.include('time 42');
+        expect(adapter.errors.join('\n')).to.contain('UPnP error 714');
+        tts.destroy();
+    });
+
+    it('plays the next announcement after a failed one', async () => {
+        const { player, calls } = fakePlayer(['http://host/broken.mp3']);
+        const tts = new TTS(fakeAdapter(), player);
+
+        tts.add('http://host/broken.mp3', 50);
+        await settle();
+        tts.add('http://host/hello.mp3', 40);
+        await settle();
+
+        expect(calls).to.include('queue http://host/hello.mp3');
+        expect(calls[calls.length - 1]).to.equal('volume 40');
+        tts.destroy();
+    });
+
+    it('goes on with the queue when a file in the middle fails', async () => {
+        const { player, calls } = fakePlayer(['http://host/broken.mp3']);
+        const tts = new TTS(fakeAdapter(), player);
+
+        tts.add('http://host/first.mp3', 40);
+        tts.add('http://host/broken.mp3', 40);
+        tts.add('http://host/third.mp3', 40);
+        await settle();
+        // the first file ended - a stop in the first second after the start is ignored, so move the start back
+        tts.playStopped = Date.now() - 5000;
+        tts.playingEnded();
+        await settle();
+
+        expect(calls).to.include('queue http://host/broken.mp3');
+        expect(calls).to.include('queue http://host/third.mp3');
+        tts.destroy();
+    });
+});
