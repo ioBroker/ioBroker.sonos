@@ -256,9 +256,33 @@ export class TTS {
         this.storeState();
 
         if (task) {
-            this.playTask(task).catch(error => this.adapter.log.error(`Cannot execute TTS: ${error}`));
+            this.playTask(task).catch(error => this.recover(error));
         }
         // wait till ended in playingEnded
+    }
+
+    /**
+     * A file could not be played - the speaker refused the URL or is part of a group, for example.
+     *
+     * Before, the error was only logged: the volume stayed at 0 from the fade-out, `ttsPlaying` stayed
+     * set and every further announcement waited in the queue for good, until the adapter was restarted.
+     * Now the state before TTS is restored and the next file in the queue is played.
+     *
+     * @param error the reason
+     */
+    private recover(error: unknown): void {
+        this.adapter.log.error(`Cannot execute TTS: ${error instanceof Error ? error.message : String(error)}`);
+
+        if (this.playStoppedTimeout) {
+            this.adapter.clearTimeout(this.playStoppedTimeout);
+            this.playStoppedTimeout = null;
+        }
+        this.clearWaitPlayerStarted();
+
+        // restoreState() starts the next file of the queue
+        this.removeAddedTrack()
+            .then(() => this.restoreState())
+            .catch(e => this.adapter.log.error(`Cannot restore state: ${e}`));
     }
 
     private async playTask(task: TtsTask): Promise<void> {
@@ -348,7 +372,7 @@ export class TTS {
             this.playStoppedTimeout = null;
         }
 
-        this.processNextTask().catch(error => this.adapter.log.error(`Cannot remove track: ${error}`));
+        this.processNextTask().catch(error => this.recover(error));
     }
 
     private async processNextTask(): Promise<void> {
