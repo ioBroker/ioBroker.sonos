@@ -102,9 +102,11 @@ describe('content-directory: HDMI audio format', () => {
 
 describe('content-directory: nowPlayingLabels', () => {
     it('shows TV as title and the format as artist', () => {
-        const labels = nowPlayingLabels({ uri: tvStreamUri(UUID), title: '', artist: '' }, LABELS, {
-            metadata: '<DIDL-Lite><item><r:streamContent>Stereo PCM</r:streamContent></item></DIDL-Lite>',
-        });
+        const labels = nowPlayingLabels(
+            { uri: tvStreamUri(UUID), title: '', artist: '' },
+            LABELS,
+            { metadata: '<DIDL-Lite><item><r:streamContent>Stereo PCM</r:streamContent></item></DIDL-Lite>' },
+        );
         expect(labels.title).to.equal('TV');
         expect(labels.station).to.equal('TV');
         expect(labels.artist).to.contain('PCM');
@@ -204,7 +206,13 @@ describe('smapi: object ids', () => {
     });
 });
 
-const { fromPlayMode, toFormatted, toPlayMode, toSeconds, toTrack } = require('../build/lib/backend/svrooij-backend');
+const {
+    fromPlayMode,
+    toFormatted,
+    toPlayMode,
+    toSeconds,
+    toTrack,
+} = require('../build/lib/backend/svrooij-backend');
 
 describe('svrooij backend: play mode', () => {
     // shuffle and repeat are two independent ioBroker states but one enum in the library,
@@ -1301,9 +1309,7 @@ describe('favorite without autoplay (#173)', () => {
     describe('@svrooij/sonos', () => {
         const backend = {
             getFavorites: async () => [{ title: 'Radio Bob', uri: 'x-sonosapi-stream:s1?sid=254', metadata: '' }],
-            getPlaylists: async () => [
-                { title: 'Morning', uri: 'file:///jffs/settings/savedqueues.rsq#3', metadata: '' },
-            ],
+            getPlaylists: async () => [{ title: 'Morning', uri: 'file:///jffs/settings/savedqueues.rsq#3', metadata: '' }],
         };
         const device = () =>
             new SvrooijDevice(
