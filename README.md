@@ -411,7 +411,7 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
-### **WORK IN PROGRESS**
+### 4.5.0 (2026-11-04)
 * (@GermanBluefox) Stereo pairs are marked: `pair_role` (`left`/`right`) and `pair_partner` tell which speakers belong together, and the description of the channel says which of the two SONOS controls the pair through. The hidden speaker of a pair never got values and ignored commands without telling why - a command written to it now names the channel to use instead
 * (@GermanBluefox) A speaker that replaces another one at the same IP address takes over its channel once the old speaker is no longer part of the SONOS system. Since 4.4.0 the new speaker got no channel and the old channel stayed empty without a word in the log (#140)
 
@@ -441,9 +441,6 @@ adapter to get a working state back.
 ### 4.2.15 (2026-10-26)
 * (@GermanBluefox) `alive` turns false when a speaker is switched off or goes to sleep: every speaker is checked every 30 seconds (#252)
 * (@GermanBluefox) Covers that were not used for 30 days are removed from the cache folder `iobroker-data/sonosCache`, which grew without limit (#222)
-
-### 4.2.14 (2026-10-26)
-* (@GermanBluefox) The Control tab and the ioBroker.devices widgets are built again with the current GUI components and React, as before 4.2.13
 
 Older changes can be found in [CHANGELOG_OLD.md](CHANGELOG_OLD.md)
 
