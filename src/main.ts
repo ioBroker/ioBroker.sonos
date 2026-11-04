@@ -33,6 +33,7 @@ import { getButtonLock, getLed, getSleepTimer, setButtonLock, setLed, setSleepTi
 import { COVER_MAX_SIZE, coverVersion, isImageData, pruneCoverCache, touchCoverFile } from './lib/cover-cache';
 import { ChannelRegistry } from './lib/channel-registry';
 import { speakersLeftGroup } from './lib/group-changes';
+import { pairDescription, readZoneGroupState, type StereoPair, type ZoneMember } from './lib/stereo-pairs';
 import {
     getAlarmStates,
     getChannelStates,
@@ -279,6 +280,11 @@ class Sonos extends utils.Adapter {
     private alarmError = '';
     /** Per channel: which optional features the speaker has; a feature is missing while that is not known yet */
     private readonly features: Record<string, Partial<Record<OptionalFeature, boolean>>> = {};
+    /** Stereo pair of every paired channel, with the channel of the partner */
+    private readonly stereoPairs: Record<string, StereoPair & { partner: string }> = {};
+    /** The stereo pairs are read after every topology change, which come in bursts: one read at a time */
+    private pairRefreshRunning = false;
+    private pairRefreshQueued = false;
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
@@ -411,6 +417,18 @@ class Sonos extends utils.Adapter {
         }
 
         if (!player) {
+            // sonos-discovery does not list the hidden speaker of a stereo pair at all
+            const pair = this.stereoPairs[id.channel];
+            if (pair?.invisible) {
+                const partnerIp = pair.partnerIp || pair.partner.replace(/_/g, '.');
+                const use = this.channels[pair.partner]
+                    ? `use the states of root.${pair.partner}`
+                    : `add ${partnerIp} to the devices in the settings and use its states`;
+                this.log.warn(
+                    `Cannot control root.${id.channel}: it is the ${pair.role} speaker of a stereo pair, which SONOS controls through ${partnerIp} only - ${use}`,
+                );
+                return;
+            }
             this.log.warn(`SONOS "${id.channel}"/"${this.channels[id.channel].uuid}" not found`);
             this.backend?.devices.forEach(p => this.log.debug(`UUID: ${p.uuid} in ${p.roomName} / ${p.baseUrl}`));
             return;
@@ -2563,6 +2581,124 @@ class Sonos extends utils.Adapter {
         // the first speakers are known now, so the alarms need not wait for the next poll
         if (!this.alarmIds && this.backend?.devices?.length) {
             void this.refreshAlarms();
+        }
+
+        void this.refreshStereoPairs();
+    }
+
+    /**
+     * Mark the speakers of stereo pairs: `pair_role`, `pair_partner` and the description of the channel.
+     * A refresh requested while one is running is done once more afterwards.
+     */
+    private async refreshStereoPairs(): Promise<void> {
+        if (this.pairRefreshRunning) {
+            this.pairRefreshQueued = true;
+            return;
+        }
+        this.pairRefreshRunning = true;
+
+        try {
+            do {
+                this.pairRefreshQueued = false;
+                await this.updateStereoPairs();
+            } while (this.pairRefreshQueued && !this.unloading);
+        } catch (e) {
+            this.log.warn(`Cannot update the stereo pairs: ${e}`);
+        } finally {
+            this.pairRefreshRunning = false;
+        }
+    }
+
+    private async updateStereoPairs(): Promise<void> {
+        // any speaker answers for the whole household
+        let members: ZoneMember[] | null = null;
+        for (const device of this.backend?.devices || []) {
+            try {
+                members = await readZoneGroupState(device.baseUrl);
+                break;
+            } catch (e) {
+                this.log.debug(`Cannot read the topology from ${device.roomName}: ${e}`);
+            }
+        }
+        if (!members || !this.backend) {
+            return;
+        }
+
+        for (const member of members) {
+            const channel = this.channelRegistry.resolve(member.uuid, member.ip.replace(/[.\s]+/g, '_') || null);
+            if (!channel || !this.channels[channel]) {
+                continue;
+            }
+            // sonos-discovery does not know the hidden speaker of a pair, so its uuid comes from here
+            this.channels[channel].uuid ||= member.uuid;
+            await this.takeStereoPair(channel, member.pair);
+        }
+    }
+
+    /**
+     * Write the stereo pair of a channel
+     *
+     * @param channel the channel name
+     * @param pair the pair of its speaker; undefined if the speaker is not paired
+     */
+    private async takeStereoPair(channel: string, pair: StereoPair | undefined): Promise<void> {
+        const partner = pair
+            ? this.channelRegistry.resolve(pair.partnerUuid, pair.partnerIp.replace(/[.\s]+/g, '_') || null) || ''
+            : '';
+        const previous = this.stereoPairs[channel];
+
+        if (pair) {
+            this.stereoPairs[channel] = { ...pair, partner };
+            if (previous?.role !== pair.role || previous.partner !== partner || previous.invisible !== pair.invisible) {
+                const partnerIp = pair.partnerIp || partner.replace(/_/g, '.');
+                if (pair.invisible) {
+                    this.log.info(
+                        `root.${channel} is the ${pair.role} speaker of the stereo pair with ${partnerIp}: SONOS controls the pair through ${partnerIp} only`,
+                    );
+                } else {
+                    this.log.debug(`root.${channel} is the ${pair.role} speaker of the stereo pair with ${partnerIp}`);
+                }
+            }
+        } else if (previous) {
+            delete this.stereoPairs[channel];
+            this.log.info(`root.${channel} is not part of a stereo pair anymore`);
+        }
+
+        await this.setStateChangedAsync(`root.${channel}.pair_role`, pair?.role || '', true);
+        await this.setStateChangedAsync(`root.${channel}.pair_partner`, partner, true);
+        await this.updatePairDescription(
+            channel,
+            pair ? pairDescription(pair, pair.partnerIp || partner.replace(/_/g, '.')) : null,
+        );
+    }
+
+    /**
+     * Describe the stereo pair in the channel object. A description of the user is kept: only the
+     * one this adapter wrote, marked in `native.pairDescription`, is changed or removed.
+     *
+     * @param channel the channel name
+     * @param desc the description; null if the speaker is not paired
+     */
+    private async updatePairDescription(channel: string, desc: ioBroker.Translated | null): Promise<void> {
+        const obj = await this.getObjectAsync(`root.${channel}`);
+        if (!obj) {
+            return;
+        }
+        const ours = Boolean(obj.native?.pairDescription);
+
+        if (desc) {
+            if ((obj.common.desc && !ours) || (ours && JSON.stringify(obj.common.desc) === JSON.stringify(desc))) {
+                return;
+            }
+            // extend, not set: the uuid of the speaker may be stored into native at the same time (#140)
+            await this.extendObjectAsync(`root.${channel}`, {
+                common: { desc },
+                native: { pairDescription: true },
+            });
+        } else if (ours) {
+            delete obj.common.desc;
+            delete obj.native.pairDescription;
+            await this.setObjectAsync(`root.${channel}`, obj);
         }
     }
 

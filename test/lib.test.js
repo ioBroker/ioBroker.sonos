@@ -1602,3 +1602,152 @@ describe('channel of a speaker under a new address (#140)', () => {
         expect(reg.resolve('RINCON_A', '192_168_1_60')).to.equal('192_168_1_60');
     });
 });
+
+describe('stereo pairs', () => {
+    const http = require('node:http');
+    const { parseZoneGroupState, pairDescription, readZoneGroupState, stereoPairOf } = require(
+        '../build/lib/stereo-pairs',
+    );
+    const { xmlEscape } = require('../build/lib/content-directory');
+
+    const location = ip => `http://${ip}:1400/xml/device_description.xml`;
+    const PAIR = 'RINCON_A01400:LF,LF;RINCON_B01400:RF,RF';
+
+    // as a speaker answers GetZoneGroupState: the topology is an XML document inside the SOAP answer
+    const topology =
+        '<ZoneGroupState><ZoneGroups>' +
+        // a stereo pair: the right speaker is hidden
+        '<ZoneGroup Coordinator="RINCON_A01400" ID="RINCON_A01400:1">' +
+        `<ZoneGroupMember UUID="RINCON_A01400" Location="${location('192.168.1.21')}" ZoneName="Wohnzimmer" ChannelMapSet="${PAIR}"/>` +
+        `<ZoneGroupMember UUID="RINCON_B01400" Location="${location('192.168.1.22')}" ZoneName="Wohnzimmer" Invisible="1" ChannelMapSet="${PAIR}"/>` +
+        '</ZoneGroup>' +
+        // a soundbar with Sub and surrounds: the satellites are nested and no pair
+        '<ZoneGroup Coordinator="RINCON_C01400" ID="RINCON_C01400:2">' +
+        `<ZoneGroupMember UUID="RINCON_C01400" Location="${location('192.168.1.30')}" ZoneName="Kino &amp; Bar" HTSatChanMapSet="RINCON_C01400:LF,RF;RINCON_D01400:SW;RINCON_E01400:LR;RINCON_F01400:RR">` +
+        `<Satellite UUID="RINCON_D01400" Location="${location('192.168.1.31')}" ZoneName="Kino &amp; Bar" Invisible="1"/>` +
+        `<Satellite UUID="RINCON_E01400" Location="${location('192.168.1.32')}" ZoneName="Kino &amp; Bar" Invisible="1"/>` +
+        '</ZoneGroupMember>' +
+        '</ZoneGroup>' +
+        // a single speaker with a Sub is no pair either
+        '<ZoneGroup Coordinator="RINCON_G01400" ID="RINCON_G01400:3">' +
+        `<ZoneGroupMember UUID="RINCON_G01400" Location="${location('192.168.1.40')}" ZoneName="Kitchen" ChannelMapSet="RINCON_G01400:LF,RF;RINCON_H01400:SW,SW"/>` +
+        `<ZoneGroupMember UUID="RINCON_H01400" Location="${location('192.168.1.41')}" ZoneName="Kitchen" Invisible="1" ChannelMapSet="RINCON_G01400:LF,RF;RINCON_H01400:SW,SW"/>` +
+        '</ZoneGroup>' +
+        '</ZoneGroups><VanishedDevices></VanishedDevices></ZoneGroupState>';
+
+    const answer = xml =>
+        `<s:Envelope><s:Body><u:GetZoneGroupStateResponse><ZoneGroupState>${xmlEscape(xml)}</ZoneGroupState></u:GetZoneGroupStateResponse></s:Body></s:Envelope>`;
+
+    it('finds the two speakers of a pair in the channel map', () => {
+        expect(stereoPairOf(PAIR)).to.deep.equal({ left: 'RINCON_A01400', right: 'RINCON_B01400' });
+        expect(stereoPairOf(`${PAIR};RINCON_S01400:SW,SW`)).to.deep.equal({
+            left: 'RINCON_A01400',
+            right: 'RINCON_B01400',
+        });
+    });
+
+    it('finds no pair in a single speaker with a Sub, a soundbar or no map', () => {
+        expect(stereoPairOf('RINCON_G01400:LF,RF;RINCON_H01400:SW,SW')).to.be.null;
+        expect(stereoPairOf('RINCON_C01400:LF,RF;RINCON_D01400:SW;RINCON_E01400:LR;RINCON_F01400:RR')).to.be.null;
+        expect(stereoPairOf('')).to.be.null;
+        expect(stereoPairOf(undefined)).to.be.null;
+    });
+
+    it('marks both speakers of a pair, the hidden one as invisible', () => {
+        const members = parseZoneGroupState(answer(topology));
+        const byUuid = uuid => members.find(member => member.uuid === uuid);
+
+        expect(byUuid('RINCON_A01400')).to.deep.equal({
+            uuid: 'RINCON_A01400',
+            ip: '192.168.1.21',
+            roomName: 'Wohnzimmer',
+            invisible: false,
+            pair: { role: 'left', invisible: false, partnerUuid: 'RINCON_B01400', partnerIp: '192.168.1.22' },
+        });
+        expect(byUuid('RINCON_B01400')).to.deep.equal({
+            uuid: 'RINCON_B01400',
+            ip: '192.168.1.22',
+            roomName: 'Wohnzimmer',
+            invisible: true,
+            pair: { role: 'right', invisible: true, partnerUuid: 'RINCON_A01400', partnerIp: '192.168.1.21' },
+        });
+    });
+
+    it('lists the other speakers without pair, and no satellites', () => {
+        const members = parseZoneGroupState(answer(topology));
+
+        expect(members.map(member => member.uuid)).to.deep.equal([
+            'RINCON_A01400',
+            'RINCON_B01400',
+            'RINCON_C01400',
+            'RINCON_G01400',
+            'RINCON_H01400',
+        ]);
+        expect(members.slice(2).map(member => member.pair)).to.deep.equal([undefined, undefined, undefined]);
+        expect(members[2].roomName).to.equal('Kino & Bar');
+        expect(members[2].ip).to.equal('192.168.1.30');
+    });
+
+    it('is empty for an answer without topology', () => {
+        expect(parseZoneGroupState('<s:Envelope><s:Body></s:Body></s:Envelope>')).to.deep.equal([]);
+        expect(parseZoneGroupState('')).to.deep.equal([]);
+    });
+
+    it('describes the hidden speaker as controlled through its partner', () => {
+        const right = pairDescription(
+            { role: 'right', invisible: true, partnerUuid: 'RINCON_A01400', partnerIp: '192.168.1.21' },
+            '192.168.1.21',
+        );
+        expect(right.en).to.equal(
+            'Right speaker of the stereo pair with 192.168.1.21 - SONOS controls the pair through 192.168.1.21 only',
+        );
+        expect(right.de).to.equal(
+            'Rechter Lautsprecher des Stereopaars mit 192.168.1.21 - SONOS steuert das Paar nur über 192.168.1.21',
+        );
+
+        const left = pairDescription(
+            { role: 'left', invisible: false, partnerUuid: 'RINCON_B01400', partnerIp: '192.168.1.22' },
+            '192.168.1.22',
+        );
+        expect(left.en).to.equal('Left speaker of the stereo pair with 192.168.1.22 - controls the pair');
+    });
+
+    describe('from the speaker', () => {
+        let server;
+        let baseUrl;
+        let requests;
+
+        before(async () => {
+            server = http.createServer((req, res) => {
+                req.resume();
+                req.on('end', () => {
+                    requests.push({ path: req.url, action: String(req.headers.soapaction) });
+                    res.end(answer(topology));
+                });
+            });
+            await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+            baseUrl = `http://127.0.0.1:${server.address().port}`;
+        });
+
+        after(() => server.close());
+
+        beforeEach(() => {
+            requests = [];
+        });
+
+        it('asks the ZoneGroupTopology service', async () => {
+            const members = await readZoneGroupState(baseUrl);
+
+            expect(requests).to.deep.equal([
+                {
+                    path: '/ZoneGroupTopology/Control',
+                    action: '"urn:schemas-upnp-org:service:ZoneGroupTopology:1#GetZoneGroupState"',
+                },
+            ]);
+            expect(members.filter(member => member.pair).map(member => member.uuid)).to.deep.equal([
+                'RINCON_A01400',
+                'RINCON_B01400',
+            ]);
+        });
+    });
+});
