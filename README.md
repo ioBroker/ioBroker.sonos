@@ -392,7 +392,7 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
-### **WORK IN PROGRESS**
+### 4.4.0 (2026-11-04)
 * (@GermanBluefox) A speaker that gets a new IP address keeps its channel and states: the channel is bound to the serial id of the speaker the first time it is found, and another speaker that gets the old address does not take it over (#140)
 * (@GermanBluefox) Errors of the `sonos-discovery` backend appear in the ioBroker log: the library wrote them to the console, so an event it could not process - which then never reached the states - left no trace (#177)
 * (@GermanBluefox) TTS (sayIt): a file the speaker cannot play, no longer leaves the volume at 0 and blocks every further announcement until a restart - the state before TTS is restored and the next announcement is played (#176)
@@ -421,11 +421,6 @@ adapter to get a working state back.
 
 ### 4.2.14 (2026-10-26)
 * (@GermanBluefox) The Control tab and the ioBroker.devices widgets are built again with the current GUI components and React, as before 4.2.13
-
-### 4.2.13 (2026-10-26)
-* (@GermanBluefox) Fixed detection of radio streams (current_type, current_station, current_title) in the new backend (#363)
-* (@GermanBluefox) The adapter no longer stops with "Cannot read properties of undefined (reading 'members')" when a speaker leaves or rejoins the network (#170, #192, #269, #272)
-* (@GermanBluefox) Local TTS files are handed to the speaker under `/sonos/...` of the web adapter; the former `/files/sonos/...` URL does not exist there (#187)
 
 Older changes can be found in [CHANGELOG_OLD.md](CHANGELOG_OLD.md)
 
