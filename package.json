@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "@iobroker/adapter-core": "^3.4.3",
-    "@svrooij/sonos": "^2.5.0",
+    "@svrooij/sonos": "^2.7.0",
     "sonos-discovery": "^1.7.3"
   },
   "devDependencies": {
