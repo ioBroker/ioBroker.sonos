@@ -1594,6 +1594,73 @@ describe('channel of a speaker under a new address (#140)', () => {
         expect(bound).to.deep.equal([]);
     });
 
+    describe('a speaker that replaces the speaker of a channel', () => {
+        function withOldSpeaker() {
+            const result = registry();
+            result.reg.addChannel('192_168_1_50', 'RINCON_OLD');
+            result.reg.addChannel('192_168_1_60', 'RINCON_C');
+            return result;
+        }
+
+        it('takes the channel over when the old speaker is gone', () => {
+            const { reg, bound } = withOldSpeaker();
+            const { taken, kept } = reg.takeOver(
+                [
+                    { uuid: 'RINCON_NEW', ipChannel: '192_168_1_50' },
+                    { uuid: 'RINCON_C', ipChannel: '192_168_1_60' },
+                ],
+                uuid => uuid === 'RINCON_C',
+            );
+
+            expect(taken).to.deep.equal([{ channel: '192_168_1_50', owner: 'RINCON_OLD', uuid: 'RINCON_NEW' }]);
+            expect(kept).to.deep.equal([]);
+            expect(bound).to.deep.equal(['192_168_1_50=RINCON_NEW']);
+            expect(reg.resolve('RINCON_NEW', '192_168_1_50')).to.equal('192_168_1_50');
+            expect(reg.uuidOf('192_168_1_50')).to.equal('RINCON_NEW');
+            // the old speaker does not get the channel back
+            expect(reg.resolve('RINCON_OLD', '192_168_1_70')).to.equal('192_168_1_70');
+        });
+
+        it('leaves the channel to the old speaker while it is still there', () => {
+            const { reg, bound } = withOldSpeaker();
+            const { taken, kept } = reg.takeOver([{ uuid: 'RINCON_NEW', ipChannel: '192_168_1_50' }], () => true);
+
+            expect(taken).to.deep.equal([]);
+            expect(kept).to.deep.equal([{ channel: '192_168_1_50', owner: 'RINCON_OLD', uuid: 'RINCON_NEW' }]);
+            expect(bound).to.deep.equal([]);
+            expect(reg.resolve('RINCON_NEW', '192_168_1_50')).to.equal(null);
+        });
+
+        it('does not move a speaker that has a channel of its own', () => {
+            const { reg } = withOldSpeaker();
+            // RINCON_C got the old address of the speaker of 192_168_1_50
+            const { taken, kept } = reg.takeOver([{ uuid: 'RINCON_C', ipChannel: '192_168_1_50' }], () => false);
+
+            expect(taken).to.deep.equal([]);
+            expect(kept).to.deep.equal([]);
+            expect(reg.uuidOf('192_168_1_50')).to.equal('RINCON_OLD');
+        });
+
+        it('ignores channels without speaker, speakers at other addresses and speakers without address', () => {
+            const { reg, bound } = registry();
+            reg.addChannel('192_168_1_50');
+            reg.addChannel('192_168_1_60', 'RINCON_C');
+            const { taken, kept } = reg.takeOver(
+                [
+                    { uuid: 'RINCON_NEW', ipChannel: '192_168_1_50' },
+                    { uuid: 'RINCON_X', ipChannel: '192_168_1_99' },
+                    { uuid: 'RINCON_Y', ipChannel: null },
+                    { uuid: 'RINCON_C', ipChannel: '192_168_1_60' },
+                ],
+                () => false,
+            );
+
+            expect(taken).to.deep.equal([]);
+            expect(kept).to.deep.equal([]);
+            expect(bound).to.deep.equal([]);
+        });
+    });
+
     it('forgets everything when the configuration is read again', () => {
         const { reg } = registry();
         reg.addChannel('192_168_1_50', 'RINCON_A');
@@ -1605,9 +1672,8 @@ describe('channel of a speaker under a new address (#140)', () => {
 
 describe('stereo pairs', () => {
     const http = require('node:http');
-    const { parseZoneGroupState, pairDescription, readZoneGroupState, stereoPairOf } = require(
-        '../build/lib/stereo-pairs',
-    );
+    const { pairDescription, stereoPairOf } = require('../build/lib/stereo-pairs');
+    const { parseZoneGroupState, readZoneGroupState } = require('../build/lib/zone-topology');
     const { xmlEscape } = require('../build/lib/content-directory');
 
     const location = ip => `http://${ip}:1400/xml/device_description.xml`;
@@ -1654,7 +1720,7 @@ describe('stereo pairs', () => {
     });
 
     it('marks both speakers of a pair, the hidden one as invisible', () => {
-        const members = parseZoneGroupState(answer(topology));
+        const { members } = parseZoneGroupState(answer(topology));
         const byUuid = uuid => members.find(member => member.uuid === uuid);
 
         expect(byUuid('RINCON_A01400')).to.deep.equal({
@@ -1673,8 +1739,8 @@ describe('stereo pairs', () => {
         });
     });
 
-    it('lists the other speakers without pair, and no satellites', () => {
-        const members = parseZoneGroupState(answer(topology));
+    it('lists the other speakers without pair, the satellites apart', () => {
+        const { members, satellites, vanished } = parseZoneGroupState(answer(topology));
 
         expect(members.map(member => member.uuid)).to.deep.equal([
             'RINCON_A01400',
@@ -1686,11 +1752,29 @@ describe('stereo pairs', () => {
         expect(members.slice(2).map(member => member.pair)).to.deep.equal([undefined, undefined, undefined]);
         expect(members[2].roomName).to.equal('Kino & Bar');
         expect(members[2].ip).to.equal('192.168.1.30');
+        expect(satellites).to.deep.equal([
+            { uuid: 'RINCON_D01400', ip: '192.168.1.31', roomName: 'Kino & Bar', invisible: true },
+            { uuid: 'RINCON_E01400', ip: '192.168.1.32', roomName: 'Kino & Bar', invisible: true },
+        ]);
+        expect(vanished).to.deep.equal([]);
+    });
+
+    it('lists the speakers that are away for a while', () => {
+        const away =
+            '<ZoneGroupState><ZoneGroups>' +
+            '<ZoneGroup Coordinator="RINCON_A01400" ID="RINCON_A01400:1">' +
+            `<ZoneGroupMember UUID="RINCON_A01400" Location="${location('192.168.1.21')}" ZoneName="Wohnzimmer"/>` +
+            '</ZoneGroup></ZoneGroups>' +
+            '<VanishedDevices><Device UUID="RINCON_M01400" ZoneName="Bad" Reason="sleeping"/></VanishedDevices>' +
+            '</ZoneGroupState>';
+
+        expect(parseZoneGroupState(answer(away)).vanished).to.deep.equal(['RINCON_M01400']);
     });
 
     it('is empty for an answer without topology', () => {
-        expect(parseZoneGroupState('<s:Envelope><s:Body></s:Body></s:Envelope>')).to.deep.equal([]);
-        expect(parseZoneGroupState('')).to.deep.equal([]);
+        const empty = { members: [], satellites: [], vanished: [] };
+        expect(parseZoneGroupState('<s:Envelope><s:Body></s:Body></s:Envelope>')).to.deep.equal(empty);
+        expect(parseZoneGroupState('')).to.deep.equal(empty);
     });
 
     it('describes the hidden speaker as controlled through its partner', () => {
@@ -1736,7 +1820,7 @@ describe('stereo pairs', () => {
         });
 
         it('asks the ZoneGroupTopology service', async () => {
-            const members = await readZoneGroupState(baseUrl);
+            const { members } = await readZoneGroupState(baseUrl);
 
             expect(requests).to.deep.equal([
                 {

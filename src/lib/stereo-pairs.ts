@@ -9,12 +9,9 @@
  *
  * Both speakers of a pair carry the same `ChannelMapSet`, e.g.
  * `RINCON_A01400:LF,LF;RINCON_B01400:RF,RF`, with one more `:SW,SW` entry if a Sub belongs to the
- * room. A single speaker with a Sub has `LF,RF` instead and is no pair. The topology is read with
- * plain SOAP, because neither library hands it on complete, and it behaves the same under both.
+ * room. A single speaker with a Sub has `LF,RF` instead and is no pair. The topology itself is read
+ * in `zone-topology.ts`.
  */
-import { decodeXml } from './content-directory';
-import { soapCall, soapValue, ZONE_GROUP_TOPOLOGY } from './soap';
-
 export type PairRole = 'left' | 'right';
 
 /** The stereo pair a speaker belongs to */
@@ -25,17 +22,6 @@ export interface StereoPair {
     partnerUuid: string;
     /** IP address of the partner with dots; empty if the topology does not tell it */
     partnerIp: string;
-}
-
-/** One speaker of the zone group topology */
-export interface ZoneMember {
-    uuid: string;
-    /** IP address with dots; empty if the topology does not tell it */
-    ip: string;
-    roomName: string;
-    invisible: boolean;
-    /** Set for the speakers of a stereo pair */
-    pair?: StereoPair;
 }
 
 /**
@@ -62,83 +48,6 @@ export function stereoPairOf(channelMapSet: string | undefined): { left: string;
     }
 
     return left && right && left !== right ? { left, right } : null;
-}
-
-/**
- * IP address out of the `Location` of a zone member
- *
- * @param location `http://<ip>:1400/xml/device_description.xml`
- */
-function ipOfLocation(location: string | undefined): string {
-    return String(location || '').match(/^https?:\/\/([^:/]+)/i)?.[1] || '';
-}
-
-/**
- * All speakers of the household out of the answer to `GetZoneGroupState`
- *
- * The topology is an XML document inside the SOAP answer, so it is decoded once more. Satellites
- * of a home theater are nested elements of their soundbar and are not listed.
- *
- * @param soapXml the SOAP answer
- */
-export function parseZoneGroupState(soapXml: string): ZoneMember[] {
-    const state = soapValue(soapXml, 'ZoneGroupState');
-    if (!state) {
-        return [];
-    }
-
-    const members: (ZoneMember & { channelMapSet: string })[] = [];
-
-    for (const element of decodeXml(state).matchAll(/<ZoneGroupMember\s([^>]*?)\/?>/g)) {
-        const attrs: Record<string, string> = {};
-        for (const [, name, value] of element[1].matchAll(/(\w+)="([^"]*)"/g)) {
-            attrs[name] = decodeXml(value);
-        }
-
-        if (!attrs.UUID || members.some(member => member.uuid === attrs.UUID)) {
-            continue;
-        }
-
-        members.push({
-            uuid: attrs.UUID,
-            ip: ipOfLocation(attrs.Location),
-            roomName: attrs.ZoneName || '',
-            invisible: attrs.Invisible === '1',
-            channelMapSet: attrs.ChannelMapSet || '',
-        });
-    }
-
-    // both speakers of a pair carry the map, but one of them is enough
-    const pairs = new Map<string, { role: PairRole; partnerUuid: string }>();
-    for (const member of members) {
-        const pair = stereoPairOf(member.channelMapSet);
-        if (pair) {
-            pairs.set(pair.left, { role: 'left', partnerUuid: pair.right });
-            pairs.set(pair.right, { role: 'right', partnerUuid: pair.left });
-        }
-    }
-
-    return members.map(({ channelMapSet: _channelMapSet, ...member }) => {
-        const pair = pairs.get(member.uuid);
-        if (pair) {
-            member.pair = {
-                role: pair.role,
-                invisible: member.invisible,
-                partnerUuid: pair.partnerUuid,
-                partnerIp: members.find(item => item.uuid === pair.partnerUuid)?.ip || '',
-            };
-        }
-        return member;
-    });
-}
-
-/**
- * Read the topology of the household. Any speaker answers for all of them.
- *
- * @param baseUrl `http://<ip>:1400` of a speaker
- */
-export async function readZoneGroupState(baseUrl: string): Promise<ZoneMember[]> {
-    return parseZoneGroupState(await soapCall(baseUrl, ZONE_GROUP_TOPOLOGY, 'GetZoneGroupState'));
 }
 
 /**

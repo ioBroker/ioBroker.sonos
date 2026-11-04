@@ -10,7 +10,20 @@
  * the first time a speaker is found at the address of a channel, the channel is bound to it. From then
  * on the speaker keeps its channel under any address, and the address of the channel cannot be taken
  * over by another speaker. The channel ids stay as they are, so nothing changes for existing scripts.
+ *
+ * A speaker that replaces another one, e.g. a new model with the fixed address of the old one, takes
+ * the channel over once the old speaker is no longer part of the SONOS system, see {@link ChannelRegistry.takeOver}.
  */
+
+/** A speaker found at the address of a channel that is bound to another speaker */
+export interface ChannelConflict {
+    channel: string;
+    /** UUID of the speaker the channel is bound to */
+    owner: string;
+    /** UUID of the speaker at the address of the channel */
+    uuid: string;
+}
+
 export class ChannelRegistry {
     /** Configured channels, with the UUID of their speaker once it is known */
     private readonly channels = new Map<string, string>();
@@ -83,10 +96,53 @@ export class ChannelRegistry {
             return null;
         }
         if (!owner && uuid) {
-            this.channels.set(ipChannel, uuid);
-            this.byUuid.set(uuid, ipChannel);
-            this.onBind(ipChannel, uuid);
+            this.bind(ipChannel, uuid);
         }
         return ipChannel;
+    }
+
+    /**
+     * Give the channels of replaced speakers to the speakers that have their address now.
+     *
+     * A channel stays with its speaker as long as that speaker belongs to the SONOS system, also under
+     * another address. Once it does not - it was removed, e.g. because a new speaker replaced it - a
+     * speaker found at the address of the channel takes the channel over, if it has none of its own.
+     *
+     * @param speakers the speakers of the system, with their current address with underscores
+     * @param isPresent tells if a speaker still belongs to the system, also while it is away for a while
+     * @returns the channels taken over, and those kept by their speaker because it is still there
+     */
+    takeOver(
+        speakers: { uuid: string; ipChannel: string | null }[],
+        isPresent: (uuid: string) => boolean,
+    ): { taken: ChannelConflict[]; kept: ChannelConflict[] } {
+        const taken: ChannelConflict[] = [];
+        const kept: ChannelConflict[] = [];
+
+        for (const { uuid, ipChannel } of speakers) {
+            if (!uuid || !ipChannel || this.byUuid.has(uuid)) {
+                continue;
+            }
+            const owner = this.channels.get(ipChannel);
+            if (!owner || owner === uuid) {
+                continue;
+            }
+
+            if (isPresent(owner)) {
+                kept.push({ channel: ipChannel, owner, uuid });
+            } else {
+                this.byUuid.delete(owner);
+                this.bind(ipChannel, uuid);
+                taken.push({ channel: ipChannel, owner, uuid });
+            }
+        }
+
+        return { taken, kept };
+    }
+
+    private bind(channel: string, uuid: string): void {
+        this.channels.set(channel, uuid);
+        this.byUuid.set(uuid, channel);
+        this.onBind(channel, uuid);
     }
 }

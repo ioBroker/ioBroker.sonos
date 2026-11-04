@@ -33,7 +33,8 @@ import { getButtonLock, getLed, getSleepTimer, setButtonLock, setLed, setSleepTi
 import { COVER_MAX_SIZE, coverVersion, isImageData, pruneCoverCache, touchCoverFile } from './lib/cover-cache';
 import { ChannelRegistry } from './lib/channel-registry';
 import { speakersLeftGroup } from './lib/group-changes';
-import { pairDescription, readZoneGroupState, type StereoPair, type ZoneMember } from './lib/stereo-pairs';
+import { pairDescription, type StereoPair } from './lib/stereo-pairs';
+import { readZoneGroupState, type ZoneTopology } from './lib/zone-topology';
 import {
     getAlarmStates,
     getChannelStates,
@@ -282,9 +283,11 @@ class Sonos extends utils.Adapter {
     private readonly features: Record<string, Partial<Record<OptionalFeature, boolean>>> = {};
     /** Stereo pair of every paired channel, with the channel of the partner */
     private readonly stereoPairs: Record<string, StereoPair & { partner: string }> = {};
-    /** The stereo pairs are read after every topology change, which come in bursts: one read at a time */
-    private pairRefreshRunning = false;
-    private pairRefreshQueued = false;
+    /** The topology is read after every topology change, which come in bursts: one read at a time */
+    private topologyRefreshRunning = false;
+    private topologyRefreshQueued = false;
+    /** Speakers at the address of a channel that still belongs to another speaker, reported once (#140) */
+    private readonly reportedConflicts = new Set<string>();
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
@@ -2583,48 +2586,107 @@ class Sonos extends utils.Adapter {
             void this.refreshAlarms();
         }
 
-        void this.refreshStereoPairs();
+        void this.refreshTopology();
     }
 
     /**
-     * Mark the speakers of stereo pairs: `pair_role`, `pair_partner` and the description of the channel.
-     * A refresh requested while one is running is done once more afterwards.
+     * Read the whole topology: give the channels of replaced speakers to the new ones, and mark the
+     * speakers of stereo pairs. A refresh requested while one is running is done once more afterwards.
      */
-    private async refreshStereoPairs(): Promise<void> {
-        if (this.pairRefreshRunning) {
-            this.pairRefreshQueued = true;
+    private async refreshTopology(): Promise<void> {
+        if (this.topologyRefreshRunning) {
+            this.topologyRefreshQueued = true;
             return;
         }
-        this.pairRefreshRunning = true;
+        this.topologyRefreshRunning = true;
 
         try {
             do {
-                this.pairRefreshQueued = false;
-                await this.updateStereoPairs();
-            } while (this.pairRefreshQueued && !this.unloading);
+                this.topologyRefreshQueued = false;
+                await this.updateTopology();
+            } while (this.topologyRefreshQueued && !this.unloading);
         } catch (e) {
-            this.log.warn(`Cannot update the stereo pairs: ${e}`);
+            this.log.warn(`Cannot update the topology: ${e}`);
         } finally {
-            this.pairRefreshRunning = false;
+            this.topologyRefreshRunning = false;
         }
     }
 
-    private async updateStereoPairs(): Promise<void> {
+    private async updateTopology(): Promise<void> {
         // any speaker answers for the whole household
-        let members: ZoneMember[] | null = null;
+        let topology: ZoneTopology | null = null;
         for (const device of this.backend?.devices || []) {
             try {
-                members = await readZoneGroupState(device.baseUrl);
+                topology = await readZoneGroupState(device.baseUrl);
                 break;
             } catch (e) {
                 this.log.debug(`Cannot read the topology from ${device.roomName}: ${e}`);
             }
         }
-        if (!members || !this.backend) {
+        if (!topology || !this.backend) {
             return;
         }
 
-        for (const member of members) {
+        await this.takeReplacedSpeakers(topology);
+        await this.updateStereoPairs(topology);
+    }
+
+    /**
+     * Give the channel of a speaker that is no longer part of the SONOS system to the speaker that has
+     * its address now, e.g. a new model that replaced it (#140). A channel whose speaker is still there,
+     * maybe under another address, stays with it - the log tells how to hand it over.
+     *
+     * @param topology the speakers of the household
+     */
+    private async takeReplacedSpeakers(topology: ZoneTopology): Promise<void> {
+        const speakers = [...topology.members, ...topology.satellites];
+        const household = new Set([...speakers.map(speaker => speaker.uuid), ...topology.vanished]);
+        const name = (uuid: string): string => {
+            const roomName = speakers.find(speaker => speaker.uuid === uuid)?.roomName;
+            return roomName ? `${uuid} (${roomName})` : uuid;
+        };
+
+        const { taken, kept } = this.channelRegistry.takeOver(
+            speakers.map(speaker => ({ uuid: speaker.uuid, ipChannel: speaker.ip.replace(/[.\s]+/g, '_') || null })),
+            // @svrooij/sonos lists a speaker that is gone until the restart: the channel is handed over then
+            uuid => household.has(uuid) || !!this.backend?.getDeviceByUuid(uuid),
+        );
+
+        for (const { channel, owner, uuid } of kept) {
+            if (this.reportedConflicts.has(`${channel}/${uuid}`)) {
+                continue;
+            }
+            this.reportedConflicts.add(`${channel}/${uuid}`);
+            const ownerIp = speakers.find(speaker => speaker.uuid === owner)?.ip;
+            this.log.info(
+                `The speaker ${name(uuid)} has the address of root.${channel}, but the channel belongs to the speaker ${name(owner)}${ownerIp ? ` at ${ownerIp}` : ''}, which is still part of the SONOS system. If the new speaker replaces it, remove the old one in the SONOS app - or delete "uuid" in the native part of root.${channel} and restart the instance`,
+            );
+        }
+
+        for (const { channel, owner, uuid } of taken) {
+            this.log.info(
+                `The speaker ${owner} of root.${channel} is no longer part of the SONOS system: the speaker ${name(uuid)} at its address takes the channel over`,
+            );
+            const info = this.channels[channel];
+            if (!info) {
+                continue;
+            }
+            info.uuid = uuid;
+            info.player = null;
+            const device = this.backend?.getDeviceByUuid(uuid);
+            if (device?.state) {
+                await this.takeSonosState(channel, device.state);
+            }
+        }
+    }
+
+    /**
+     * Mark the speakers of stereo pairs: `pair_role`, `pair_partner` and the description of the channel
+     *
+     * @param topology the speakers of the household
+     */
+    private async updateStereoPairs(topology: ZoneTopology): Promise<void> {
+        for (const member of topology.members) {
             const channel = this.channelRegistry.resolve(member.uuid, member.ip.replace(/[.\s]+/g, '_') || null);
             if (!channel || !this.channels[channel]) {
                 continue;
