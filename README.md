@@ -378,6 +378,13 @@ later, it keeps its channel and its states - scripts and views keep working - an
 new address once. Another speaker that gets the old address does not take the channel over. The
 search in the settings does not offer a moved speaker a second time.
 
+A speaker that replaces another one - e.g. a new model that gets the fixed address of the old one -
+takes the channel over with its states as soon as the old speaker is no longer part of the SONOS
+system; remove it in the SONOS app if it is still listed there. While the old speaker belongs to the
+system, also under another address, the channel stays with it and the log says so once. To hand the
+channel over anyway, delete `uuid` in the native part of the channel (Admin → Objects) and restart the
+instance.
+
 ### Sonos library
 
 The adapter ships two client libraries and the setting picks one. Nothing else changes:
@@ -406,6 +413,7 @@ adapter to get a working state back.
 ## Changelog
 ### **WORK IN PROGRESS**
 * (@GermanBluefox) Stereo pairs are marked: `pair_role` (`left`/`right`) and `pair_partner` tell which speakers belong together, and the description of the channel says which of the two SONOS controls the pair through. The hidden speaker of a pair never got values and ignored commands without telling why - a command written to it now names the channel to use instead
+* (@GermanBluefox) A speaker that replaces another one at the same IP address takes over its channel once the old speaker is no longer part of the SONOS system. Since 4.4.0 the new speaker got no channel and the old channel stayed empty without a word in the log (#140)
 
 ### 4.4.0 (2026-11-04)
 * (@GermanBluefox) A speaker that gets a new IP address keeps its channel and states: the channel is bound to the serial id of the speaker the first time it is found, and another speaker that gets the old address does not take it over (#140)
