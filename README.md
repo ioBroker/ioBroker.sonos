@@ -157,6 +157,18 @@ In admin the page also appears as a tile on the overview, next to the tiles of t
 
 *) These states will be updated if changes are made in the SONOS app.
 
+## Stereo pairs
+Two speakers paired to one room in the SONOS app - one plays left, the other right - are controlled
+through one of them only, SONOS hides the other one. Every channel shows whether its speaker
+belongs to a pair:
+* **`pair_role`**: `left` or `right` for a speaker of a stereo pair, empty otherwise
+* **`pair_partner`**: the other speaker of the pair, as IP address with underscores like `coordinator`, e.g. `192_168_1_21`
+
+The channel of a paired speaker also gets a description in the object tree that names its partner
+and tells which of the two controls the pair. The hidden speaker reports no playback and no volume
+and takes no commands: use the channel of its partner. It needs no channel of its own; if it has
+one, only `alive` and what belongs to the device itself - `led`, `button_lock`, the battery - work there.
+
 ## Battery
 Speakers with a battery - Move and Roam - get two more states as soon as they report it:
 * **`battery_level`**: the charge in percent
@@ -392,6 +404,9 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
+### **WORK IN PROGRESS**
+* (@GermanBluefox) Stereo pairs are marked: `pair_role` (`left`/`right`) and `pair_partner` tell which speakers belong together, and the description of the channel says which of the two SONOS controls the pair through. The hidden speaker of a pair never got values and ignored commands without telling why - a command written to it now names the channel to use instead
+
 ### 4.4.0 (2026-11-04)
 * (@GermanBluefox) A speaker that gets a new IP address keeps its channel and states: the channel is bound to the serial id of the speaker the first time it is found, and another speaker that gets the old address does not take it over (#140)
 * (@GermanBluefox) Errors of the `sonos-discovery` backend appear in the ioBroker log: the library wrote them to the console, so an event it could not process - which then never reached the states - left no trace (#177)

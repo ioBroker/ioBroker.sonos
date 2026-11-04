@@ -26,6 +26,11 @@ export const AV_TRANSPORT: UpnpService = {
     urn: 'urn:schemas-upnp-org:service:AVTransport:1',
 };
 
+export const ZONE_GROUP_TOPOLOGY: UpnpService = {
+    path: '/ZoneGroupTopology/Control',
+    urn: 'urn:schemas-upnp-org:service:ZoneGroupTopology:1',
+};
+
 /** The speaker answered, but refused the action - unlike a speaker that cannot be reached */
 export class SoapError extends Error {
     constructor(

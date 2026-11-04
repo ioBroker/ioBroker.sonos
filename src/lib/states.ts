@@ -597,6 +597,24 @@ export function getChannelStates(): Record<string, StateDefinition> {
             desc: 'When the next enabled alarm of this room rings, null if there is none',
             name: 'Next alarm',
         },
+        pair_role: {
+            def: '',
+            type: 'string',
+            read: true,
+            write: false,
+            role: 'text',
+            desc: 'left or right speaker of a stereo pair, empty if the speaker is not paired',
+            name: 'Stereo pair role',
+        },
+        pair_partner: {
+            def: '',
+            type: 'string',
+            read: true,
+            write: false,
+            role: 'text',
+            desc: 'Channel of the other speaker of the stereo pair, e.g. 192_168_1_21; empty if the speaker is not paired',
+            name: 'Stereo pair partner',
+        },
     };
 
     for (const g in newGroupStates) {
