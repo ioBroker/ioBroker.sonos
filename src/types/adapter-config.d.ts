@@ -21,7 +21,10 @@ declare namespace ioBroker {
         backend?: 'discovery' | 'svrooij';
         /** Port, on which `@svrooij/sonos` receives the events of the speakers */
         listenerPort?: number;
-        /** Interval in ms, how often the elapsed time will be updated while playing */
+        /**
+         * Interval in ms, how often the elapsed time will be updated while playing.
+         * Old settings hold it as a string, `main()` turns it into a number.
+         */
         elapsedInterval: number;
         /** Fade in time in ms. The values are read from the admin as string */
         fadeIn: number | string;

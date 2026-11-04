@@ -1182,7 +1182,7 @@ class Sonos extends utils.Adapter {
                 if (!this.channels[ip].elapsedTimer && !this.unloading) {
                     this.channels[ip].elapsedTimer = this.setInterval(
                         () => this.updateElapsed(ip),
-                        this.config.elapsedInterval || 5000,
+                        this.config.elapsedInterval,
                     );
                 }
             } else {
@@ -2100,7 +2100,7 @@ class Sonos extends utils.Adapter {
             return;
         }
 
-        channel.elapsed += (this.config.elapsedInterval || 5000) / 1000;
+        channel.elapsed += this.config.elapsedInterval / 1000;
 
         if (channel.elapsed > channel.duration) {
             channel.elapsed = channel.duration;
@@ -2889,6 +2889,10 @@ class Sonos extends utils.Adapter {
     private async main(): Promise<void> {
         this.config.fadeIn = parseInt(String(this.config.fadeIn), 10) || 0;
         this.config.fadeOut = parseInt(String(this.config.fadeOut), 10) || 0;
+        // Settings saved by the old admin page hold the interval as a string. js-controller rejects
+        // that as interval of a timer, and the error aborted every update of the playback states.
+        const elapsedInterval = parseInt(String(this.config.elapsedInterval), 10);
+        this.config.elapsedInterval = elapsedInterval > 0 ? elapsedInterval : 5000;
 
         await this.syncConfig();
         if (this.unloading) {
