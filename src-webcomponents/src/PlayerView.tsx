@@ -1,6 +1,6 @@
 import { useState, type CSSProperties, type JSX } from 'react';
 
-import { timeString } from './constants';
+import { coordinatorOf, isOnTv, splitMembers, timeString } from './constants';
 import { Button, Cover, Slider } from './controls';
 import type { WordKey } from './texts';
 import type { Word } from './words';
@@ -31,6 +31,57 @@ export interface PlayerValues {
     tv: boolean;
     nightMode: boolean;
     speech: boolean;
+}
+
+/**
+ * What the player shows of a speaker, from the states of its channel
+ *
+ * @param room channel name of the speaker
+ * @param name what the player calls it
+ * @param value the value of a state of the speaker
+ * @param coverTs the time of its state `current_cover`
+ * @param showCover false: no cover is loaded
+ */
+export function getPlayerValues(
+    room: string,
+    name: string,
+    value: (state: string) => ioBroker.StateValue | undefined,
+    coverTs: number | undefined,
+    showCover = true,
+): PlayerValues {
+    const str = (state: string): string => {
+        const val = value(state);
+        return val === null || val === undefined ? '' : String(val);
+    };
+    const num = (state: string): number => Number(value(state)) || 0;
+
+    // the adapter appends the version of the cover; the time of the state as well, so that a cover that did not
+    // load is tried again with the next track
+    let cover = showCover ? str('current_cover') : '';
+    if (cover && coverTs && /^\/[^/]/.test(cover)) {
+        cover = `${cover}${cover.includes('?') ? '&' : '?'}ts=${coverTs}`;
+    }
+
+    const coordinator = coordinatorOf(room, value('coordinator'));
+    return {
+        name,
+        grouped:
+            coordinator !== room || splitMembers(value('membersChannels')).filter(member => member !== room).length > 0,
+        offline: value('alive') === false,
+        playing: value('state_simple') === true,
+        muted: value('muted') === true,
+        volume: num('volume'),
+        shuffle: value('shuffle') === true,
+        repeat: num('repeat'),
+        elapsed: num('current_elapsed'),
+        duration: num('current_duration'),
+        title: str('current_title'),
+        sub: [str('current_artist'), str('current_album') || str('current_station')].filter(Boolean).join(' · '),
+        cover,
+        tv: isOnTv(value('current_type'), value('current_title')),
+        nightMode: value('night_mode') === true,
+        speech: value('speech_enhancement') === true,
+    };
 }
 
 /** A speaker of the instance, for the chips that switch the player to it */
@@ -78,6 +129,34 @@ export interface PlayerViewProps {
 }
 
 const REPEAT_WORDS: WordKey[] = ['sonosdm_repeat', 'sonosdm_repeat_all', 'sonosdm_repeat_one'];
+
+/**
+ * The toggles of a group: one pill per speaker, on while it is in the group. The coordinator is always in it.
+ * `label` is the text before the pills, `onGroup` adds a speaker to the group or removes it.
+ */
+export function GroupPills(props: {
+    group: PlayerGroupMember[];
+    label: string;
+    onGroup: (room: string, join: boolean) => void;
+}): JSX.Element {
+    return (
+        <div className="groups">
+            <span className="label secondary">{props.label}</span>
+            {props.group.map(member => (
+                <Button
+                    key={member.room}
+                    icon="link"
+                    title={member.name}
+                    active={member.member}
+                    disabled={member.coordinator}
+                    onClick={() => props.onGroup(member.room, !member.member)}
+                >
+                    {member.name}
+                </Button>
+            ))}
+        </div>
+    );
+}
 
 export function PlayerView(props: PlayerViewProps): JSX.Element {
     const { values, word, onCommand } = props;
@@ -286,21 +365,11 @@ export function PlayerView(props: PlayerViewProps): JSX.Element {
                 </div>
             ) : null}
             {props.group && props.group.length > 1 ? (
-                <div className="groups">
-                    <span className="label secondary">{word('vis_group')}</span>
-                    {props.group.map(member => (
-                        <Button
-                            key={member.room}
-                            icon="link"
-                            title={member.name}
-                            active={member.member}
-                            disabled={member.coordinator}
-                            onClick={() => props.onGroup(member.room, !member.member)}
-                        >
-                            {member.name}
-                        </Button>
-                    ))}
-                </div>
+                <GroupPills
+                    group={props.group}
+                    label={word('vis_group')}
+                    onGroup={props.onGroup}
+                />
             ) : null}
         </div>
     );

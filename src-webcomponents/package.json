@@ -4,7 +4,7 @@
     "version": "0.1.0",
     "type": "module",
     "scripts": {
-        "build": "vite build --mode player && vite build --mode rooms",
+        "build": "vite build --mode player && vite build --mode rooms && vite build --mode control",
         "check-ts": "tsc --noEmit",
         "lint": "eslint -c eslint.config.mjs src"
     },

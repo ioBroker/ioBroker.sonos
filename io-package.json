@@ -255,7 +255,8 @@
     },
     "webComponents": [
       "webcomponents/sonos-player.json",
-      "webcomponents/sonos-rooms.json"
+      "webcomponents/sonos-rooms.json",
+      "webcomponents/sonos-control.json"
     ],
     "extIcon": "https://raw.githubusercontent.com/ioBroker/ioBroker.sonos/master/admin/sonos.png",
     "type": "multimedia"

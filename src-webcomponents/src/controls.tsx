@@ -178,12 +178,23 @@ export function Cover({ url, icon, className }: { url: string; icon: IconName; c
     );
 }
 
-/** A note instead of the content: a setting is missing or wrong */
-export function Hint({ text, icon, editMode }: { text: string; icon: IconName; editMode: boolean }): JSX.Element {
+/** A note instead of the content: a setting is missing or wrong; `children` e.g. a button that may help */
+export function Hint({
+    text,
+    icon,
+    editMode,
+    children,
+}: {
+    text: string;
+    icon: IconName;
+    editMode: boolean;
+    children?: ReactNode;
+}): JSX.Element {
     return (
         <div className={`hint${editMode ? ' edit' : ''}`}>
             <Icon name={icon} />
             <span>{text}</span>
+            {children}
         </div>
     );
 }

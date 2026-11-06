@@ -37,7 +37,7 @@ src-devices/node_modules/
 src-devices/build/
 src-devices/.__mf__temp/
 
-# web components <iob-sonos-player> and <iob-sonos-rooms>: built by "npm run build:wc", the result
+# web components <iob-sonos-player>, <iob-sonos-rooms> and <iob-sonos-control>: built by "npm run build:wc", the result
 # (admin/webcomponents/, listed in common.webComponents) is committed like the admin bundles above
 src-webcomponents/node_modules/
 src-webcomponents/build/

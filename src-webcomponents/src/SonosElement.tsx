@@ -1,5 +1,5 @@
 /**
- * What both elements share: the shadow root with React in it, the speakers of an instance, the source selection and
+ * What the elements share: the shadow root with React in it, the speakers of an instance, the source selection and
  * the dialogs.
  *
  * The base class `IobWebComponent` subscribes what `getStateIds` names whenever the socket or the settings change.
@@ -37,6 +37,9 @@ export abstract class SonosElement<TSettings extends WebComponentSettings> exten
     #roomsFor = '';
 
     #roomsSocket: WebComponentSocket | null = null;
+
+    /** The speakers are read again, see `reloadRooms`: the list read so far stays until then */
+    #roomsStale = false;
 
     /** The speaker whose source selection is open */
     #sourceRoom: RoomTarget | null = null;
@@ -132,16 +135,31 @@ export abstract class SonosElement<TSettings extends WebComponentSettings> exten
         return this.states[stateId(namespace, room, name)]?.val;
     }
 
-    /** Read the speakers of the instance once - again only when the instance or the socket changes */
+    /** Read the speakers of the instance again, e.g. after a speaker was added in the adapter configuration */
+    protected reloadRooms(): void {
+        if (!this.editMode) {
+            this.#roomsStale = true;
+            this.render();
+        }
+    }
+
+    /**
+     * Read the speakers of the instance once - again only when the instance or the socket changes, or when
+     * `reloadRooms` asks for it
+     */
     #loadRooms(): void {
         const socket = this.socket;
         const namespace = socket ? this.getRoomsNamespace(this.settings) : null;
-        if (!socket || !namespace || (namespace === this.#roomsFor && socket === this.#roomsSocket)) {
+        const same = namespace === this.#roomsFor && socket === this.#roomsSocket;
+        if (!socket || !namespace || (same && !this.#roomsStale)) {
             return;
         }
+        this.#roomsStale = false;
         this.#roomsFor = namespace;
         this.#roomsSocket = socket;
-        this.#rooms = null;
+        if (!same) {
+            this.#rooms = null;
+        }
         const prefix = `${namespace}.root.`;
         socket
             .getObjectViewSystem('channel', prefix, `${prefix}香`)

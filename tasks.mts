@@ -8,9 +8,10 @@
  *   src-admin/         -> admin/custom/           the JsonConfig `custom` component of the "Control" tab
  *   src-devices/       -> admin/dm-widgets/       the widgets ioBroker.devices shows in its dashboard
  *   src-web/           -> www/                    the control page the `web` adapter serves at /sonos/
- *   src-webcomponents/ -> admin/webcomponents/    the web components `<iob-sonos-player>` and
- *                                                 `<iob-sonos-rooms>` (`common.webComponents`), one
- *                                                 ES module plus manifest each, for every host
+ *   src-webcomponents/ -> admin/webcomponents/    the web components `<iob-sonos-player>`,
+ *                                                 `<iob-sonos-rooms>` and `<iob-sonos-control>`
+ *                                                 (`common.webComponents`), one ES module plus
+ *                                                 manifest each, for every host
  *
  * `npm run build` builds the adapter and all five front-ends - that is what CI and `npm publish`
  * run. The two admin bundles take several minutes each because module federation pre-builds the
@@ -39,7 +40,7 @@ const SRC_WEB = `${ROOT}/src-web`;
 /** Directory of the web components */
 const SRC_WC = `${ROOT}/src-webcomponents`;
 /** The web components, each one a build of its own: `vite build --mode <name>` (see its vite.config.ts) */
-const WEB_COMPONENTS = ['player', 'rooms'];
+const WEB_COMPONENTS = ['player', 'rooms', 'control'];
 
 /**
  * Copies the built vis-2 widgets into `widgets/sonos/`.

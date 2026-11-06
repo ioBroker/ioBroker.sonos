@@ -600,3 +600,229 @@ button.item:hover {
     font-size: 0.85em;
 }
 `;
+
+/**
+ * The control centre: the speakers on the left, the player, the group and the library of the selected speaker on the
+ * right - with the styles of the player and of the source selection, which it shows inline.
+ *
+ * The player part is a container of its own, so the player inside leaves out its parts as in its own box. In a
+ * narrow box the speakers become a row of pills above; in a narrow or low one the right side shows one part at a
+ * time, picked with the tabs (`.current`, kept by `ControlView`).
+ */
+export const CONTROL_CSS = `${PLAYER_CSS}${SOURCE_CSS}
+.view.control {
+    flex-direction: row;
+}
+.speakers {
+    flex: 0 0 clamp(170px, 30cqw, 280px);
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-right: var(--gap);
+    border-right: 1px solid var(--iob-divider);
+}
+.speakers-head {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+.speakers-head > svg {
+    width: calc(var(--icon) * 0.9);
+    height: calc(var(--icon) * 0.9);
+    fill: currentColor;
+    flex: none;
+}
+.speakers-head .label {
+    flex: 1;
+    font-weight: 600;
+}
+.speaker-list {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+button.speaker {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 6px 8px;
+    text-align: left;
+    border-radius: var(--iob-border-radius);
+}
+button.speaker:hover {
+    background: var(--hover);
+}
+button.speaker.selected {
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+button.speaker.selected .speaker-name {
+    font-weight: 600;
+}
+button.speaker.offline {
+    opacity: 0.5;
+}
+button.speaker > svg {
+    width: 20px;
+    height: 20px;
+    opacity: 0.7;
+}
+button.speaker.playing > svg {
+    fill: var(--accent);
+    opacity: 1;
+}
+.speaker .text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+.speaker-sub {
+    font-size: 0.85em;
+}
+.speaker-level {
+    min-width: 2em;
+    font-size: 0.8em;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+.control-main {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+}
+.part-tabs {
+    flex: none;
+    display: none;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.part {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+.part > .view {
+    flex: 1 1 0;
+    min-height: 0;
+    height: auto;
+    padding: 0;
+}
+.part-player {
+    flex: 0 0 clamp(150px, 44cqh, 260px);
+    /* the player follows the size of its part, as in a box of its own */
+    container-type: size;
+}
+.control-main:not(.has-library) .part-player {
+    flex: 1 1 0;
+}
+.part-group {
+    flex: none;
+    max-height: 32cqh;
+    overflow-y: auto;
+    gap: 6px;
+    padding: 6px 0;
+    border-top: 1px solid var(--iob-divider);
+    border-bottom: 1px solid var(--iob-divider);
+}
+.control-main:not(.has-library) .part-group {
+    border-bottom: none;
+}
+.part-group .groups {
+    flex-wrap: wrap;
+    row-gap: 4px;
+    overflow: visible;
+}
+.group-volume {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+.group-volume > svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+    opacity: 0.75;
+    flex: none;
+}
+.group-volume .label {
+    flex: 0 1 auto;
+    font-size: 0.8em;
+}
+.part-library {
+    flex: 1 1 0;
+}
+.part-library > .view.source {
+    gap: 6px;
+}
+/* a narrow box: the speakers are a row of pills above the rest */
+@container (max-width: 599px) {
+    .view.control {
+        flex-direction: column;
+    }
+    .speakers {
+        flex: none;
+        padding: 0 0 var(--gap);
+        border-right: none;
+        border-bottom: 1px solid var(--iob-divider);
+    }
+    .speakers-head,
+    .speaker-sub,
+    .speaker-level {
+        display: none;
+    }
+    .speaker-list {
+        flex: none;
+        flex-direction: row;
+        gap: 4px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: none;
+    }
+    button.speaker {
+        width: auto;
+        max-width: 60cqw;
+        gap: 6px;
+        padding: 4px 12px;
+        border: 1px solid var(--iob-divider);
+        border-radius: 999px;
+        font-size: 0.85em;
+    }
+    button.speaker.selected {
+        border-color: var(--accent);
+    }
+    button.speaker > svg {
+        width: 1.2em;
+        height: 1.2em;
+    }
+}
+/* a narrow or low box: one part at a time, picked with the tabs */
+@container (max-width: 599px) or (max-height: 439px) {
+    .part-tabs {
+        display: flex;
+    }
+    .control-main .part {
+        display: none;
+    }
+    .control-main .part.current {
+        display: flex;
+        flex: 1 1 0;
+        max-height: none;
+        border: none;
+        padding: 0;
+    }
+}
+`;

@@ -110,16 +110,17 @@ second time leaves the mode.
 
 ## Web components
 
-The same two widgets also exist as web components for every host that supports
-[`@iobroker/web-components`](https://github.com/ioBroker/web-components) - Aura, vis-2,
-ioBroker.devices, admin. The adapter lists them in `common.webComponents`; each one is a single ES
+The same two widgets - and the Control tab of the instance settings - also exist as web components
+for every host that supports [`@iobroker/web-components`](https://github.com/ioBroker/web-components) -
+Aura, vis-2, ioBroker.devices, admin. The adapter lists them in `common.webComponents`; each one is a single ES
 module with a manifest next to it in `admin/webcomponents/`. React comes from the host, the
 component itself only talks to the socket of the host - nothing has to run in the adapter for it.
 
-| Element              | Name         | What it shows                                                                                                                                         |
-|----------------------|--------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `<iob-sonos-player>` | SONOS player | One speaker: cover, title, artist, progress, previous / play-pause / next, shuffle, repeat, mute, volume and the source selection                     |
-| `<iob-sonos-rooms>`  | SONOS rooms  | Every speaker of an instance: what it plays, play/pause, volume, the source selection and the grouping with the link buttons, as in the devices widget |
+| Element               | Name                 | What it shows                                                                                                                                             |
+|-----------------------|----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `<iob-sonos-player>`  | SONOS player         | One speaker: cover, title, artist, progress, previous / play-pause / next, shuffle, repeat, mute, volume and the source selection                         |
+| `<iob-sonos-rooms>`   | SONOS rooms          | Every speaker of an instance: what it plays, play/pause, volume, the source selection and the grouping with the link buttons, as in the devices widget    |
+| `<iob-sonos-control>` | SONOS control centre | The Control tab of the instance settings as a dashboard: every speaker with what it plays, and for the selected one the player, its group and its library |
 
 **SONOS player** is configured with the channel of the speaker (`sonos.0.root.<speaker>`) - the
 instance comes from it - and an optional title. Cover, progress, shuffle/repeat, volume and the
@@ -133,7 +134,16 @@ soundbar it shows night sound and speech enhancement instead of the transport.
 switched off, and speakers that are not reachable can be hidden. A low box shows only how many
 speakers are playing; a click opens the list in a dialog.
 
-Both take an accent color; everything else comes from the theme of the host, light or dark.
+**SONOS control centre** is configured with the instance and optionally the speaker that is
+selected first. On the left it lists every speaker with what it plays; on the right it shows the
+player of the selected one (cover, title, progress, transport, volume), its group (add and remove
+speakers, group volume) and its library - favorites, playlists, queue, recently played and the
+sources and music services to browse. The list of speakers, the group and the library can be
+switched off. In a narrow box the speakers become a row of buttons on top, and in a narrow or low
+box the player, the group and the library are shown one at a time, picked with tabs. While the
+instance is stopped it says so.
+
+All of them take an accent color; everything else comes from the theme of the host, light or dark.
 
 ## Control tab in admin
 
@@ -144,6 +154,9 @@ grouping, and the library with favorites, playlists, queue, recently played and 
 This is meant for checking that a freshly added speaker really answers, without leaving the adapter
 configuration. The tab talks to the running instance, so it stays empty while the instance is
 stopped.
+
+The same view is available for dashboards as the web component **SONOS control centre**
+(`<iob-sonos-control>`, see [Web components](#web-components)).
 
 ## Control page in the browser
 
@@ -448,6 +461,7 @@ adapter to get a working state back.
 ## Changelog
 ### **WORK IN PROGRESS**
 * (@GermanBluefox) Added the web components `<iob-sonos-player>` and `<iob-sonos-rooms>` (`common.webComponents`): the SONOS player and SONOS rooms widgets for Aura and every other host of `@iobroker/web-components`
+* (@GermanBluefox) Added a SONOS control centre for Aura and other dashboards: all speakers with player, group and library in one place
 
 ### 4.5.1 (2026-11-04)
 * (@GermanBluefox) Fixed "Cannot process transport-state: Parameter "timeout" needs to be of type "number"": settings saved by the old admin page hold the update interval of the elapsed time as a string, which js-controller rejects. The error aborted every update of the playback, so title, artist and cover stayed at the first track after a restart

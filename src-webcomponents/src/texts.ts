@@ -1,10 +1,10 @@
 /**
- * The words of both components and of their manifests.
+ * The words of the components and of their manifests.
  *
  * Most of them are the words of the native widgets: `vite.config.ts` picks them from the i18n files of the
- * ioBroker.devices widgets (`src-devices/src/i18n`, keys `sonosdm_*`) and of the vis-2 widgets
- * (`src-widgets/src/i18n`, here with the prefix `vis_`), so a translation fixed there is fixed here too. Only what
- * neither of them says is written below. The module gets the picked words only (`__SONOS_WORDS__`, see `words.ts`).
+ * ioBroker.devices widgets (`src-devices/src/i18n`, keys `sonosdm_*`), of the vis-2 widgets (`src-widgets/src/i18n`,
+ * here with the prefix `vis_`) and of the Control tab of the instance settings (`src-admin/src/i18n`, keys
+ * `sonos_ctrl_*`), so a translation fixed there is fixed here too. Only what none of them says is written below. The module gets the picked words only (`__SONOS_WORDS__`, see `words.ts`).
  *
  * Imported by `vite.config.ts`, so nothing in here may touch the DOM.
  */
@@ -57,7 +57,23 @@ export const DEVICES_WORDS = [
 ] as const;
 
 /** Taken from `src-widgets/src/i18n/<lang>.json`; the key here is `vis_<key>` */
-export const VIS_WORDS = ['show_rooms', 'show_groups', 'night_mode', 'speech_enhancement', 'group'] as const;
+export const VIS_WORDS = [
+    'show_rooms',
+    'show_groups',
+    'show_library',
+    'night_mode',
+    'speech_enhancement',
+    'group',
+] as const;
+
+/** Taken from `src-admin/src/i18n/<lang>.json` under the same key: the words of the Control tab */
+export const ADMIN_WORDS = [
+    'sonos_ctrl_speakers',
+    'sonos_ctrl_refresh',
+    'sonos_ctrl_group',
+    'sonos_ctrl_follows',
+    'sonos_ctrl_instance_not_running',
+] as const;
 
 const EN = {
     wc_choose_speaker: 'Choose a speaker in the settings',
@@ -75,11 +91,20 @@ const EN = {
     wc_back: 'Back',
     wc_sign_in: 'Sign in',
     wc_clear: 'Clear',
+    wc_control_name: 'SONOS control centre',
+    wc_control_description:
+        'All speakers of an instance at a glance; the selected one with player, group and library (favorites, playlists, queue, music services)',
+    wc_start_room: 'Speaker shown first',
+    wc_start_room_help: 'Empty: the first speaker of the instance',
+    wc_show_speakers: 'Show the list of speakers',
+    wc_player: 'Player',
+    wc_library: 'Library',
+    wc_group_volume: 'Group volume',
 };
 
 export type ExtraWordKey = keyof typeof EN;
 
-/** What neither of the native widgets says */
+/** What none of the native widgets says */
 export const EXTRA_WORDS: Record<Language, Record<ExtraWordKey, string>> = {
     en: EN,
     de: {
@@ -98,6 +123,15 @@ export const EXTRA_WORDS: Record<Language, Record<ExtraWordKey, string>> = {
         wc_back: 'Zurück',
         wc_sign_in: 'Anmelden',
         wc_clear: 'Leeren',
+        wc_control_name: 'SONOS-Steuerzentrale',
+        wc_control_description:
+            'Alle Lautsprecher einer Instanz auf einen Blick; der gewählte mit Player, Gruppe und Mediathek (Favoriten, Wiedergabelisten, Warteschlange, Musikdienste)',
+        wc_start_room: 'Zuerst gezeigter Lautsprecher',
+        wc_start_room_help: 'Leer: der erste Lautsprecher der Instanz',
+        wc_show_speakers: 'Liste der Lautsprecher anzeigen',
+        wc_player: 'Player',
+        wc_library: 'Mediathek',
+        wc_group_volume: 'Gruppenlautstärke',
     },
     ru: {
         wc_choose_speaker: 'Выберите колонку в настройках',
@@ -115,6 +149,15 @@ export const EXTRA_WORDS: Record<Language, Record<ExtraWordKey, string>> = {
         wc_back: 'Назад',
         wc_sign_in: 'Войти',
         wc_clear: 'Очистить',
+        wc_control_name: 'Центр управления SONOS',
+        wc_control_description:
+            'Все колонки экземпляра с первого взгляда; выбранная - с плеером, группой и библиотекой (избранное, плейлисты, очередь, музыкальные сервисы)',
+        wc_start_room: 'Колонка, показываемая первой',
+        wc_start_room_help: 'Пусто: первая колонка экземпляра',
+        wc_show_speakers: 'Показать список колонок',
+        wc_player: 'Плеер',
+        wc_library: 'Библиотека',
+        wc_group_volume: 'Громкость группы',
     },
     pt: {
         wc_choose_speaker: 'Escolha uma coluna nas configurações',
@@ -132,6 +175,15 @@ export const EXTRA_WORDS: Record<Language, Record<ExtraWordKey, string>> = {
         wc_back: 'Voltar',
         wc_sign_in: 'Iniciar sessão',
         wc_clear: 'Limpar',
+        wc_control_name: 'Central de controlo SONOS',
+        wc_control_description:
+            'Todas as colunas de uma instância num relance; a selecionada com leitor, grupo e biblioteca (favoritos, listas de reprodução, fila, serviços de música)',
+        wc_start_room: 'Coluna mostrada primeiro',
+        wc_start_room_help: 'Vazio: a primeira coluna da instância',
+        wc_show_speakers: 'Mostrar a lista de colunas',
+        wc_player: 'Leitor',
+        wc_library: 'Biblioteca',
+        wc_group_volume: 'Volume do grupo',
     },
     nl: {
         wc_choose_speaker: 'Kies een luidspreker in de instellingen',
@@ -149,6 +201,15 @@ export const EXTRA_WORDS: Record<Language, Record<ExtraWordKey, string>> = {
         wc_back: 'Terug',
         wc_sign_in: 'Aanmelden',
         wc_clear: 'Wissen',
+        wc_control_name: 'SONOS-bedieningscentrum',
+        wc_control_description:
+            'Alle luidsprekers van een instantie in één oogopslag; de gekozen met speler, groep en bibliotheek (favorieten, afspeellijsten, wachtrij, muziekdiensten)',
+        wc_start_room: 'Eerst getoonde luidspreker',
+        wc_start_room_help: 'Leeg: de eerste luidspreker van de instantie',
+        wc_show_speakers: 'Lijst van luidsprekers tonen',
+        wc_player: 'Speler',
+        wc_library: 'Bibliotheek',
+        wc_group_volume: 'Groepsvolume',
     },
     fr: {
         wc_choose_speaker: 'Choisissez une enceinte dans les paramètres',
@@ -166,6 +227,15 @@ export const EXTRA_WORDS: Record<Language, Record<ExtraWordKey, string>> = {
         wc_back: 'Retour',
         wc_sign_in: 'Se connecter',
         wc_clear: 'Effacer',
+        wc_control_name: 'Centre de contrôle SONOS',
+        wc_control_description:
+            "Toutes les enceintes d'une instance d'un coup d'œil ; celle choisie avec lecteur, groupe et bibliothèque (favoris, listes de lecture, file d'attente, services musicaux)",
+        wc_start_room: "Enceinte affichée d'abord",
+        wc_start_room_help: "Vide : la première enceinte de l'instance",
+        wc_show_speakers: 'Afficher la liste des enceintes',
+        wc_player: 'Lecteur',
+        wc_library: 'Bibliothèque',
+        wc_group_volume: 'Volume du groupe',
     },
     it: {
         wc_choose_speaker: 'Scegli un altoparlante nelle impostazioni',
@@ -183,6 +253,15 @@ export const EXTRA_WORDS: Record<Language, Record<ExtraWordKey, string>> = {
         wc_back: 'Indietro',
         wc_sign_in: 'Accedi',
         wc_clear: 'Cancella',
+        wc_control_name: 'Centro di controllo SONOS',
+        wc_control_description:
+            "Tutti gli altoparlanti di un'istanza a colpo d'occhio; quello scelto con lettore, gruppo e libreria (preferiti, playlist, coda, servizi musicali)",
+        wc_start_room: 'Altoparlante mostrato per primo',
+        wc_start_room_help: "Vuoto: il primo altoparlante dell'istanza",
+        wc_show_speakers: "Mostra l'elenco degli altoparlanti",
+        wc_player: 'Lettore',
+        wc_library: 'Libreria',
+        wc_group_volume: 'Volume del gruppo',
     },
     es: {
         wc_choose_speaker: 'Elija un altavoz en la configuración',
@@ -200,6 +279,15 @@ export const EXTRA_WORDS: Record<Language, Record<ExtraWordKey, string>> = {
         wc_back: 'Atrás',
         wc_sign_in: 'Iniciar sesión',
         wc_clear: 'Borrar',
+        wc_control_name: 'Centro de control SONOS',
+        wc_control_description:
+            'Todos los altavoces de una instancia de un vistazo; el elegido con reproductor, grupo y biblioteca (favoritos, listas de reproducción, cola, servicios de música)',
+        wc_start_room: 'Altavoz mostrado primero',
+        wc_start_room_help: 'Vacío: el primer altavoz de la instancia',
+        wc_show_speakers: 'Mostrar la lista de altavoces',
+        wc_player: 'Reproductor',
+        wc_library: 'Biblioteca',
+        wc_group_volume: 'Volumen del grupo',
     },
     pl: {
         wc_choose_speaker: 'Wybierz głośnik w ustawieniach',
@@ -217,6 +305,15 @@ export const EXTRA_WORDS: Record<Language, Record<ExtraWordKey, string>> = {
         wc_back: 'Wstecz',
         wc_sign_in: 'Zaloguj się',
         wc_clear: 'Wyczyść',
+        wc_control_name: 'Centrum sterowania SONOS',
+        wc_control_description:
+            'Wszystkie głośniki instancji w jednym miejscu; wybrany z odtwarzaczem, grupą i biblioteką (ulubione, playlisty, kolejka, serwisy muzyczne)',
+        wc_start_room: 'Głośnik pokazywany jako pierwszy',
+        wc_start_room_help: 'Puste: pierwszy głośnik instancji',
+        wc_show_speakers: 'Pokaż listę głośników',
+        wc_player: 'Odtwarzacz',
+        wc_library: 'Biblioteka',
+        wc_group_volume: 'Głośność grupy',
     },
     uk: {
         wc_choose_speaker: 'Виберіть колонку в налаштуваннях',
@@ -234,6 +331,15 @@ export const EXTRA_WORDS: Record<Language, Record<ExtraWordKey, string>> = {
         wc_back: 'Назад',
         wc_sign_in: 'Увійти',
         wc_clear: 'Очистити',
+        wc_control_name: 'Центр керування SONOS',
+        wc_control_description:
+            'Усі колонки екземпляра з першого погляду; вибрана - з плеєром, групою та бібліотекою (обране, плейлисти, черга, музичні сервіси)',
+        wc_start_room: 'Колонка, що показується першою',
+        wc_start_room_help: 'Порожньо: перша колонка екземпляра',
+        wc_show_speakers: 'Показати список колонок',
+        wc_player: 'Плеєр',
+        wc_library: 'Бібліотека',
+        wc_group_volume: 'Гучність групи',
     },
     'zh-cn': {
         wc_choose_speaker: '请在设置中选择扬声器',
@@ -251,6 +357,15 @@ export const EXTRA_WORDS: Record<Language, Record<ExtraWordKey, string>> = {
         wc_back: '返回',
         wc_sign_in: '登录',
         wc_clear: '清除',
+        wc_control_name: 'SONOS 控制中心',
+        wc_control_description:
+            '一目了然地查看实例的所有扬声器；所选扬声器带播放器、群组和媒体库（收藏、播放列表、队列、音乐服务）',
+        wc_start_room: '首先显示的扬声器',
+        wc_start_room_help: '为空：实例的第一个扬声器',
+        wc_show_speakers: '显示扬声器列表',
+        wc_player: '播放器',
+        wc_library: '媒体库',
+        wc_group_volume: '群组音量',
     },
 };
 
@@ -268,15 +383,22 @@ export const MANIFEST_WORDS: readonly WordKey[] = [
     'sonosdm_hideOffline',
     'vis_show_rooms',
     'vis_show_groups',
+    'vis_show_library',
     'wc_room_help',
     'wc_title_help',
     'wc_rooms_title_help',
     'wc_accent',
     'wc_accent_help',
+    'wc_control_name',
+    'wc_control_description',
+    'wc_start_room',
+    'wc_start_room_help',
+    'wc_show_speakers',
 ];
 
 /** Every word the components and their manifests use */
-export type WordKey = (typeof DEVICES_WORDS)[number] | `vis_${(typeof VIS_WORDS)[number]}` | ExtraWordKey;
+export type WordKey =
+    (typeof DEVICES_WORDS)[number] | `vis_${(typeof VIS_WORDS)[number]}` | (typeof ADMIN_WORDS)[number] | ExtraWordKey;
 
 /** The words in one language, by key */
 export type Dictionary = Record<WordKey, string>;

@@ -22,7 +22,6 @@ import {
     COMPONENTS,
     coordinatorOf,
     getName,
-    isOnTv,
     parseRoomId,
     PLAYER_STATES,
     splitMembers,
@@ -31,7 +30,13 @@ import {
     type RoomTarget,
 } from './constants';
 import { Hint } from './controls';
-import { PlayerView, type PlayerGroupMember, type PlayerRoomChip, type PlayerValues } from './PlayerView';
+import {
+    getPlayerValues,
+    PlayerView,
+    type PlayerGroupMember,
+    type PlayerRoomChip,
+    type PlayerValues,
+} from './PlayerView';
 import { SonosElement } from './SonosElement';
 import { PLAYER_CSS } from './styles';
 
@@ -91,49 +96,19 @@ class SonosPlayer extends SonosElement<PlayerSettings> {
     /** The values of the speaker shown */
     #getValues(target: RoomTarget, settings: PlayerSettings): PlayerValues {
         const { namespace, room } = target;
-        const val = (name: string): ioBroker.StateValue | undefined => this.stateValue(namespace, room, name);
-        const str = (name: string): string => {
-            const value = val(name);
-            return value === null || value === undefined ? '' : String(value);
-        };
-        const num = (name: string): number => Number(val(name)) || 0;
-
         const channel = this.objects[`${namespace}.root.${room}`];
         const name =
             (target.room === parseRoomId(settings.room)?.room && settings.title) ||
             getName(channel?.common?.name, this.systemLang) ||
             this.rooms?.find(item => item.room === room)?.name ||
             room;
-
-        // the adapter appends the version of the cover; the time of the state as well, so that a cover that did not
-        // load is tried again with the next track
-        let cover = settings.showCover === false ? '' : str('current_cover');
-        const coverTs = this.states[stateId(namespace, room, 'current_cover')]?.ts;
-        if (cover && coverTs && /^\/[^/]/.test(cover)) {
-            cover = `${cover}${cover.includes('?') ? '&' : '?'}ts=${coverTs}`;
-        }
-
-        const coordinator = coordinatorOf(room, val('coordinator'));
-        return {
+        return getPlayerValues(
+            room,
             name,
-            grouped:
-                coordinator !== room ||
-                splitMembers(val('membersChannels')).filter(member => member !== room).length > 0,
-            offline: val('alive') === false,
-            playing: val('state_simple') === true,
-            muted: val('muted') === true,
-            volume: num('volume'),
-            shuffle: val('shuffle') === true,
-            repeat: num('repeat'),
-            elapsed: num('current_elapsed'),
-            duration: num('current_duration'),
-            title: str('current_title'),
-            sub: [str('current_artist'), str('current_album') || str('current_station')].filter(Boolean).join(' · '),
-            cover,
-            tv: isOnTv(val('current_type'), val('current_title')),
-            nightMode: val('night_mode') === true,
-            speech: val('speech_enhancement') === true,
-        };
+            state => this.stateValue(namespace, room, state),
+            this.states[stateId(namespace, room, 'current_cover')]?.ts,
+            settings.showCover !== false,
+        );
     }
 
     #getRoomChips(target: RoomTarget, settings: PlayerSettings): PlayerRoomChip[] | null {

@@ -1,13 +1,14 @@
 /**
- * What both web components share: their tags and files, the states they read and pure helpers.
+ * What the web components share: their tags and files, the states they read and pure helpers.
  *
  * Imported by `vite.config.ts` as well (the tags and files), so nothing in here may touch the DOM.
  */
 
-/** The two components: tag of the custom element and the files the build writes into `admin/webcomponents/` */
+/** The components: tag of the custom element and the files the build writes into `admin/webcomponents/` */
 export const COMPONENTS = {
     player: { tag: 'iob-sonos-player', module: 'sonos-player.js', manifest: 'sonos-player.json' },
     rooms: { tag: 'iob-sonos-rooms', module: 'sonos-rooms.js', manifest: 'sonos-rooms.json' },
+    control: { tag: 'iob-sonos-control', module: 'sonos-control.js', manifest: 'sonos-control.json' },
 } as const;
 
 export type ComponentName = keyof typeof COMPONENTS;
@@ -90,6 +91,18 @@ export interface RoomsSettings {
     showSource?: boolean;
     allowGrouping?: boolean;
     hideOffline?: boolean;
+    accent?: string;
+}
+
+/** The values of the settings of `<iob-sonos-control>`; a setting without a value is missing */
+export interface ControlSettings {
+    [name: string]: string | number | boolean | undefined;
+    instance?: string;
+    /** The speaker selected first: its channel; empty for the first speaker of the instance */
+    room?: string;
+    showRooms?: boolean;
+    showGroups?: boolean;
+    showLibrary?: boolean;
     accent?: string;
 }
 

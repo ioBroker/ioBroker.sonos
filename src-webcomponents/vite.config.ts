@@ -5,8 +5,9 @@ import type { Plugin, UserConfig } from 'vite';
 
 // with the extension: Vite may load its config natively, without a bundler that would add it
 import { COMPONENTS, MODULE_FOLDER, type ComponentName } from './src/constants.ts';
-import { buildManifests, type NativeWidget } from './src/manifests.ts';
+import { buildManifests, type NativeComponentName, type NativeWidget } from './src/manifests.ts';
 import {
+    ADMIN_WORDS,
     DEVICES_WORDS,
     EXTRA_WORDS,
     LANGUAGES,
@@ -18,13 +19,14 @@ import {
 } from './src/texts.ts';
 
 /**
- * The web components `<iob-sonos-player>` and `<iob-sonos-rooms>`: one ES module each,
- * `admin/webcomponents/sonos-player.js` and `sonos-rooms.js`, with its manifest next to it (`common.webComponents`).
+ * The web components `<iob-sonos-player>`, `<iob-sonos-rooms>` and `<iob-sonos-control>`: one ES module each,
+ * `admin/webcomponents/sonos-player.js`, `sonos-rooms.js` and `sonos-control.js`, with its manifest next to it
+ * (`common.webComponents`).
  * Every host - vis-2, devices, Aura, admin - reads them from `/adapter/sonos/webcomponents/`. No module federation:
  * the host shares nothing but the socket.
  *
  * A host imports exactly one URL per component, so every component is a build of its own with everything it
- * needs compiled in: `vite build --mode player` and `vite build --mode rooms` (`npm run build`, `tasks.mts --wc`).
+ * needs compiled in: `vite build --mode player|rooms|control` (`npm run build`, `tasks.mts --wc`).
  *
  * React is not bundled: the four React imports point at `lib/esm/react-19.js`, which web and admin serve beside
  * `adapter/`. The path is relative to the module, so a path prefix of a reverse proxy stays.
@@ -36,8 +38,8 @@ function readJson<T>(path: string): T {
 }
 
 /**
- * The words of `texts.ts` in every language: those of the i18n files of the native widgets, and the own ones. A
- * word without English stops the build; another missing language is taken in English.
+ * The words of `texts.ts` in every language: those of the i18n files of the native widgets and of the Control tab,
+ * and the own ones. A word without English stops the build; another missing language is taken in English.
  */
 function readWords(): Record<Language, Dictionary> {
     const english: Partial<Dictionary> = {};
@@ -45,12 +47,16 @@ function readWords(): Record<Language, Dictionary> {
     for (const lang of LANGUAGES) {
         const devices = readJson<Record<string, string>>(`../src-devices/src/i18n/${lang}.json`);
         const vis = readJson<Record<string, string>>(`../src-widgets/src/i18n/${lang}.json`);
+        const admin = readJson<Record<string, string>>(`../src-admin/src/i18n/${lang}.json`);
         const dictionary: Partial<Dictionary> = { ...EXTRA_WORDS[lang] };
         for (const key of DEVICES_WORDS) {
             dictionary[key] = devices[key];
         }
         for (const key of VIS_WORDS) {
             dictionary[`vis_${key}`] = vis[key];
+        }
+        for (const key of ADMIN_WORDS) {
+            dictionary[key] = admin[key];
         }
         if (lang === 'en') {
             for (const [key, text] of Object.entries(dictionary)) {
@@ -68,8 +74,8 @@ function readWords(): Record<Language, Dictionary> {
     return words;
 }
 
-/** The ioBroker.devices widgets of the adapter: the components are called like them */
-function readNativeWidgets(): Record<ComponentName, NativeWidget> {
+/** The ioBroker.devices widgets of the adapter: the player and the rooms are called like them */
+function readNativeWidgets(): Record<NativeComponentName, NativeWidget> {
     const io = readJson<{
         common: {
             deviceWidgets?: {
@@ -142,7 +148,7 @@ export default ({ mode }: { mode: string }): UserConfig => {
         build: {
             target: 'es2022',
             outDir: './build',
-            // the other component is built into the same folder; `tasks.mts` empties it before
+            // the other components are built into the same folder; `tasks.mts` empties it before
             emptyOutDir: false,
             lib: {
                 entry: `./src/${name}.tsx`,

@@ -1,13 +1,19 @@
 /**
- * The manifests of both components. Read by the build only (`vite.config.ts`), which writes them as
- * `sonos-player.json` and `sonos-rooms.json` next to the modules - a host reads those files for its palette and
- * its settings without loading a module.
+ * The manifests of the components. Read by the build only (`vite.config.ts`), which writes them as
+ * `sonos-player.json`, `sonos-rooms.json` and `sonos-control.json` next to the modules - a host reads those files for
+ * its palette and its settings without loading a module.
  */
 import type { WebComponentManifest, WebComponentText } from '@iobroker/web-components';
 
 // with the extension: `vite.config.ts` imports this file, and Vite may load its config natively
 import { COMPONENTS, type ComponentName } from './constants.ts';
 import { LANGUAGES, type WordKey } from './texts.ts';
+
+/**
+ * The components that are a native ioBroker.devices widget as well. The control centre is none: it is the Control
+ * tab of the instance settings, so it has a name of its own and every host shows it.
+ */
+export type NativeComponentName = Exclude<ComponentName, 'control'>;
 
 /** What the native ioBroker.devices widget of a component is called: `common.deviceWidgets.components[]` */
 export interface NativeWidget {
@@ -30,7 +36,7 @@ function inAllLanguages(text: WebComponentText): ioBroker.Translated {
 }
 
 /**
- * Both manifests
+ * The manifests
  *
  * @param word a word of `texts.ts` in every language
  * @param native the ioBroker.devices widgets of the adapter: the components are called like them, so that
@@ -38,7 +44,7 @@ function inAllLanguages(text: WebComponentText): ioBroker.Translated {
  */
 export function buildManifests(
     word: (key: WordKey) => ioBroker.Translated,
-    native: Record<ComponentName, NativeWidget>,
+    native: Record<NativeComponentName, NativeWidget>,
 ): Record<ComponentName, WebComponentManifest> {
     const accent = {
         type: 'color',
@@ -103,5 +109,33 @@ export function buildManifests(
         },
     };
 
-    return { player, rooms };
+    const control: WebComponentManifest = {
+        $schema: 'https://raw.githubusercontent.com/ioBroker/web-components/main/schemas/manifest.json',
+        manifestVersion: 1,
+        tag: COMPONENTS.control.tag,
+        name: word('wc_control_name'),
+        description: word('wc_control_description'),
+        icon: '../sonos.png',
+        module: COMPONENTS.control.module,
+        size: { width: 800, height: 520 },
+        settings: {
+            type: 'panel',
+            items: {
+                instance: { type: 'instance', adapter: 'sonos', default: 'sonos.0', label: word('sonosdm_instance') },
+                room: {
+                    type: 'objectId',
+                    types: 'channel',
+                    root: 'sonos',
+                    label: word('wc_start_room'),
+                    help: word('wc_start_room_help'),
+                },
+                showRooms: { type: 'checkbox', default: true, label: word('wc_show_speakers') },
+                showGroups: { type: 'checkbox', default: true, label: word('vis_show_groups') },
+                showLibrary: { type: 'checkbox', default: true, label: word('vis_show_library') },
+                accent,
+            },
+        },
+    };
+
+    return { player, rooms, control };
 }
