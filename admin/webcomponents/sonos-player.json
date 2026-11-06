@@ -191,12 +191,12 @@
                     "ru": "Показать комнаты",
                     "pt": "Mostrar salas",
                     "nl": "Kamers tonen",
-                    "fr": "Montrer les salles",
-                    "it": "Show room",
-                    "es": "Salas de exposición",
+                    "fr": "Afficher les pièces",
+                    "it": "Mostra stanze",
+                    "es": "Mostrar habitaciones",
                     "pl": "Pokaż pokoje",
-                    "uk": "Показові кімнати",
-                    "zh-cn": "展示厅"
+                    "uk": "Показати кімнати",
+                    "zh-cn": "显示房间"
                 }
             },
             "showGroups": {
@@ -213,7 +213,7 @@
                     "es": "Mostrar grupos",
                     "pl": "Pokaż grupy",
                     "uk": "Показати групи",
-                    "zh-cn": "显示组"
+                    "zh-cn": "显示群组"
                 }
             },
             "accent": {

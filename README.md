@@ -462,6 +462,7 @@ adapter to get a working state back.
 ### **WORK IN PROGRESS**
 * (@GermanBluefox) Added the web components `<iob-sonos-player>` and `<iob-sonos-rooms>` (`common.webComponents`): the SONOS player and SONOS rooms widgets for Aura and every other host of `@iobroker/web-components`
 * (@GermanBluefox) Added a SONOS control centre for Aura and other dashboards: all speakers with player, group and library in one place
+* (@GermanBluefox) Fixed wrong translations of the vis-2 widgets and the web components, e.g. "Show rooms" read as "showroom" in Italian, Spanish, Ukrainian and Chinese
 
 ### 4.5.1 (2026-11-04)
 * (@GermanBluefox) Fixed "Cannot process transport-state: Parameter "timeout" needs to be of type "number"": settings saved by the old admin page hold the update interval of the elapsed time as a string, which js-controller rejects. The error aborted every update of the playback, so title, artist and cover stayed at the first track after a restart

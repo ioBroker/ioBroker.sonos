@@ -117,7 +117,7 @@
                     "es": "Mostrar grupos",
                     "pl": "Pokaż grupy",
                     "uk": "Показати групи",
-                    "zh-cn": "显示组"
+                    "zh-cn": "显示群组"
                 }
             },
             "showLibrary": {
@@ -134,7 +134,7 @@
                     "es": "Mostrar biblioteca",
                     "pl": "Pokaż bibliotekę",
                     "uk": "Показати бібліотеку",
-                    "zh-cn": "显示库"
+                    "zh-cn": "显示媒体库"
                 }
             },
             "accent": {
