@@ -59,16 +59,17 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "npm run build:ts && npm run build:widgets && npm run build:web && npm run build:admin && npm run build:devices",
+    "build": "npm run build:ts && npm run build:widgets && npm run build:web && npm run build:admin && npm run build:devices && npm run build:wc",
     "build:ts": "tsc -p tsconfig.build.json",
     "build:widgets": "node tasks.mts",
     "build:admin": "node tasks.mts --admin",
     "build:devices": "node tasks.mts --devices",
     "build:web": "node tasks.mts --web",
+    "build:wc": "node tasks.mts --wc",
     "build:all": "npm run build:ts && node tasks.mts --all",
     "watch": "tsc -p tsconfig.build.json --watch",
     "check:ts": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.tasks.json --noEmit",
-    "lint": "eslint -c eslint.config.mjs src tasks.mts && cd src-devices && npm run lint && cd ../src-admin && npm run lint && cd ../src-web && npm run lint",
+    "lint": "eslint -c eslint.config.mjs src tasks.mts && cd src-devices && npm run lint && cd ../src-admin && npm run lint && cd ../src-web && npm run lint && cd ../src-webcomponents && npm run lint",
     "lint:fix": "eslint -c eslint.config.mjs src tasks.mts --fix",
     "prepublishOnly": "npm run build",
     "test": "npm run test:package && npm run test:lib && npm run test:unit",
@@ -78,13 +79,13 @@
     "test:unit": "mocha test/unit --exit",
     "pretest:integration": "npm run build:ts",
     "test:integration": "mocha test/integration --exit",
-    "update-packages": "npx -y npm-check-updates -u && cd src-widgets && npx -y npm-check-updates -u && cd ../src-admin && npx -y npm-check-updates -u && cd ../src-devices && npx -y npm-check-updates -u&& cd ../src-web && npx -y npm-check-updates -u",
+    "update-packages": "npx -y npm-check-updates -u && cd src-widgets && npx -y npm-check-updates -u && cd ../src-admin && npx -y npm-check-updates -u && cd ../src-devices && npx -y npm-check-updates -u&& cd ../src-web && npx -y npm-check-updates -u && cd ../src-webcomponents && npx -y npm-check-updates -u",
     "release": "release-script",
     "release-patch": "release-script patch --yes",
     "release-minor": "release-script minor --yes",
     "release-major": "release-script major --yes",
     "translate": "translate-adapter",
-    "npm": "npm i && cd src-widgets && npm i && cd ../src-admin && npm i && cd ../src-devices && npm i && cd ../src-web && npm i"
+    "npm": "npm i && cd src-widgets && npm i && cd ../src-admin && npm i && cd ../src-devices && npm i && cd ../src-web && npm i && cd ../src-webcomponents && npm i"
   },
   "license": "MIT"
 }

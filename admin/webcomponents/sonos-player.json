@@ -1,0 +1,250 @@
+{
+    "$schema": "https://raw.githubusercontent.com/ioBroker/web-components/main/schemas/manifest.json",
+    "manifestVersion": 1,
+    "tag": "iob-sonos-player",
+    "name": {
+        "en": "SONOS player",
+        "de": "SONOS player",
+        "ru": "SONOS player",
+        "pt": "SONOS player",
+        "nl": "SONOS player",
+        "fr": "SONOS player",
+        "it": "SONOS player",
+        "es": "SONOS player",
+        "pl": "SONOS player",
+        "uk": "SONOS player",
+        "zh-cn": "SONOS player"
+    },
+    "description": {
+        "en": "Player of one SONOS speaker",
+        "de": "Player eines SONOS-Lautsprechers",
+        "ru": "Плеер одной колонки SONOS",
+        "pt": "Leitor de uma coluna SONOS",
+        "nl": "Speler van één SONOS-luidspreker",
+        "fr": "Lecteur d’une enceinte SONOS",
+        "it": "Lettore di un altoparlante SONOS",
+        "es": "Reproductor de un altavoz SONOS",
+        "pl": "Odtwarzacz jednego głośnika SONOS",
+        "uk": "Плеєр однієї колонки SONOS",
+        "zh-cn": "单个 SONOS 扬声器的播放器"
+    },
+    "icon": "../dm-widgets/player.png",
+    "module": "sonos-player.js",
+    "size": {
+        "width": 400,
+        "height": 240
+    },
+    "settings": {
+        "type": "panel",
+        "items": {
+            "room": {
+                "type": "objectId",
+                "types": "channel",
+                "root": "sonos",
+                "label": {
+                    "en": "Speaker",
+                    "de": "Lautsprecher",
+                    "ru": "Колонка",
+                    "pt": "Coluna",
+                    "nl": "Luidspreker",
+                    "fr": "Enceinte",
+                    "it": "Altoparlante",
+                    "es": "Altavoz",
+                    "pl": "Głośnik",
+                    "uk": "Колонка",
+                    "zh-cn": "扬声器"
+                },
+                "help": {
+                    "en": "The channel of the speaker: sonos.0.root.<IP address with underscores>",
+                    "de": "Der Kanal des Lautsprechers: sonos.0.root.<IP-Adresse mit Unterstrichen>",
+                    "ru": "Канал колонки: sonos.0.root.<IP-адрес с подчёркиваниями>",
+                    "pt": "O canal da coluna: sonos.0.root.<endereço IP com sublinhados>",
+                    "nl": "Het kanaal van de luidspreker: sonos.0.root.<IP-adres met underscores>",
+                    "fr": "Le canal de l'enceinte : sonos.0.root.<adresse IP avec des tirets bas>",
+                    "it": "Il canale dell'altoparlante: sonos.0.root.<indirizzo IP con trattini bassi>",
+                    "es": "El canal del altavoz: sonos.0.root.<dirección IP con guiones bajos>",
+                    "pl": "Kanał głośnika: sonos.0.root.<adres IP z podkreśleniami>",
+                    "uk": "Канал колонки: sonos.0.root.<IP-адреса з підкресленнями>",
+                    "zh-cn": "扬声器的通道：sonos.0.root.<用下划线代替点的 IP 地址>"
+                }
+            },
+            "title": {
+                "type": "text",
+                "label": {
+                    "en": "Name",
+                    "de": "Name",
+                    "ru": "Имя",
+                    "pt": "Nome",
+                    "nl": "Naam",
+                    "fr": "Nom",
+                    "it": "Nome",
+                    "es": "Nombre",
+                    "pl": "Nazwa",
+                    "uk": "Назва",
+                    "zh-cn": "名称"
+                },
+                "help": {
+                    "en": "Instead of the name of the speaker",
+                    "de": "Statt des Namens des Lautsprechers",
+                    "ru": "Вместо названия колонки",
+                    "pt": "Em vez do nome da coluna",
+                    "nl": "In plaats van de naam van de luidspreker",
+                    "fr": "À la place du nom de l'enceinte",
+                    "it": "Al posto del nome dell'altoparlante",
+                    "es": "En lugar del nombre del altavoz",
+                    "pl": "Zamiast nazwy głośnika",
+                    "uk": "Замість назви колонки",
+                    "zh-cn": "代替扬声器的名称"
+                }
+            },
+            "showCover": {
+                "type": "checkbox",
+                "default": true,
+                "label": {
+                    "en": "Show cover",
+                    "de": "Cover anzeigen",
+                    "ru": "Показывать обложку",
+                    "pt": "Mostrar capa",
+                    "nl": "Hoes tonen",
+                    "fr": "Afficher la pochette",
+                    "it": "Mostra copertina",
+                    "es": "Mostrar carátula",
+                    "pl": "Pokaż okładkę",
+                    "uk": "Показувати обкладинку",
+                    "zh-cn": "显示封面"
+                }
+            },
+            "showSeek": {
+                "type": "checkbox",
+                "default": true,
+                "label": {
+                    "en": "Show progress",
+                    "de": "Fortschritt anzeigen",
+                    "ru": "Показывать прогресс",
+                    "pt": "Mostrar progresso",
+                    "nl": "Voortgang tonen",
+                    "fr": "Afficher la progression",
+                    "it": "Mostra avanzamento",
+                    "es": "Mostrar progreso",
+                    "pl": "Pokaż postęp",
+                    "uk": "Показувати прогрес",
+                    "zh-cn": "显示进度"
+                }
+            },
+            "showModes": {
+                "type": "checkbox",
+                "default": true,
+                "label": {
+                    "en": "Show shuffle and repeat",
+                    "de": "Zufall und Wiederholung anzeigen",
+                    "ru": "Показывать перемешивание и повтор",
+                    "pt": "Mostrar aleatório e repetição",
+                    "nl": "Shuffle en herhalen tonen",
+                    "fr": "Afficher aléatoire et répétition",
+                    "it": "Mostra casuale e ripetizione",
+                    "es": "Mostrar aleatorio y repetición",
+                    "pl": "Pokaż losowo i powtarzanie",
+                    "uk": "Показувати перемішування та повтор",
+                    "zh-cn": "显示随机播放和重复"
+                }
+            },
+            "showVolume": {
+                "type": "checkbox",
+                "default": true,
+                "label": {
+                    "en": "Show volume",
+                    "de": "Lautstärke anzeigen",
+                    "ru": "Показывать громкость",
+                    "pt": "Mostrar volume",
+                    "nl": "Volume tonen",
+                    "fr": "Afficher le volume",
+                    "it": "Mostra volume",
+                    "es": "Mostrar volumen",
+                    "pl": "Pokaż głośność",
+                    "uk": "Показувати гучність",
+                    "zh-cn": "显示音量"
+                }
+            },
+            "showSource": {
+                "type": "checkbox",
+                "default": true,
+                "label": {
+                    "en": "Show source selection",
+                    "de": "Quellenauswahl anzeigen",
+                    "ru": "Показывать выбор источника",
+                    "pt": "Mostrar seleção de fonte",
+                    "nl": "Bronkeuze tonen",
+                    "fr": "Afficher le choix de la source",
+                    "it": "Mostra selezione sorgente",
+                    "es": "Mostrar selección de fuente",
+                    "pl": "Pokaż wybór źródła",
+                    "uk": "Показувати вибір джерела",
+                    "zh-cn": "显示音源选择"
+                }
+            },
+            "showRooms": {
+                "type": "checkbox",
+                "default": false,
+                "label": {
+                    "en": "Show rooms",
+                    "de": "Räume anzeigen",
+                    "ru": "Показать комнаты",
+                    "pt": "Mostrar salas",
+                    "nl": "Kamers tonen",
+                    "fr": "Montrer les salles",
+                    "it": "Show room",
+                    "es": "Salas de exposición",
+                    "pl": "Pokaż pokoje",
+                    "uk": "Показові кімнати",
+                    "zh-cn": "展示厅"
+                }
+            },
+            "showGroups": {
+                "type": "checkbox",
+                "default": false,
+                "label": {
+                    "en": "Show groups",
+                    "de": "Gruppen anzeigen",
+                    "ru": "Показать группы",
+                    "pt": "Mostrar grupos",
+                    "nl": "Groepen weergeven",
+                    "fr": "Afficher les groupes",
+                    "it": "Mostra gruppi",
+                    "es": "Mostrar grupos",
+                    "pl": "Pokaż grupy",
+                    "uk": "Показати групи",
+                    "zh-cn": "显示组"
+                }
+            },
+            "accent": {
+                "type": "color",
+                "label": {
+                    "en": "Accent color",
+                    "de": "Akzentfarbe",
+                    "ru": "Цвет акцента",
+                    "pt": "Cor de destaque",
+                    "nl": "Accentkleur",
+                    "fr": "Couleur d'accent",
+                    "it": "Colore di accento",
+                    "es": "Color de acento",
+                    "pl": "Kolor akcentu",
+                    "uk": "Колір акценту",
+                    "zh-cn": "强调色"
+                },
+                "help": {
+                    "en": "Of the sliders and the active buttons; empty: the primary color of the host",
+                    "de": "Der Schieberegler und der aktiven Tasten; leer: die Hauptfarbe der Oberfläche",
+                    "ru": "Ползунков и активных кнопок; пусто: основной цвет интерфейса",
+                    "pt": "Dos controles deslizantes e dos botões ativos; vazio: a cor principal da interface",
+                    "nl": "Van de schuifregelaars en de actieve knoppen; leeg: de hoofdkleur van de interface",
+                    "fr": "Des curseurs et des boutons actifs ; vide : la couleur principale de l'interface",
+                    "it": "Dei cursori e dei pulsanti attivi; vuoto: il colore principale dell'interfaccia",
+                    "es": "De los controles deslizantes y los botones activos; vacío: el color principal de la interfaz",
+                    "pl": "Suwaków i aktywnych przycisków; puste: główny kolor interfejsu",
+                    "uk": "Повзунків і активних кнопок; порожньо: основний колір інтерфейсу",
+                    "zh-cn": "滑块和激活按钮的颜色；为空时使用界面的主色"
+                }
+            }
+        }
+    }
+}

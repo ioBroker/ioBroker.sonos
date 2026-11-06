@@ -108,6 +108,33 @@ It also forms groups: the link button of a speaker marks it as the group master,
 button of every other speaker then adds it to that group or removes it again. Clicking the master a
 second time leaves the mode.
 
+## Web components
+
+The same two widgets also exist as web components for every host that supports
+[`@iobroker/web-components`](https://github.com/ioBroker/web-components) - Aura, vis-2,
+ioBroker.devices, admin. The adapter lists them in `common.webComponents`; each one is a single ES
+module with a manifest next to it in `admin/webcomponents/`. React comes from the host, the
+component itself only talks to the socket of the host - nothing has to run in the adapter for it.
+
+| Element              | Name         | What it shows                                                                                                                                         |
+|----------------------|--------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `<iob-sonos-player>` | SONOS player | One speaker: cover, title, artist, progress, previous / play-pause / next, shuffle, repeat, mute, volume and the source selection                     |
+| `<iob-sonos-rooms>`  | SONOS rooms  | Every speaker of an instance: what it plays, play/pause, volume, the source selection and the grouping with the link buttons, as in the devices widget |
+
+**SONOS player** is configured with the channel of the speaker (`sonos.0.root.<speaker>`) - the
+instance comes from it - and an optional title. Cover, progress, shuffle/repeat, volume and the
+source button can be switched off, and two optional rows from the vis-2 player can be switched on:
+the chips to switch to another speaker of the instance, and the group toggles. The player follows
+the size of its box: the parts that do not fit are left out, down to a strip with the speaker, the
+title, a play button and a button that opens the whole player in a dialog. On the TV input of a
+soundbar it shows night sound and speech enhancement instead of the transport.
+
+**SONOS rooms** is configured with the instance. Volume, the source button and grouping can be
+switched off, and speakers that are not reachable can be hidden. A low box shows only how many
+speakers are playing; a click opens the list in a dialog.
+
+Both take an accent color; everything else comes from the theme of the host, light or dark.
+
 ## Control tab in admin
 
 The instance settings have a third tab, **Control**. It is the same player as in vis, but inside
@@ -319,23 +346,25 @@ Please note: highlighting current playing favorite is not supported.
 
 ## Development
 
-Four front-ends live next to the adapter, all built with vite - the first three additionally with
+Five front-ends live next to the adapter, all built with vite - the first three additionally with
 module federation:
 
-| Sources        | Build output        | Loaded by                                    |
-|----------------|---------------------|----------------------------------------------|
-| `src-widgets/` | `widgets/sonos/`    | vis-2                                        |
-| `src-admin/`   | `admin/custom/`     | the **Control** tab of the instance settings |
-| `src-devices/` | `admin/dm-widgets/` | the dashboard of ioBroker.devices            |
-| `src-web/`     | `www/`              | the **web** adapter, at `/sonos/`            |
+| Sources              | Build output           | Loaded by                                                      |
+|----------------------|------------------------|----------------------------------------------------------------|
+| `src-widgets/`       | `widgets/sonos/`       | vis-2                                                          |
+| `src-admin/`         | `admin/custom/`        | the **Control** tab of the instance settings                   |
+| `src-devices/`       | `admin/dm-widgets/`    | the dashboard of ioBroker.devices                              |
+| `src-web/`           | `www/`                 | the **web** adapter, at `/sonos/`                              |
+| `src-webcomponents/` | `admin/webcomponents/` | every host of web components (Aura, vis-2, devices, admin)     |
 
 ```bash
-npm run npm            # install the adapter and all four front-ends
-npm run build          # all four of them plus the adapter - what CI and npm publish run
+npm run npm            # install the adapter and all five front-ends
+npm run build          # all five of them plus the adapter - what CI and npm publish run
 npm run build:widgets  # the vis-2 widget set         -> widgets/sonos/
 npm run build:web      # the control page             -> www/
 npm run build:admin    # the Control tab component    -> admin/custom/
 npm run build:devices  # the ioBroker.devices widgets -> admin/dm-widgets/
+npm run build:wc       # the web components           -> admin/webcomponents/
 npm run build:all      # the same as build, in a single tasks.mts run
 ```
 
@@ -347,6 +376,12 @@ rejects syntax that could not be stripped.
 pre-builds the whole shared GUI stack and takes several minutes. `npm run build` rebuilds them
 together with everything else, `npm run build:admin` / `npm run build:devices` rebuild only one of
 them - either way, commit the output when something below `src-admin/` or `src-devices/` changed.
+
+`admin/webcomponents/` is committed as well. Every web component is a vite build of its own
+(`vite build --mode player|rooms`), because a host imports exactly one file per component; the
+build also writes the manifest next to the module and fails if it does not pass the check of
+`@iobroker/web-components`. The texts are taken from the i18n files of `src-devices` and
+`src-widgets`, the names from the ioBroker.devices widgets in `io-package.json`.
 
 `src-devices` has a dev harness: `cd src-devices && npm start` opens the widgets on
 `http://localhost:3000` against a real ioBroker admin on `localhost:8081`, so they can be developed
@@ -411,6 +446,9 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
+### **WORK IN PROGRESS**
+* (@GermanBluefox) Added the web components `<iob-sonos-player>` and `<iob-sonos-rooms>` (`common.webComponents`): the SONOS player and SONOS rooms widgets for Aura and every other host of `@iobroker/web-components`
+
 ### 4.5.1 (2026-11-04)
 * (@GermanBluefox) Fixed "Cannot process transport-state: Parameter "timeout" needs to be of type "number"": settings saved by the old admin page hold the update interval of the elapsed time as a string, which js-controller rejects. The error aborted every update of the playback, so title, artist and cover stayed at the first track after a restart
 
