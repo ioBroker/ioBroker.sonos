@@ -1,0 +1,171 @@
+{
+    "$schema": "https://raw.githubusercontent.com/ioBroker/web-components/main/schemas/manifest.json",
+    "manifestVersion": 1,
+    "tag": "iob-sonos-control",
+    "name": {
+        "en": "SONOS control centre",
+        "de": "SONOS-Steuerzentrale",
+        "ru": "Центр управления SONOS",
+        "pt": "Central de controlo SONOS",
+        "nl": "SONOS-bedieningscentrum",
+        "fr": "Centre de contrôle SONOS",
+        "it": "Centro di controllo SONOS",
+        "es": "Centro de control SONOS",
+        "pl": "Centrum sterowania SONOS",
+        "uk": "Центр керування SONOS",
+        "zh-cn": "SONOS 控制中心"
+    },
+    "description": {
+        "en": "All speakers of an instance at a glance; the selected one with player, group and library (favorites, playlists, queue, music services)",
+        "de": "Alle Lautsprecher einer Instanz auf einen Blick; der gewählte mit Player, Gruppe und Mediathek (Favoriten, Wiedergabelisten, Warteschlange, Musikdienste)",
+        "ru": "Все колонки экземпляра с первого взгляда; выбранная - с плеером, группой и библиотекой (избранное, плейлисты, очередь, музыкальные сервисы)",
+        "pt": "Todas as colunas de uma instância num relance; a selecionada com leitor, grupo e biblioteca (favoritos, listas de reprodução, fila, serviços de música)",
+        "nl": "Alle luidsprekers van een instantie in één oogopslag; de gekozen met speler, groep en bibliotheek (favorieten, afspeellijsten, wachtrij, muziekdiensten)",
+        "fr": "Toutes les enceintes d'une instance d'un coup d'œil ; celle choisie avec lecteur, groupe et bibliothèque (favoris, listes de lecture, file d'attente, services musicaux)",
+        "it": "Tutti gli altoparlanti di un'istanza a colpo d'occhio; quello scelto con lettore, gruppo e libreria (preferiti, playlist, coda, servizi musicali)",
+        "es": "Todos los altavoces de una instancia de un vistazo; el elegido con reproductor, grupo y biblioteca (favoritos, listas de reproducción, cola, servicios de música)",
+        "pl": "Wszystkie głośniki instancji w jednym miejscu; wybrany z odtwarzaczem, grupą i biblioteką (ulubione, playlisty, kolejka, serwisy muzyczne)",
+        "uk": "Усі колонки екземпляра з першого погляду; вибрана - з плеєром, групою та бібліотекою (обране, плейлисти, черга, музичні сервіси)",
+        "zh-cn": "一目了然地查看实例的所有扬声器；所选扬声器带播放器、群组和媒体库（收藏、播放列表、队列、音乐服务）"
+    },
+    "icon": "../sonos.png",
+    "module": "sonos-control.js",
+    "size": {
+        "width": 800,
+        "height": 520
+    },
+    "settings": {
+        "type": "panel",
+        "items": {
+            "instance": {
+                "type": "instance",
+                "adapter": "sonos",
+                "default": "sonos.0",
+                "label": {
+                    "en": "SONOS instance",
+                    "de": "SONOS-Instanz",
+                    "ru": "Экземпляр SONOS",
+                    "pt": "Instância SONOS",
+                    "nl": "SONOS-instantie",
+                    "fr": "Instance SONOS",
+                    "it": "Istanza SONOS",
+                    "es": "Instancia SONOS",
+                    "pl": "Instancja SONOS",
+                    "uk": "Екземпляр SONOS",
+                    "zh-cn": "SONOS 实例"
+                }
+            },
+            "room": {
+                "type": "objectId",
+                "types": "channel",
+                "root": "sonos",
+                "label": {
+                    "en": "Speaker shown first",
+                    "de": "Zuerst gezeigter Lautsprecher",
+                    "ru": "Колонка, показываемая первой",
+                    "pt": "Coluna mostrada primeiro",
+                    "nl": "Eerst getoonde luidspreker",
+                    "fr": "Enceinte affichée d'abord",
+                    "it": "Altoparlante mostrato per primo",
+                    "es": "Altavoz mostrado primero",
+                    "pl": "Głośnik pokazywany jako pierwszy",
+                    "uk": "Колонка, що показується першою",
+                    "zh-cn": "首先显示的扬声器"
+                },
+                "help": {
+                    "en": "Empty: the first speaker of the instance",
+                    "de": "Leer: der erste Lautsprecher der Instanz",
+                    "ru": "Пусто: первая колонка экземпляра",
+                    "pt": "Vazio: a primeira coluna da instância",
+                    "nl": "Leeg: de eerste luidspreker van de instantie",
+                    "fr": "Vide : la première enceinte de l'instance",
+                    "it": "Vuoto: il primo altoparlante dell'istanza",
+                    "es": "Vacío: el primer altavoz de la instancia",
+                    "pl": "Puste: pierwszy głośnik instancji",
+                    "uk": "Порожньо: перша колонка екземпляра",
+                    "zh-cn": "为空：实例的第一个扬声器"
+                }
+            },
+            "showRooms": {
+                "type": "checkbox",
+                "default": true,
+                "label": {
+                    "en": "Show the list of speakers",
+                    "de": "Liste der Lautsprecher anzeigen",
+                    "ru": "Показать список колонок",
+                    "pt": "Mostrar a lista de colunas",
+                    "nl": "Lijst van luidsprekers tonen",
+                    "fr": "Afficher la liste des enceintes",
+                    "it": "Mostra l'elenco degli altoparlanti",
+                    "es": "Mostrar la lista de altavoces",
+                    "pl": "Pokaż listę głośników",
+                    "uk": "Показати список колонок",
+                    "zh-cn": "显示扬声器列表"
+                }
+            },
+            "showGroups": {
+                "type": "checkbox",
+                "default": true,
+                "label": {
+                    "en": "Show groups",
+                    "de": "Gruppen anzeigen",
+                    "ru": "Показать группы",
+                    "pt": "Mostrar grupos",
+                    "nl": "Groepen weergeven",
+                    "fr": "Afficher les groupes",
+                    "it": "Mostra gruppi",
+                    "es": "Mostrar grupos",
+                    "pl": "Pokaż grupy",
+                    "uk": "Показати групи",
+                    "zh-cn": "显示群组"
+                }
+            },
+            "showLibrary": {
+                "type": "checkbox",
+                "default": true,
+                "label": {
+                    "en": "Show library",
+                    "de": "Mediathek anzeigen",
+                    "ru": "Показать библиотеку",
+                    "pt": "Mostrar biblioteca",
+                    "nl": "Bibliotheek tonen",
+                    "fr": "Afficher la bibliothèque",
+                    "it": "Mostra libreria",
+                    "es": "Mostrar biblioteca",
+                    "pl": "Pokaż bibliotekę",
+                    "uk": "Показати бібліотеку",
+                    "zh-cn": "显示媒体库"
+                }
+            },
+            "accent": {
+                "type": "color",
+                "label": {
+                    "en": "Accent color",
+                    "de": "Akzentfarbe",
+                    "ru": "Цвет акцента",
+                    "pt": "Cor de destaque",
+                    "nl": "Accentkleur",
+                    "fr": "Couleur d'accent",
+                    "it": "Colore di accento",
+                    "es": "Color de acento",
+                    "pl": "Kolor akcentu",
+                    "uk": "Колір акценту",
+                    "zh-cn": "强调色"
+                },
+                "help": {
+                    "en": "Of the sliders and the active buttons; empty: the primary color of the host",
+                    "de": "Der Schieberegler und der aktiven Tasten; leer: die Hauptfarbe der Oberfläche",
+                    "ru": "Ползунков и активных кнопок; пусто: основной цвет интерфейса",
+                    "pt": "Dos controles deslizantes e dos botões ativos; vazio: a cor principal da interface",
+                    "nl": "Van de schuifregelaars en de actieve knoppen; leeg: de hoofdkleur van de interface",
+                    "fr": "Des curseurs et des boutons actifs ; vide : la couleur principale de l'interface",
+                    "it": "Dei cursori e dei pulsanti attivi; vuoto: il colore principale dell'interfaccia",
+                    "es": "De los controles deslizantes y los botones activos; vacío: el color principal de la interfaz",
+                    "pl": "Suwaków i aktywnych przycisków; puste: główny kolor interfejsu",
+                    "uk": "Повзунків і активних кнопок; порожньо: основний колір інтерфейсу",
+                    "zh-cn": "滑块和激活按钮的颜色；为空时使用界面的主色"
+                }
+            }
+        }
+    }
+}

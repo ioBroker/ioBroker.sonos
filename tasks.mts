@@ -1,15 +1,19 @@
 /*!
  * Build tasks of ioBroker.sonos
  *
- * Four independent front-ends live next to the adapter, all built with vite - the first three
+ * Five independent front-ends live next to the adapter, all built with vite - the first three
  * additionally with module federation:
  *
- *   src-widgets/  -> widgets/sonos/       the vis-2 widget set (loaded by vis-2)
- *   src-admin/    -> admin/custom/        the JsonConfig `custom` component of the "Control" tab
- *   src-devices/  -> admin/dm-widgets/    the widgets ioBroker.devices shows in its dashboard
- *   src-web/      -> www/                 the control page the `web` adapter serves at /sonos/
+ *   src-widgets/       -> widgets/sonos/          the vis-2 widget set (loaded by vis-2)
+ *   src-admin/         -> admin/custom/           the JsonConfig `custom` component of the "Control" tab
+ *   src-devices/       -> admin/dm-widgets/       the widgets ioBroker.devices shows in its dashboard
+ *   src-web/           -> www/                    the control page the `web` adapter serves at /sonos/
+ *   src-webcomponents/ -> admin/webcomponents/    the web components `<iob-sonos-player>`,
+ *                                                 `<iob-sonos-rooms>` and `<iob-sonos-control>`
+ *                                                 (`common.webComponents`), one ES module plus
+ *                                                 manifest each, for every host
  *
- * `npm run build` builds the adapter and all four front-ends - that is what CI and `npm publish`
+ * `npm run build` builds the adapter and all five front-ends - that is what CI and `npm publish`
  * run. The two admin bundles take several minutes each because module federation pre-builds the
  * whole shared GUI stack, so their result is committed instead of being rebuilt on install:
  * `npm run build:admin` / `npm run build:devices` rebuild just one of them, and the output has to
@@ -19,6 +23,7 @@
  * along, so it must stay free of syntax that a compiler would have to rewrite (`enum`,
  * `namespace`, parameter properties). `npm run check:ts` enforces that with `erasableSyntaxOnly`.
  */
+import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { deleteFoldersRecursive, npmInstall, buildReact, copyFiles, patchHtmlFile } from '@iobroker/build-tools';
 
@@ -32,6 +37,10 @@ const SRC_ADMIN = `${ROOT}/src-admin`;
 const SRC_DEVICES = `${ROOT}/src-devices`;
 /** Directory of the control page for the web adapter */
 const SRC_WEB = `${ROOT}/src-web`;
+/** Directory of the web components */
+const SRC_WC = `${ROOT}/src-webcomponents`;
+/** The web components, each one a build of its own: `vite build --mode <name>` (see its vite.config.ts) */
+const WEB_COMPONENTS = ['player', 'rooms', 'control'];
 
 /**
  * Copies the built vis-2 widgets into `widgets/sonos/`.
@@ -80,6 +89,15 @@ async function copyWeb(): Promise<void> {
     await patchHtmlFile('www/index.html', '..');
 }
 
+/**
+ * Copies the built web components into `admin/webcomponents/`: the module and the manifest of each,
+ * which `common.webComponents` in io-package.json lists. Hosts load them from
+ * `/adapter/sonos/webcomponents/`.
+ */
+function copyWebComponents(): void {
+    copyFiles(['src-webcomponents/build/*.js', 'src-webcomponents/build/*.json'], 'admin/webcomponents/');
+}
+
 async function installIfNeeded(dir: string): Promise<void> {
     if (!existsSync(`${dir}/node_modules`)) {
         await npmInstall(dir);
@@ -117,6 +135,24 @@ async function buildWeb(): Promise<void> {
     await copyWeb();
 }
 
+/**
+ * Builds the web components. A host imports exactly one URL per component, so each one is a vite
+ * build of its own (`--mode`), which `buildReact` cannot pass. The build writes the manifests and
+ * fails if one of them does not pass the check of `@iobroker/web-components`.
+ */
+async function buildWebComponents(): Promise<void> {
+    deleteFoldersRecursive(`${ROOT}/admin/webcomponents`);
+    deleteFoldersRecursive(`${SRC_WC}/build`);
+    await installIfNeeded(SRC_WC);
+    for (const name of WEB_COMPONENTS) {
+        execFileSync(process.execPath, [`${SRC_WC}/node_modules/vite/bin/vite.js`, 'build', '--mode', name], {
+            cwd: SRC_WC,
+            stdio: 'inherit',
+        });
+    }
+    copyWebComponents();
+}
+
 async function main(): Promise<void> {
     if (process.argv.includes('--copy-files')) {
         copyWidgets();
@@ -134,11 +170,16 @@ async function main(): Promise<void> {
         await buildWeb();
         return;
     }
+    if (process.argv.includes('--wc')) {
+        await buildWebComponents();
+        return;
+    }
     if (process.argv.includes('--all')) {
         await buildWidgets();
         await buildWeb();
         await buildAdmin();
         await buildDevices();
+        await buildWebComponents();
         return;
     }
     await buildWidgets();

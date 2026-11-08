@@ -1,0 +1,186 @@
+{
+    "$schema": "https://raw.githubusercontent.com/ioBroker/web-components/main/schemas/manifest.json",
+    "manifestVersion": 1,
+    "tag": "iob-sonos-rooms",
+    "name": {
+        "en": "SONOS rooms",
+        "de": "SONOS rooms",
+        "ru": "SONOS rooms",
+        "pt": "SONOS rooms",
+        "nl": "SONOS rooms",
+        "fr": "SONOS rooms",
+        "it": "SONOS rooms",
+        "es": "SONOS rooms",
+        "pl": "SONOS rooms",
+        "uk": "SONOS rooms",
+        "zh-cn": "SONOS rooms"
+    },
+    "description": {
+        "en": "Overview and grouping of all SONOS speakers",
+        "de": "Übersicht und Gruppierung aller SONOS-Lautsprecher",
+        "ru": "Обзор и группировка всех колонок SONOS",
+        "pt": "Visão geral e agrupamento de todas as colunas SONOS",
+        "nl": "Overzicht en groeperen van alle SONOS-luidsprekers",
+        "fr": "Vue d’ensemble et groupement de toutes les enceintes SONOS",
+        "it": "Panoramica e raggruppamento di tutti gli altoparlanti SONOS",
+        "es": "Visión general y agrupación de todos los altavoces SONOS",
+        "pl": "Przegląd i grupowanie wszystkich głośników SONOS",
+        "uk": "Огляд та групування всіх колонок SONOS",
+        "zh-cn": "所有 SONOS 扬声器的概览与分组"
+    },
+    "icon": "../dm-widgets/rooms.png",
+    "module": "sonos-rooms.js",
+    "size": {
+        "width": 400,
+        "height": 300
+    },
+    "settings": {
+        "type": "panel",
+        "items": {
+            "instance": {
+                "type": "instance",
+                "adapter": "sonos",
+                "default": "sonos.0",
+                "label": {
+                    "en": "SONOS instance",
+                    "de": "SONOS-Instanz",
+                    "ru": "Экземпляр SONOS",
+                    "pt": "Instância SONOS",
+                    "nl": "SONOS-instantie",
+                    "fr": "Instance SONOS",
+                    "it": "Istanza SONOS",
+                    "es": "Instancia SONOS",
+                    "pl": "Instancja SONOS",
+                    "uk": "Екземпляр SONOS",
+                    "zh-cn": "SONOS 实例"
+                }
+            },
+            "title": {
+                "type": "text",
+                "label": {
+                    "en": "Name",
+                    "de": "Name",
+                    "ru": "Имя",
+                    "pt": "Nome",
+                    "nl": "Naam",
+                    "fr": "Nom",
+                    "it": "Nome",
+                    "es": "Nombre",
+                    "pl": "Nazwa",
+                    "uk": "Назва",
+                    "zh-cn": "名称"
+                },
+                "help": {
+                    "en": "Instead of \"SONOS\"",
+                    "de": "Statt \"SONOS\"",
+                    "ru": "Вместо \"SONOS\"",
+                    "pt": "Em vez de \"SONOS\"",
+                    "nl": "In plaats van \"SONOS\"",
+                    "fr": "À la place de \"SONOS\"",
+                    "it": "Al posto di \"SONOS\"",
+                    "es": "En lugar de \"SONOS\"",
+                    "pl": "Zamiast \"SONOS\"",
+                    "uk": "Замість \"SONOS\"",
+                    "zh-cn": "代替 \"SONOS\""
+                }
+            },
+            "showVolume": {
+                "type": "checkbox",
+                "default": true,
+                "label": {
+                    "en": "Show volume",
+                    "de": "Lautstärke anzeigen",
+                    "ru": "Показывать громкость",
+                    "pt": "Mostrar volume",
+                    "nl": "Volume tonen",
+                    "fr": "Afficher le volume",
+                    "it": "Mostra volume",
+                    "es": "Mostrar volumen",
+                    "pl": "Pokaż głośność",
+                    "uk": "Показувати гучність",
+                    "zh-cn": "显示音量"
+                }
+            },
+            "showSource": {
+                "type": "checkbox",
+                "default": true,
+                "label": {
+                    "en": "Show source selection",
+                    "de": "Quellenauswahl anzeigen",
+                    "ru": "Показывать выбор источника",
+                    "pt": "Mostrar seleção de fonte",
+                    "nl": "Bronkeuze tonen",
+                    "fr": "Afficher le choix de la source",
+                    "it": "Mostra selezione sorgente",
+                    "es": "Mostrar selección de fuente",
+                    "pl": "Pokaż wybór źródła",
+                    "uk": "Показувати вибір джерела",
+                    "zh-cn": "显示音源选择"
+                }
+            },
+            "allowGrouping": {
+                "type": "checkbox",
+                "default": true,
+                "label": {
+                    "en": "Allow grouping",
+                    "de": "Gruppieren erlauben",
+                    "ru": "Разрешить группировку",
+                    "pt": "Permitir agrupamento",
+                    "nl": "Groeperen toestaan",
+                    "fr": "Autoriser le groupement",
+                    "it": "Consenti il raggruppamento",
+                    "es": "Permitir agrupación",
+                    "pl": "Zezwól na grupowanie",
+                    "uk": "Дозволити групування",
+                    "zh-cn": "允许分组"
+                }
+            },
+            "hideOffline": {
+                "type": "checkbox",
+                "default": false,
+                "label": {
+                    "en": "Hide unreachable speakers",
+                    "de": "Nicht erreichbare Lautsprecher ausblenden",
+                    "ru": "Скрывать недоступные колонки",
+                    "pt": "Ocultar colunas inacessíveis",
+                    "nl": "Onbereikbare luidsprekers verbergen",
+                    "fr": "Masquer les enceintes injoignables",
+                    "it": "Nascondi altoparlanti non raggiungibili",
+                    "es": "Ocultar altavoces no accesibles",
+                    "pl": "Ukryj nieosiągalne głośniki",
+                    "uk": "Приховувати недоступні колонки",
+                    "zh-cn": "隐藏无法访问的扬声器"
+                }
+            },
+            "accent": {
+                "type": "color",
+                "label": {
+                    "en": "Accent color",
+                    "de": "Akzentfarbe",
+                    "ru": "Цвет акцента",
+                    "pt": "Cor de destaque",
+                    "nl": "Accentkleur",
+                    "fr": "Couleur d'accent",
+                    "it": "Colore di accento",
+                    "es": "Color de acento",
+                    "pl": "Kolor akcentu",
+                    "uk": "Колір акценту",
+                    "zh-cn": "强调色"
+                },
+                "help": {
+                    "en": "Of the sliders and the active buttons; empty: the primary color of the host",
+                    "de": "Der Schieberegler und der aktiven Tasten; leer: die Hauptfarbe der Oberfläche",
+                    "ru": "Ползунков и активных кнопок; пусто: основной цвет интерфейса",
+                    "pt": "Dos controles deslizantes e dos botões ativos; vazio: a cor principal da interface",
+                    "nl": "Van de schuifregelaars en de actieve knoppen; leeg: de hoofdkleur van de interface",
+                    "fr": "Des curseurs et des boutons actifs ; vide : la couleur principale de l'interface",
+                    "it": "Dei cursori e dei pulsanti attivi; vuoto: il colore principale dell'interfaccia",
+                    "es": "De los controles deslizantes y los botones activos; vacío: el color principal de la interfaz",
+                    "pl": "Suwaków i aktywnych przycisków; puste: główny kolor interfejsu",
+                    "uk": "Повзунків і активних кнопок; порожньо: основний колір інтерфейсу",
+                    "zh-cn": "滑块和激活按钮的颜色；为空时使用界面的主色"
+                }
+            }
+        }
+    }
+}
