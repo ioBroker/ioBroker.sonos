@@ -459,7 +459,7 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
-### **WORK IN PROGRESS**
+### 4.6.0 (2026-11-09)
 * (@GermanBluefox) Added the web components `<iob-sonos-player>` and `<iob-sonos-rooms>` (`common.webComponents`): the SONOS player and SONOS rooms widgets for Aura and every other host of `@iobroker/web-components`
 * (@GermanBluefox) Added a SONOS control centre for Aura and other dashboards: all speakers with player, group and library in one place
 * (@GermanBluefox) Fixed wrong translations of the vis-2 widgets and the web components, e.g. "Show rooms" read as "showroom" in Italian, Spanish, Ukrainian and Chinese
@@ -490,9 +490,6 @@ adapter to get a working state back.
 * (@GermanBluefox) Added the battery of Move and Roam: `battery_level` and `battery_charging` (#116, #211)
 * (@GermanBluefox) Added `led` for the status LED - also of a Boost - `button_lock` and `sleep_timer` (#253, #66)
 * (@GermanBluefox) Added `autoplay`: set it to `false` to only load a favorite or playlist with `favorites_set`/`playlist_set` without starting playback (#173)
-
-### 4.2.16 (2026-10-26)
-* (@GermanBluefox) `current_cover` changes with every new cover (`/sonos/coverImage/<ip>.png?v=<hash>`), so vis, Lovelace and the browser show the new cover instead of the old one - for example when switching back to a radio station (#204, #205)
 
 Older changes can be found in [CHANGELOG_OLD.md](CHANGELOG_OLD.md)
 
