@@ -254,9 +254,72 @@
       ]
     },
     "webComponents": [
-      "webcomponents/sonos-player.json",
-      "webcomponents/sonos-rooms.json",
-      "webcomponents/sonos-control.json"
+      {
+        "manifest": "webcomponents/sonos-player.json",
+        "tag": "iob-sonos-player",
+        "name": {
+          "en": "SONOS player",
+          "de": "SONOS player",
+          "ru": "SONOS player",
+          "pt": "SONOS player",
+          "nl": "SONOS player",
+          "fr": "SONOS player",
+          "it": "SONOS player",
+          "es": "SONOS player",
+          "pl": "SONOS player",
+          "uk": "SONOS player",
+          "zh-cn": "SONOS player"
+        },
+        "icon": "../dm-widgets/player.png",
+        "size": {
+          "width": 400,
+          "height": 240
+        }
+      },
+      {
+        "manifest": "webcomponents/sonos-rooms.json",
+        "tag": "iob-sonos-rooms",
+        "name": {
+          "en": "SONOS rooms",
+          "de": "SONOS rooms",
+          "ru": "SONOS rooms",
+          "pt": "SONOS rooms",
+          "nl": "SONOS rooms",
+          "fr": "SONOS rooms",
+          "it": "SONOS rooms",
+          "es": "SONOS rooms",
+          "pl": "SONOS rooms",
+          "uk": "SONOS rooms",
+          "zh-cn": "SONOS rooms"
+        },
+        "icon": "../dm-widgets/rooms.png",
+        "size": {
+          "width": 400,
+          "height": 300
+        }
+      },
+      {
+        "manifest": "webcomponents/sonos-control.json",
+        "tag": "iob-sonos-control",
+        "name": {
+          "en": "SONOS control centre",
+          "de": "SONOS-Steuerzentrale",
+          "ru": "Центр управления SONOS",
+          "pt": "Central de controlo SONOS",
+          "nl": "SONOS-bedieningscentrum",
+          "fr": "Centre de contrôle SONOS",
+          "it": "Centro di controllo SONOS",
+          "es": "Centro de control SONOS",
+          "pl": "Centrum sterowania SONOS",
+          "uk": "Центр керування SONOS",
+          "zh-cn": "SONOS 控制中心"
+        },
+        "icon": "../sonos.png",
+        "size": {
+          "width": 800,
+          "height": 520
+        }
+      }
     ],
     "extIcon": "https://raw.githubusercontent.com/ioBroker/ioBroker.sonos/master/admin/sonos.png",
     "type": "multimedia"

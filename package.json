@@ -41,6 +41,7 @@
     "@iobroker/eslint-config": "^2.3.4",
     "@iobroker/testing": "^6.3.1",
     "@iobroker/types": "^7.2.5",
+    "@iobroker/web-components": "^0.8.0",
     "@tsconfig/node22": "^22.0.6",
     "@types/node": "^22.20.5",
     "typescript": "~6.0.3"
@@ -59,7 +60,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "npm run build:ts && npm run build:widgets && npm run build:web && npm run build:admin && npm run build:devices && npm run build:wc",
+    "build": "npm run build:ts && npm run build:widgets && npm run build:web && npm run build:admin && npm run build:devices && npm run build:wc && iob-web-components sync-io-package",
     "build:ts": "tsc -p tsconfig.build.json",
     "build:widgets": "node tasks.mts",
     "build:admin": "node tasks.mts --admin",
