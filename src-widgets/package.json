@@ -6,7 +6,7 @@
     "dependencies": {
         "@iobroker/types-vis-2": "~2.20.6",
         "@module-federation/vite": "^1.23.9",
-        "@vitejs/plugin-react": "^6.2.1"
+        "@vitejs/plugin-react": "^6.3.0"
     },
     "devDependencies": {
         "@emotion/react": "^11.14.0",
