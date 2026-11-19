@@ -44,6 +44,7 @@ import {
 } from './lib/states';
 import { alarmStateValues, applyAlarmSetting, newAlarm, nextAlarmStart, type AlarmLookup } from './lib/alarm-clock';
 import { parseFormattedTime, toFormattedTime } from './lib/time';
+import { COMMANDS, helpText } from './lib/help';
 import {
     albumArtFromDidl,
     getMediaRoot,
@@ -652,6 +653,19 @@ class Sonos extends utils.Adapter {
         let answered = false;
 
         switch (obj.command) {
+            case 'help':
+                // what the instance offers, for an AI agent (e.g. ioBroker.pi-agent)
+                if (obj.callback) {
+                    this.sendTo(
+                        obj.from,
+                        obj.command,
+                        { help: helpText(this.namespace), commands: COMMANDS },
+                        obj.callback,
+                    );
+                    answered = true;
+                }
+                break;
+
             case 'send':
                 if (obj.message) {
                     void this.text2speech(obj.message as string);
@@ -678,6 +692,16 @@ class Sonos extends utils.Adapter {
 
             default:
                 this.log.warn(`Unknown command: ${obj.command}`);
+                // the message itself as answer looked like success to a caller (e.g. an AI agent)
+                if (obj.callback) {
+                    this.sendTo(
+                        obj.from,
+                        obj.command,
+                        { error: `Unknown command: ${obj.command}`, commands: COMMANDS.map(item => item.command) },
+                        obj.callback,
+                    );
+                    answered = true;
+                }
                 break;
         }
 

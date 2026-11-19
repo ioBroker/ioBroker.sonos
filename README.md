@@ -268,6 +268,15 @@ on({ id: 'sonos.0.root.192_168_1_50.alarm_next' }, obj => {
 `next_start` and `alarm_next` are calculated in the time zone of the ioBroker host, which has to be
 the one of the SONOS household.
 
+## For AI agents
+`sendTo('sonos.0', 'help', {})` answers `{ help: '...', commands: [{ command, write }] }`: a text for an AI agent
+(e.g. ioBroker.pi-agent, or the MCP server with `send_to`) that describes the speakers and their states, groups,
+favorites and playlists, browsing the music library and the music services with `media_browse` and `media_play`,
+announcements, the alarms and the messages, and how to act (rooms instead of channels, changes only on request,
+check the result). `commands` lists the messages, `write: true` for the ones that change something (`send`).
+An unknown message answers `{ error, commands }` with the list of all messages; before it answered with the message
+itself.
+
 ## Using it with the sayIt adapter
 To use the [sayit adapter](https://github.com/ioBroker/ioBroker.sayit) with this SONOS adapter, ensure that the [web adapter](https://github.com/ioBroker/ioBroker.web) is instantiated and running too. The web adapter is required to allow the SONOS adapter to read the generated MP3 file from the sayit adapter.
 
@@ -463,6 +472,7 @@ adapter to get a working state back.
 ### **WORK IN PROGRESS**
 * (@GermanBluefox) Added the short form of the web component manifests (tag, name, icon, size) to `common.webComponents`, so that hosts like Aura can list the components before the adapter is installed; the build writes it with `iob-web-components sync-io-package`
 * (@GermanBluefox) Fixed the adapter stopping with "XmlError: Attribute value expected" when a speaker reports `<Cloud queue error>` (a queue of a streaming service started from the SONOS app that cannot be resumed): the value is kept as text and the rest of the event is processed. Reported to the library as [svrooij/node-sonos-ts#235](https://github.com/svrooij/node-sonos-ts/issues/235)
+* (@GermanBluefox) Added the message `help`: describes the states, groups, media browsing, announcements, alarms and messages for an AI agent (e.g. ioBroker.pi-agent); an unknown message answers with an error and the list of messages instead of the message itself
 
 ### 4.6.0 (2026-11-09)
 * (@GermanBluefox) Added the web components `<iob-sonos-player>` and `<iob-sonos-rooms>` (`common.webComponents`): the SONOS player and SONOS rooms widgets for Aura and every other host of `@iobroker/web-components`

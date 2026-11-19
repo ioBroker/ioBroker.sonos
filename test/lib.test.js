@@ -767,6 +767,63 @@ describe('cover of what was started (#64)', () => {
     });
 });
 
+describe('help for AI agents', () => {
+    const fs = require('node:fs');
+    const path = require('node:path');
+    const { COMMANDS, helpText } = require('../build/lib/help');
+    const { getAlarmStates, getChannelStates, optionalStates } = require('../build/lib/states');
+
+    const help = helpText('sonos.0');
+    const channelStates = {
+        ...getChannelStates(),
+        ...Object.assign({}, ...Object.values(optionalStates)),
+    };
+    const alarmStates = getAlarmStates();
+    const known = new Set([...Object.keys(channelStates), ...Object.keys(alarmStates)]);
+    const named = name => new RegExp(`(^|[^\\w.])${name}(?![\\w])`).test(help);
+
+    it('lists exactly the commands onMessage answers', () => {
+        const source = fs.readFileSync(path.join(__dirname, '../src/main.ts'), 'utf8');
+        const start = source.indexOf('private onMessage(');
+        const end = source.indexOf('private getRoomList(');
+        expect(start).to.be.greaterThan(0);
+        expect(end).to.be.greaterThan(start);
+        const cases = [...source.slice(start, end).matchAll(/case '([^']+)':/g)].map(match => match[1]);
+        expect(COMMANDS.map(item => item.command).sort()).to.deep.equal(cases.sort());
+        COMMANDS.forEach(item => expect(help).to.contain(item.command));
+    });
+
+    it('marks the commands that change something', () => {
+        COMMANDS.forEach(item => expect(item.write, item.command).to.be.a('boolean'));
+        expect(COMMANDS.filter(item => item.write).map(item => item.command)).to.deep.equal(['send']);
+    });
+
+    it('names only states that exist', () => {
+        const words = help.match(/\b[a-z]+(?:_[a-z]+)+\b|\bmembersChannels\b/g);
+        const unknown = [...new Set(words)].filter(word => !known.has(word));
+        expect(unknown).to.deep.equal([]);
+    });
+
+    it('names every state that can be written', () => {
+        const writable = [...Object.entries(channelStates), ...Object.entries(alarmStates)]
+            .filter(([, common]) => common.write)
+            .map(([name]) => name);
+        expect(writable.filter(name => !named(name))).to.deep.equal([]);
+        expect(help).to.contain('sonos.0.alarms.create');
+    });
+
+    it('uses the namespace of the instance', () => {
+        const other = helpText('sonos.1');
+        expect(other).to.contain('sendTo sonos.1 "sonos:getRooms"');
+        expect(other).to.contain('sonos.1.root.<channel>');
+        expect(other).not.to.contain('sonos.0');
+    });
+
+    it('keeps the lines short', () => {
+        help.split('\n').forEach(line => expect(line.length, line).to.be.at.most(120));
+    });
+});
+
 describe('elapsed time', () => {
     const { parseFormattedTime, toFormattedTime } = require('../build/lib/time');
 

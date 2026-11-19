@@ -209,6 +209,43 @@ tests.integration(path.join(__dirname, '..'), {
             });
         });
 
+        suite('Messages for AI agents', getHarness => {
+            let harness;
+
+            /** sendTo through js-controller, as an agent does it */
+            const ask = (command, message) =>
+                new Promise((resolve, reject) => {
+                    const timer = setTimeout(() => reject(new Error(`no answer to ${command}`)), 10000);
+                    harness.sendTo('sonos.0', command, message, answer => {
+                        clearTimeout(timer);
+                        resolve(answer);
+                    });
+                });
+
+            before(async function () {
+                this.timeout(60000);
+                harness = getHarness();
+                await harness.startAdapterAndWait();
+            });
+
+            it('answers help with the description for an agent', async function () {
+                this.timeout(15000);
+                const answer = await ask('help', {});
+                expect(answer.help).to.be.a('string');
+                expect(answer.help).to.contain('sonos.0.root.<channel>');
+                expect(answer.help).to.contain('media_browse');
+                expect(answer.commands).to.deep.include({ command: 'send', write: true });
+                expect(answer.commands).to.deep.include({ command: 'sonos:getRooms', write: false });
+            });
+
+            it('answers an unknown command with an error and the commands', async function () {
+                this.timeout(15000);
+                const answer = await ask('getStatus', {});
+                expect(answer.error).to.equal('Unknown command: getStatus');
+                expect(answer.commands).to.include.members(['help', 'sonos:getRooms']);
+            });
+        });
+
         suite('Stop during the start', getHarness => {
             let harness;
 
