@@ -437,6 +437,90 @@ describe('svrooij backend: partial events', () => {
     });
 });
 
+describe('svrooij backend: library guard', () => {
+    // A speaker whose cloud queue failed reports `<Cloud queue error>` where the library expects
+    // XML. The parser threw on the HTTP listener of the library and stopped the adapter.
+    const { AVTransportService } = require('@svrooij/sonos/lib/services');
+    const { guardLibrary } = require('../build/lib/backend/svrooij-backend');
+
+    const logged = { warn: [], debug: [] };
+    const log = {
+        warn: message => logged.warn.push(message),
+        info: () => {},
+        debug: message => logged.debug.push(message),
+    };
+
+    const encode = text =>
+        text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const lastChange = instance =>
+        '<e:propertyset xmlns:e="urn:schemas-upnp-org:event-1-0"><e:property><LastChange>' +
+        encode(
+            `<Event xmlns="urn:schemas-upnp-org:metadata-1-0/AVT/"><InstanceID val="0">${instance}</InstanceID></Event>`,
+        ) +
+        '</LastChange></e:property></e:propertyset>';
+
+    /** Feed one event into a service of the library and return what it emitted */
+    const parse = xml => {
+        const service = new AVTransportService('192.168.1.50', 1400);
+        const events = [];
+        service.Events.on('serviceEvent', event => events.push(event));
+        service.ParseEvent(xml);
+        return events;
+    };
+
+    before(() => guardLibrary(log));
+    beforeEach(() => {
+        logged.warn.length = 0;
+        logged.debug.length = 0;
+    });
+
+    it('keeps a value that is no XML as text and delivers the rest of the event', () => {
+        const events = parse(
+            lastChange(
+                '<TransportState val="STOPPED"/>' +
+                    '<EnqueuedTransportURIMetaData val="&lt;Cloud queue error&gt;"/>' +
+                    '<CurrentTrackMetaData val="&lt;Cloud queue error&gt;"/>',
+            ),
+        );
+        expect(events).to.have.length(1);
+        expect(events[0].TransportState).to.equal('STOPPED');
+        expect(events[0].EnqueuedTransportURIMetaData).to.equal('<Cloud queue error>');
+        expect(events[0].CurrentTrackMetaData).to.equal('<Cloud queue error>');
+        expect(logged.warn).to.be.empty;
+        expect(logged.debug.join()).to.contain('Cloud queue error');
+    });
+
+    it('still parses the metadata that is XML', () => {
+        const didl =
+            '<DIDL-Lite xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/" ' +
+            'xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/"><item id="-1" parentID="-1">' +
+            '<dc:title>Song</dc:title><upnp:class>object.item.audioItem.musicTrack</upnp:class></item></DIDL-Lite>';
+        const events = parse(lastChange(`<CurrentTrackMetaData val="${encode(didl)}"/>`));
+        expect(events[0].CurrentTrackMetaData).to.deep.include({ Title: 'Song' });
+        expect(logged.debug).to.be.empty;
+    });
+
+    it('drops an event that cannot be read at all with a warning instead of throwing', () => {
+        const xml =
+            '<e:propertyset xmlns:e="urn:schemas-upnp-org:event-1-0"><e:property><LastChange>' +
+            '&lt;Event&gt;&lt;broken' +
+            '</LastChange></e:property></e:propertyset>';
+        expect(() => parse(xml)).not.to.throw();
+        expect(logged.warn).to.have.length(1);
+        expect(logged.warn[0]).to.contain('192.168.1.50');
+    });
+
+    it('gives the wrapper of the adapter a track it can show for such a value', () => {
+        const d = new SvrooijDevice(
+            { Uuid: 'RINCON_1', Host: '192.168.1.50', Port: 1400, Name: 'Kitchen' },
+            { devices: [], getDeviceByUuid: () => undefined },
+        );
+        d.applyTransportEvent({ TransportState: 'STOPPED', CurrentTrackMetaData: '<Cloud queue error>' });
+        expect(d.state.playbackState).to.equal('STOPPED');
+        expect(d.state.currentTrack).to.deep.equal({ uri: '', duration: 0 });
+    });
+});
+
 describe('discovery backend: library guards (#170, #272)', () => {
     const { EventEmitter } = require('node:events');
 

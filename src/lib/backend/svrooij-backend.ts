@@ -13,6 +13,7 @@ import { MetaDataHelper, SonosEventListener, SonosManager } from '@svrooij/sonos
 import { PlayMode } from '@svrooij/sonos/lib/models';
 import type { BrowseResponse, Track } from '@svrooij/sonos/lib/models';
 import type { AVTransportServiceEvent, RenderingControlServiceEvent } from '@svrooij/sonos/lib/services';
+import BaseService from '@svrooij/sonos/lib/services/base-service';
 
 import { htAudioInLabel, isHtAudioSilent, mediaItem, streamContentFromDidl, tvAudioFormat } from '../content-directory';
 import { createAlarmClock } from '../alarm-clock';
@@ -37,6 +38,69 @@ interface SmapiLog {
     warn: (message: string) => void;
     info: (message: string) => void;
     debug: (message: string) => void;
+}
+
+/** The members of the library's service class that {@link guardLibrary} wraps; both are not public */
+interface ServiceInternals {
+    readonly host: string;
+    ParseEvent(xml: string): void;
+    ResolveEventPropertyValue(name: string, originalValue: unknown, type: string): unknown;
+}
+
+/** Log of the adapter that created the backend last - in compact mode the instances share the module */
+let libraryLog: SmapiLog | null = null;
+let libraryGuarded = false;
+
+/**
+ * Keeps an event of a speaker that the library cannot read from crashing the adapter.
+ *
+ * `@svrooij/sonos` parses every event value that starts with `<` as XML. A speaker whose cloud
+ * queue failed (a queue of a streaming service started from the SONOS app) reports plain text
+ * there: `<Cloud queue error>`. The parser throws on it, and as the event arrives on the HTTP
+ * listener of the library, nothing catches it - the adapter stopped with an uncaught exception.
+ *
+ * Such a value is kept as text now, the way the library keeps metadata it cannot parse, so the
+ * rest of the event (the transport state, for example) still arrives. An event that cannot be
+ * read at all is dropped with a warning. The prototype is patched once per process, because in
+ * compact mode several instances share the module.
+ *
+ * @param log the log of the adapter
+ */
+export function guardLibrary(log: SmapiLog): void {
+    libraryLog = log;
+    if (libraryGuarded) {
+        return;
+    }
+    libraryGuarded = true;
+
+    const proto = BaseService.prototype as unknown as ServiceInternals;
+
+    // The subclasses that override it call `super`, which ends up here as well
+    const resolve = proto.ResolveEventPropertyValue;
+    proto.ResolveEventPropertyValue = function (
+        this: ServiceInternals,
+        name: string,
+        originalValue: unknown,
+        type: string,
+    ): unknown {
+        try {
+            return resolve.call(this, name, originalValue, type);
+        } catch (e) {
+            libraryLog?.debug(
+                `${this.host}: ${name} of an event is no XML, kept as text: ${String(originalValue)} (${e?.message || e})`,
+            );
+            return originalValue;
+        }
+    };
+
+    const parse = proto.ParseEvent;
+    proto.ParseEvent = function (this: ServiceInternals, xml: string): void {
+        try {
+            parse.call(this, xml);
+        } catch (e) {
+            libraryLog?.warn(`${this.host}: cannot read an event of the speaker: ${e?.message || e}`);
+        }
+    };
 }
 
 /** `h:mm:ss` into seconds; the speakers answer with that format everywhere */
@@ -704,6 +768,7 @@ export class SvrooijBackend implements SonosBackend {
     constructor(
         private readonly options: { localEndpoint?: string; listenerPort?: number; tokenFile: string; log: SmapiLog },
     ) {
+        guardLibrary(options.log);
         this.smapi = new SmapiHub(options.log, options.tokenFile);
 
         const anyBaseUrl = (): string => this.devices[0]?.baseUrl || '';
