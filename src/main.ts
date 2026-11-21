@@ -60,6 +60,7 @@ import {
 } from './lib/content-directory';
 import type { MediaBrowseItem, MediaBrowseResult } from './lib/content-directory';
 import { encodeSmapiId, parseSmapiId } from './lib/smapi';
+import { asText, findPlayer, isRoom, mediaListItems, type NamedPlayer, playTarget, soundSource } from './lib/standard';
 
 const DEFAULT_IMAGE = `${__dirname}/../img/no-cover.png`;
 /** A cover that does not arrive within this time is not waited for */
@@ -107,6 +108,20 @@ interface RecentTrack {
 }
 
 const RECENT_TRACKS_MAX = 25;
+
+/** `media.play` and `speech.playSound` answer `{ok, pending: true}` when the speaker needs longer (rule 9) */
+const STANDARD_ANSWER_MS = 12000;
+
+/** A speaker for the commands of the shared catalog */
+interface StandardPlayer extends NamedPlayer {
+    roomId?: string;
+    roomNames: string[];
+    online: boolean;
+    device: SonosDevice | undefined;
+}
+
+/** An answer of the commands of the shared catalog */
+type StandardAnswer = Record<string, unknown>;
 
 /** How often the HDMI audio format is re-read while the TV input is playing */
 const TV_FORMAT_POLL_MS = 5000;
@@ -690,6 +705,15 @@ class Sonos extends utils.Adapter {
                 }
                 break;
 
+            // the commands of the shared catalog (HELP.md of ioBroker.assistant); they answer themselves
+            case 'getPlayers':
+            case 'getMedia':
+            case 'play':
+            case 'playSound':
+                answered = true;
+                this.answerStandard(obj);
+                break;
+
             default:
                 this.log.warn(`Unknown command: ${obj.command}`);
                 // the message itself as answer looked like success to a caller (e.g. an AI agent)
@@ -725,6 +749,296 @@ class Sonos extends utils.Adapter {
                 label: device.name?.trim() || device.ip,
             }))
             .sort((a, b) => a.label.localeCompare(b.label));
+    }
+
+    /**
+     * The commands of the shared catalog of ioBroker.assistant: media.getPlayers, media.getMedia, media.play and
+     * speech.playSound. Every message with a callback gets an answer, also on errors.
+     *
+     * @param obj the message
+     */
+    private answerStandard(obj: ioBroker.Message): void {
+        const message = (obj.message && typeof obj.message === 'object' ? obj.message : {}) as Record<string, unknown>;
+        const reply = (answer: StandardAnswer): void => {
+            if (obj.callback) {
+                this.sendTo(obj.from, obj.command, answer, obj.callback);
+            }
+        };
+        let promise: Promise<StandardAnswer>;
+        if (obj.command === 'getPlayers') {
+            promise = this.standardPlayers().then(players => ({
+                players: players.map(player => ({
+                    id: player.id,
+                    name: player.name,
+                    room: player.roomNames[0],
+                    roomId: player.roomId,
+                    online: player.online,
+                    active: player.device?.coordinator.state?.playbackState === 'PLAYING',
+                    kinds: ['audio'],
+                })),
+            }));
+        } else if (obj.command === 'getMedia') {
+            promise = this.standardGetMedia(message);
+        } else if (obj.command === 'play') {
+            promise = this.standardPlay(message);
+        } else {
+            promise = this.standardPlaySound(message);
+        }
+        promise.then(reply).catch(e => {
+            this.log.warn(`Cannot execute ${obj.command}: ${e}`);
+            reply({ error: `Cannot execute ${obj.command}: ${e instanceof Error ? e.message : String(e)}` });
+        });
+    }
+
+    /** The configured speakers with their room (an ioBroker room that holds the channel, else the one of the settings) */
+    private async standardPlayers(): Promise<StandardPlayer[]> {
+        const rooms = Object.values((await this.getForeignObjectsAsync('enum.rooms.*', 'enum')) || {});
+        const lang = (this as unknown as { language?: string }).language || 'en';
+        return Promise.all(
+            (this.config.devices || [])
+                .filter(device => device.ip)
+                .map(async device => {
+                    const id = device.ip.replace(/[.\s]+/g, '_');
+                    const channel = `${this.namespace}.root.${id}`;
+                    const room =
+                        rooms.find(item =>
+                            item.common?.members?.some(
+                                member => member === channel || member.startsWith(`${channel}.`),
+                            ),
+                        ) || rooms.find(item => item._id === device.room);
+                    const name = room?.common?.name;
+                    const roomNames =
+                        name && typeof name === 'object'
+                            ? [name[lang as ioBroker.Languages] || name.en, ...Object.values(name)].filter(Boolean)
+                            : name
+                              ? [name]
+                              : [];
+                    const player = this.backend?.getDeviceByChannel(id);
+                    const alive = await this.getStateAsync(`root.${id}.alive`);
+                    return {
+                        id,
+                        name: device.name?.trim() || device.ip,
+                        names: [player?.roomName || '', device.ip].filter(Boolean),
+                        roomId: room?._id,
+                        roomNames: [...new Set(roomNames)],
+                        online: !!alive?.val,
+                        device: player,
+                    };
+                }),
+        );
+    }
+
+    /**
+     * media.getMedia {list, search?, limit?, offset?}: the favorites or the SONOS playlists of the household
+     *
+     * @param message the parameters
+     */
+    private async standardGetMedia(message: Record<string, unknown>): Promise<StandardAnswer> {
+        const list = asText(message.list);
+        if (list !== 'favorites' && list !== 'playlists') {
+            return {
+                error: list ? `The list "${list}" is not supported: favorites or playlists` : 'Give the list',
+                reason: list ? 'NOT_SUPPORTED' : 'BAD_REQUEST',
+            };
+        }
+        if (!this.backend) {
+            return { error: 'Not connected to the SONOS speakers', reason: 'NOT_CONNECTED' };
+        }
+        const entries = list === 'favorites' ? await this.backend.getFavorites() : await this.backend.getPlaylists();
+        const offset = Math.max(0, parseInt(String(message.offset), 10) || 0);
+        const limit = Math.max(1, parseInt(String(message.limit), 10) || 100);
+        return {
+            items: mediaListItems(entries, list, asText(message.search)).slice(offset, offset + limit),
+        };
+    }
+
+    /**
+     * media.play {uri?, device?, positionSec?, shuffle?}: plays and answers when the speaker plays (rule 9)
+     *
+     * @param message the parameters
+     */
+    private async standardPlay(message: Record<string, unknown>): Promise<StandardAnswer> {
+        const started = Date.now();
+        if (!this.backend) {
+            return { error: 'Not connected to the SONOS speakers', reason: 'NOT_CONNECTED' };
+        }
+        const players = await this.standardPlayers();
+        const devices = players.map(player => player.name);
+        let target: StandardPlayer;
+        if (message.device) {
+            const found = findPlayer(players, asText(message.device));
+            if ('error' in found) {
+                return found.reason === 'AMBIGUOUS' ? { ...found } : { ...found, reason: 'DEVICE_NOT_FOUND', devices };
+            }
+            target = found.player;
+        } else if (players.length === 1) {
+            target = players[0];
+        } else {
+            return { error: 'Name the speaker to play on (device)', reason: 'NO_ACTIVE_DEVICE', devices };
+        }
+        if (!target.device) {
+            return target.online
+                ? { error: `${target.name} cannot be controlled (pair_partner?)`, reason: 'DEVICE_NOT_CONTROLLABLE' }
+                : { error: `${target.name} is offline`, reason: 'NOT_CONNECTED' };
+        }
+
+        const media = target.device.coordinator;
+        const what = playTarget(message.uri);
+        const before = media.state?.playbackState;
+        if ('resume' in what) {
+            await media.play();
+        } else if ('favorite' in what) {
+            await media.playFavorite(what.favorite, true);
+        } else if ('playlist' in what) {
+            await media.playPlaylist(what.playlist, true);
+        } else {
+            // a favorite needs its metadata, e.g. a radio station
+            const favorite = (await this.backend.getFavorites()).find(entry => entry.uri === what.uri);
+            await this.handleMediaPlay(
+                media,
+                JSON.stringify({ uri: what.uri, metadata: favorite?.metadata || '' }),
+                target.device,
+            );
+        }
+
+        // something else played before: wait until the speaker reported the change
+        let changed = before !== 'PLAYING' || 'resume' in what;
+        let playing = false;
+        while (Date.now() - started < STANDARD_ANSWER_MS && this.backend) {
+            const state = media.state?.playbackState;
+            changed ||= state !== 'PLAYING';
+            if (state === 'PLAYING' && (changed || Date.now() - started > 2000)) {
+                playing = true;
+                break;
+            }
+            await this.delay(250);
+        }
+
+        if (message.shuffle !== undefined) {
+            await media.setShuffle(!!message.shuffle).catch(e => this.log.warn(`Cannot set shuffle: ${e}`));
+        }
+        const position = parseFloat(String(message.positionSec));
+        if (!Number.isNaN(position)) {
+            await media.seekTime(Math.round(position)).catch(e => this.log.warn(`Cannot seek: ${e}`));
+        }
+        const device = { id: target.id, name: target.name };
+        return playing ? { ok: true, device } : { ok: true, pending: true, device };
+    }
+
+    /**
+     * speech.playSound {url | file, device?, room?, volume?}: plays a sound over what plays, then that goes on.
+     * Answers when it was played (rule 9).
+     *
+     * @param message the parameters
+     */
+    private async standardPlaySound(message: Record<string, unknown>): Promise<StandardAnswer> {
+        if (!this.backend) {
+            return { error: 'Not connected to the SONOS speakers', reason: 'NOT_CONNECTED' };
+        }
+        const source = soundSource(message.url, message.file, message.contentType);
+        if ('error' in source) {
+            return source;
+        }
+        let volume: number | null = null;
+        if (message.volume !== undefined && message.volume !== null && message.volume !== '') {
+            volume = Number(message.volume);
+            if (Number.isNaN(volume) || volume < 0 || volume > 100) {
+                return { error: 'volume must be 0..100', reason: 'BAD_REQUEST' };
+            }
+        }
+
+        const players = await this.standardPlayers();
+        let targets = players;
+        if (message.device) {
+            const found = findPlayer(players, asText(message.device));
+            if ('error' in found) {
+                return { ...found };
+            }
+            targets = [found.player];
+        } else if (message.room) {
+            targets = players.filter(player => isRoom(player.roomId, player.roomNames, asText(message.room)));
+            if (!targets.length) {
+                const rooms = players.map(player => player.roomNames[0]).filter(Boolean);
+                return {
+                    error: `No speaker in the room "${asText(message.room)}"`,
+                    reason: 'NOT_FOUND',
+                    candidates: [...new Set(rooms)],
+                };
+            }
+        }
+        targets = targets.filter(player => player.device);
+        if (!targets.length) {
+            return { error: 'The speakers are not reachable', reason: 'NOT_CONNECTED' };
+        }
+
+        let url: string;
+        if ('url' in source) {
+            url = source.url;
+        } else {
+            if (!this.config.webServer) {
+                return { error: 'Set the web server in the settings to play files', reason: 'NOT_SUPPORTED' };
+            }
+            let data: Buffer;
+            let ext: string;
+            if ('data' in source) {
+                ({ data, ext } = source);
+            } else if ('storage' in source) {
+                const file = await this.readFileAsync(source.storage.adapter, source.storage.path);
+                data = Buffer.isBuffer(file.file) ? file.file : Buffer.from(file.file, 'binary');
+                ext = path.extname(source.storage.path).slice(1) || 'mp3';
+            } else {
+                data = fs.readFileSync(source.hostFile);
+                ext = path.extname(source.hostFile).slice(1) || 'mp3';
+            }
+            url = await this.publishSound(data, ext);
+        }
+
+        const devices = targets.map(player => player.name);
+        let timer: ioBroker.Timeout | undefined;
+        const played = Promise.all(
+            targets.map(
+                player =>
+                    new Promise<string | undefined>(resolve =>
+                        this.playOnSonos(url, player.device!.uuid, volume, resolve),
+                    ),
+            ),
+        );
+        const outcome = await Promise.race([
+            played,
+            new Promise<null>(resolve => (timer = this.setTimeout(() => resolve(null), STANDARD_ANSWER_MS))),
+        ]);
+        if (timer) {
+            this.clearTimeout(timer);
+        }
+        if (!outcome) {
+            return { ok: true, pending: true, devices };
+        }
+        const errors = outcome.filter(Boolean);
+        return errors.length === outcome.length
+            ? { error: `Cannot play the sound: ${errors[0]}` }
+            : { ok: true, devices: devices.filter((_name, i) => !outcome[i]) };
+    }
+
+    /**
+     * Put a sound into the files of the adapter, where the speakers fetch it through the web server of the settings
+     *
+     * @param data the content of the file
+     * @param ext the extension of the file, e.g. mp3
+     * @returns the URL of the file
+     */
+    private async publishSound(data: Buffer, ext: string): Promise<string> {
+        const id = `/TTS/${this.namespace}/tts${this.currentFileNum++}.${ext}`;
+        if (this.currentFileNum > 10) {
+            this.currentFileNum = 0;
+        }
+        await this.writeFileAsync(this.name, id, data);
+        const obj = await this.getForeignObjectAsync(this.config.webServer);
+        if (!obj?.native || !this.backend) {
+            throw new Error(`Web server ${this.config.webServer} not found`);
+        }
+        return `http${obj.native.secure ? 's' : ''}://${this.backend.localEndpoint}:${obj.native.port as number}/${
+            this.name
+        }${id}`;
     }
 
     /** Merge the devices, found by the discovery, into the configured devices and answer the message */
@@ -1120,15 +1434,21 @@ class Sonos extends utils.Adapter {
         this.forEachPlayer(sonosIp, player => this.tts[player.uuid]?.immediatelyStopTTS());
     }
 
-    private playOnSonos(uri: string, sonosUuid: string, volume: number | string | null): void {
+    private playOnSonos(
+        uri: string,
+        sonosUuid: string,
+        volume: number | string | null,
+        done?: (error?: string) => void,
+    ): void {
         const player = this.backend?.getDeviceByUuid(sonosUuid);
 
         if (!player) {
+            done?.('the speaker is not reachable');
             return;
         }
 
         this.tts[player.uuid] ||= new TTS(this, player);
-        this.tts[player.uuid].add(uri, volume);
+        this.tts[player.uuid].add(uri, volume, done);
     }
 
     //////////////////

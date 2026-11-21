@@ -273,9 +273,19 @@ the one of the SONOS household.
 (e.g. ioBroker.pi-agent, or the MCP server with `send_to`) that describes the speakers and their states, groups,
 favorites and playlists, browsing the music library and the music services with `media_browse` and `media_play`,
 announcements, the alarms and the messages, and how to act (rooms instead of channels, changes only on request,
-check the result). `commands` lists the messages, `write: true` for the ones that change something (`send`).
+check the result). `commands` lists the messages, `write: true` for the ones that change something (`send`,
+`play`, `playSound`).
 An unknown message answers `{ error, commands }` with the list of all messages; before it answered with the message
 itself.
+
+The messages `getPlayers`, `getMedia`, `play` and `playSound` follow the shared catalog of commands of
+ioBroker.assistant (marked with `standard` in `commands`), so every player adapter can be called the same way:
+- `getPlayers` answers `{ players: [{ id, name, room, roomId, online, active, kinds }] }`.
+- `getMedia { list: "favorites" | "playlists", search?, limit?, offset? }` answers `{ items: [{ type, uri, name, image? }] }`.
+- `play { uri?, device?, positionSec?, shuffle? }` plays an item of `getMedia`, a URL or resumes, and answers
+  `{ ok: true, device }` when the speaker plays (`pending: true` after 12 s) or `{ error, reason }`.
+- `playSound { url | file, device?, room?, volume? }` plays a sound like `tts` on one speaker, the speakers of a room
+  or all, and answers `{ ok: true, devices }` when it was played.
 
 ## Using it with the sayIt adapter
 To use the [sayit adapter](https://github.com/ioBroker/ioBroker.sayit) with this SONOS adapter, ensure that the [web adapter](https://github.com/ioBroker/ioBroker.web) is instantiated and running too. The web adapter is required to allow the SONOS adapter to read the generated MP3 file from the sayit adapter.
@@ -468,6 +478,9 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
+### **WORK IN PROGRESS**
+* (@GermanBluefox) Added the standard commands of the shared catalog: media.getPlayers, media.getMedia, media.play, speech.playSound
+
 ### 4.7.0 (2026-11-19)
 * (@GermanBluefox) Added the short form of the web component manifests (tag, name, icon, size) to `common.webComponents`, so that hosts like Aura can list the components before the adapter is installed; the build writes it with `iob-web-components sync-io-package`
 * (@GermanBluefox) Fixed the adapter stopping with "XmlError: Attribute value expected" when a speaker reports `<Cloud queue error>` (a queue of a streaming service started from the SONOS app that cannot be resumed): the value is kept as text and the rest of the event is processed. Reported to the library as [svrooij/node-sonos-ts#235](https://github.com/svrooij/node-sonos-ts/issues/235)

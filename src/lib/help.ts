@@ -9,11 +9,15 @@
  * js-controller): `write` is true for a command that changes something, so that an agent may allow the others with a
  * weaker permission.
  */
-export const COMMANDS: { command: string; write: boolean }[] = [
+export const COMMANDS: { command: string; write: boolean; standard?: string }[] = [
     { command: 'help', write: false },
     { command: 'send', write: true },
     { command: 'browse', write: false },
     { command: 'sonos:getRooms', write: false },
+    { command: 'getPlayers', write: false, standard: 'media.getPlayers' },
+    { command: 'getMedia', write: false, standard: 'media.getMedia' },
+    { command: 'play', write: true, standard: 'media.play' },
+    { command: 'playSound', write: true, standard: 'speech.playSound' },
 ];
 
 /**
@@ -85,6 +89,23 @@ Commands (sendTo ${ns}):
 - sonos:getRooms: the speakers, [{value: <channel>, label: <name>}].
 - send "[volume;]<URL or file>": the announcement on every speaker at once, like tts (write).
 - browse: searches the network for speakers, for the settings, not for agents.
+These follow the shared catalog of commands (the same names and answers in all players; marked "standard" in
+commands). device = the channel, the name of the settings or the room of the SONOS app, without case; errors are
+{error, reason}:
+- getPlayers {}: the speakers, {players: [{id: <channel>, name, room?, roomId?, online, active (plays), kinds}]}.
+- getMedia {list: "favorites" | "playlists", search?, limit? (100), offset?}: {items: [{type, uri, name, image?}]};
+  uri is "favorite:<title>" or "playlist:<title>". Other lists: reason NOT_SUPPORTED.
+- play {uri?, device?, positionSec?, shuffle?} (write): plays on the group of the speaker: uri from getMedia, a
+  stream or file URL or a URI of a music service; no uri = go on playing. device may be left out with one speaker.
+  Answers {ok: true, device: {id, name}} when it plays, {ok: true, pending: true, device} after 12 s, or {error,
+  reason}: NO_ACTIVE_DEVICE or DEVICE_NOT_FOUND (with devices), AMBIGUOUS (candidates), DEVICE_NOT_CONTROLLABLE,
+  NOT_CONNECTED.
+- playSound {url | file, contentType?, device?, room?, volume? (0..100)} (write): a short sound (door bell, gong,
+  speech file) over what plays, on one speaker, the speakers of an ioBroker room or all, then that goes on, like
+  tts. file: a data URL, base64 with contentType, iobfile://<adapter>.<n>/<path> or a file on the ioBroker host
+  (these need the web server of the settings). Answers {ok: true, devices: [names]} when played, {ok: true,
+  pending: true} after 12 s, or {error, reason} (NOT_FOUND with candidates, AMBIGUOUS, NOT_CONNECTED, BAD_REQUEST).
+Pause, next, previous, volume and mute have no command: write the states above. A text is spoken by sayit.
 
 How to act:
 - Name speakers by their room, not by the channel.

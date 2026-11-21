@@ -795,7 +795,30 @@ describe('help for AI agents', () => {
 
     it('marks the commands that change something', () => {
         COMMANDS.forEach(item => expect(item.write, item.command).to.be.a('boolean'));
-        expect(COMMANDS.filter(item => item.write).map(item => item.command)).to.deep.equal(['send']);
+        expect(COMMANDS.filter(item => item.write).map(item => item.command)).to.deep.equal([
+            'send',
+            'play',
+            'playSound',
+        ]);
+    });
+
+    it('marks the commands of the shared catalog', () => {
+        const marked = Object.fromEntries(
+            COMMANDS.filter(item => item.standard).map(item => [item.command, item.standard]),
+        );
+        expect(marked).to.deep.equal({
+            getPlayers: 'media.getPlayers',
+            getMedia: 'media.getMedia',
+            play: 'media.play',
+            playSound: 'speech.playSound',
+        });
+        COMMANDS.forEach(item => {
+            if (item.standard) {
+                expect(item.standard, item.command).to.match(/^[a-z]+\.[a-zA-Z]+$/);
+                expect(item.standard.split('.')[1], item.command).to.equal(item.command);
+            }
+        });
+        expect(help).to.contain('shared catalog');
     });
 
     it('names only states that exist', () => {
@@ -1613,6 +1636,146 @@ describe('TTS after a file that cannot be played (#176)', () => {
         expect(calls).to.include('queue http://host/broken.mp3');
         expect(calls).to.include('queue http://host/third.mp3');
         tts.destroy();
+    });
+
+    it('tells the caller when a file was played or failed (speech.playSound)', async () => {
+        const { player } = fakePlayer(['http://host/broken.mp3']);
+        const tts = new TTS(fakeAdapter(), player);
+        const done = [];
+
+        tts.add('http://host/first.mp3', 40, error => done.push(['first', error]));
+        tts.add('http://host/broken.mp3', 40, error => done.push(['broken', error]));
+        tts.add('http://host/third.mp3', 40, error => done.push(['third', error]));
+        await settle();
+        expect(done).to.deep.equal([]); // the first one plays
+
+        tts.playStopped = Date.now() - 5000;
+        tts.playingEnded();
+        await settle();
+        expect(done[0]).to.deep.equal(['first', undefined]);
+        expect(done[1][0]).to.equal('broken');
+        expect(done[1][1]).to.contain('UPnP error 714');
+
+        tts.destroy();
+        await settle();
+        expect(done.map(([name]) => name)).to.deep.equal(['first', 'broken', 'third']);
+        expect(done[2][1]).to.equal('stopped');
+    });
+
+    it('tells the callers of the dropped files when the announcement is stopped', async () => {
+        const { player } = fakePlayer([]);
+        const tts = new TTS(fakeAdapter(), player);
+        const done = [];
+
+        tts.add('http://host/first.mp3', 40, error => done.push(error));
+        tts.add('http://host/second.mp3', 40, error => done.push(error));
+        await settle();
+        tts.immediatelyStopTTS();
+        await settle();
+
+        expect(done).to.deep.equal(['stopped', 'stopped']);
+        tts.destroy();
+        expect(done).to.have.length(2); // each one once
+    });
+});
+
+describe('commands of the shared catalog', () => {
+    const {
+        favoriteType,
+        findPlayer,
+        isRoom,
+        mediaListItems,
+        playTarget,
+        soundSource,
+    } = require('../build/lib/standard');
+
+    const players = [
+        { id: '192_168_1_50', name: 'Kitchen', names: ['Küche', '192.168.1.50'] },
+        { id: '192_168_1_51', name: 'Living room', names: ['Wohnzimmer', '192.168.1.51'] },
+        { id: '192_168_1_52', name: 'Living room left', names: ['192.168.1.52'] },
+    ];
+
+    it('finds the speaker of device by channel, name, room of the app or IP, without case', () => {
+        expect(findPlayer(players, '192_168_1_50').player.name).to.equal('Kitchen');
+        expect(findPlayer(players, 'kitchen').player.name).to.equal('Kitchen');
+        expect(findPlayer(players, 'KÜCHE').player.name).to.equal('Kitchen');
+        expect(findPlayer(players, '192.168.1.51').player.name).to.equal('Living room');
+        expect(findPlayer(players, 'Kit').player.name).to.equal('Kitchen');
+    });
+
+    it('prefers an exact name and reports AMBIGUOUS and NOT_FOUND with candidates', () => {
+        expect(findPlayer(players, 'living room').player.id).to.equal('192_168_1_51');
+        const ambiguous = findPlayer(players, 'living');
+        expect(ambiguous.reason).to.equal('AMBIGUOUS');
+        expect(ambiguous.candidates).to.deep.equal(['Living room', 'Living room left']);
+        const unknown = findPlayer(players, 'Bath');
+        expect(unknown.reason).to.equal('NOT_FOUND');
+        expect(unknown.candidates).to.have.length(3);
+        expect(unknown.error).to.be.a('string');
+        expect(findPlayer(players, '').reason).to.equal('NOT_FOUND');
+    });
+
+    it('takes a room as ID, ID without prefix or name', () => {
+        expect(isRoom('enum.rooms.kitchen', ['Küche', 'Kitchen'], 'enum.rooms.kitchen')).to.equal(true);
+        expect(isRoom('enum.rooms.kitchen', ['Küche', 'Kitchen'], 'kitchen')).to.equal(true);
+        expect(isRoom('enum.rooms.kitchen', ['Küche', 'Kitchen'], 'küche')).to.equal(true);
+        expect(isRoom('enum.rooms.kitchen', ['Küche'], 'living')).to.equal(false);
+        expect(isRoom(undefined, [], 'kitchen')).to.equal(false);
+    });
+
+    it('reads url and file of playSound', () => {
+        expect(soundSource('https://host/gong.mp3')).to.deep.equal({ url: 'https://host/gong.mp3' });
+        expect(soundSource(undefined, 'http://host/gong.mp3')).to.deep.equal({ url: 'http://host/gong.mp3' });
+        expect(soundSource(undefined, 'iobfile://vis-2.0/main/bell.mp3')).to.deep.equal({
+            storage: { adapter: 'vis-2.0', path: 'main/bell.mp3' },
+        });
+        expect(soundSource(undefined, '/opt/sounds/bell.wav')).to.deep.equal({ hostFile: '/opt/sounds/bell.wav' });
+
+        const base64 = Buffer.from('ID3 sound').toString('base64');
+        const fromDataUrl = soundSource(undefined, `data:audio/mpeg;base64,${base64}`);
+        expect(fromDataUrl.ext).to.equal('mp3');
+        expect(fromDataUrl.data.toString()).to.equal('ID3 sound');
+        const fromBase64 = soundSource(undefined, base64, 'audio/wav');
+        expect(fromBase64.ext).to.equal('wav');
+        expect(fromBase64.data.toString()).to.equal('ID3 sound');
+
+        expect(soundSource().reason).to.equal('BAD_REQUEST');
+        expect(soundSource(undefined, base64, 'image/png').reason).to.equal('BAD_REQUEST');
+        expect(soundSource({ url: 'x' }).reason).to.equal('BAD_REQUEST');
+    });
+
+    it('lists favorites and playlists as items that play takes', () => {
+        const favorites = [
+            { title: 'Radio Bob', uri: 'x-sonosapi-stream:s1234?sid=254', metadata: '' },
+            {
+                title: 'Best of',
+                uri: 'x-rincon-cpcontainer:1006206c',
+                metadata: '<DIDL-Lite><item><upnp:class>object.container.album.musicAlbum</upnp:class></item>',
+                albumArtUri: 'https://img/cover.jpg',
+            },
+            { title: 'Something', uri: 'x-file-cifs://nas/a.mp3', albumArtUri: '/getaa?u=x' },
+            { uri: 'no title' },
+        ];
+        expect(mediaListItems(favorites, 'favorites')).to.deep.equal([
+            { type: 'radio', uri: 'favorite:Radio Bob', name: 'Radio Bob' },
+            { type: 'album', uri: 'favorite:Best of', name: 'Best of', image: 'https://img/cover.jpg' },
+            { type: 'favorite', uri: 'favorite:Something', name: 'Something' },
+        ]);
+        expect(mediaListItems(favorites, 'favorites', 'BOB').map(item => item.name)).to.deep.equal(['Radio Bob']);
+        expect(mediaListItems([{ title: 'Party' }], 'playlists')).to.deep.equal([
+            { type: 'playlist', uri: 'playlist:Party', name: 'Party' },
+        ]);
+        expect(favoriteType({ metadata: '&lt;upnp:class&gt;object.item.audioItem.audioBroadcast&lt;' })).to.equal(
+            'radio',
+        );
+    });
+
+    it('reads the uri of play', () => {
+        expect(playTarget()).to.deep.equal({ resume: true });
+        expect(playTarget('  ')).to.deep.equal({ resume: true });
+        expect(playTarget('favorite:Radio Bob')).to.deep.equal({ favorite: 'Radio Bob' });
+        expect(playTarget('playlist:Party')).to.deep.equal({ playlist: 'Party' });
+        expect(playTarget('https://stream/radio.mp3')).to.deep.equal({ uri: 'https://stream/radio.mp3' });
     });
 });
 

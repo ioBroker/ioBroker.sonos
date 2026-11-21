@@ -24,6 +24,8 @@ interface TtsTask {
     uri: string;
     /** The volume is extracted from the file name, so it can be a string */
     volume: number | string | null;
+    /** Called once: when the file was played, or with the reason why it was not */
+    done?: (error?: string) => void;
 }
 
 interface FadeOptions {
@@ -49,6 +51,8 @@ export class TTS {
     private readonly fadeInMs: number;
     private readonly fadeOutMs: number;
     private readonly queue: TtsTask[] = [];
+    /** The file that plays now */
+    private current: TtsTask | null = null;
     private storedState: StoredState | null = null;
     private ttsPlaying = false;
     private restoring = false;
@@ -64,10 +68,27 @@ export class TTS {
         this.fadeOutMs = parseInt(String(adapter.config.fadeOut), 10) || 0;
     }
 
-    /** Add a new file to the TTS queue and start playing if not yet started */
-    add(uri: string, volume: number | string | null): void {
-        this.queue.push({ uri, volume });
+    /**
+     * Add a new file to the TTS queue and start playing if not yet started
+     *
+     * @param uri URL of the file
+     * @param volume volume of the announcement
+     * @param done called once: when the file was played, or with the reason why it was not
+     */
+    add(uri: string, volume: number | string | null, done?: (error?: string) => void): void {
+        this.queue.push({ uri, volume, done });
         this.startTTS();
+    }
+
+    /**
+     * Tell the caller of the file that played that it is over
+     *
+     * @param error why it was not played to the end
+     */
+    private finish(error?: string): void {
+        const task = this.current;
+        this.current = null;
+        task?.done?.(error);
     }
 
     /** Stop the running TTS immediately, drop all pending files and restore the state before TTS */
@@ -77,7 +98,8 @@ export class TTS {
         }
 
         // drop all files, that are waiting to be played
-        this.queue.length = 0;
+        this.queue.splice(0).forEach(task => task.done?.('stopped'));
+        this.finish('stopped');
 
         // stop wait for "speech end timeout"
         if (this.playStoppedTimeout) {
@@ -111,6 +133,8 @@ export class TTS {
     }
 
     destroy(): void {
+        this.queue.splice(0).forEach(task => task.done?.('stopped'));
+        this.finish('stopped');
         if (this.playStoppedTimeout) {
             this.adapter.clearTimeout(this.playStoppedTimeout);
             this.playStoppedTimeout = null;
@@ -252,6 +276,7 @@ export class TTS {
         this.ttsPlaying = true;
 
         const task = this.queue.shift();
+        this.current = task || null;
 
         this.storeState();
 
@@ -271,7 +296,9 @@ export class TTS {
      * @param error the reason
      */
     private recover(error: unknown): void {
-        this.adapter.log.error(`Cannot execute TTS: ${error instanceof Error ? error.message : String(error)}`);
+        const text = error instanceof Error ? error.message : String(error);
+        this.adapter.log.error(`Cannot execute TTS: ${text}`);
+        this.finish(text);
 
         if (this.playStoppedTimeout) {
             this.adapter.clearTimeout(this.playStoppedTimeout);
@@ -376,6 +403,8 @@ export class TTS {
     }
 
     private async processNextTask(): Promise<void> {
+        // the file before has been played
+        this.finish();
         await this.removeAddedTrack();
 
         // process next task
@@ -388,6 +417,7 @@ export class TTS {
         if (!task) {
             return;
         }
+        this.current = task;
 
         if (this.storedState?.radio) {
             await this.player.setTransportUri(task.uri);
