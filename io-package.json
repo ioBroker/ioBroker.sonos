@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "sonos",
-    "version": "4.8.0",
+    "version": "4.8.1",
     "news": {
+      "4.8.1": {
+        "en": "Updated `@iobroker/testing` to 6.3.3: the integration tests stop the adapter again with js-controller 8.0.0-alpha.23 and newer, which blocked the release of 4.8.0",
+        "de": "`@iobroker /testing` auf 6.3.3 aktualisiert: Die Integrationstests stoppen den Adapter wieder mit js-controller 8.0.0-alpha.23 und neuer, was 4.8.0 blockierte",
+        "ru": "Обновлено «@iobroker /testing» до 6.3.3: интеграционные тесты снова останавливают адаптер с помощью js-controller 8.0.0-alpha.23 и новее, что заблокировало выпуск 4.8.0",
+        "pt": "Atualizado `@iobroker /testing` para 6.3.3: os testes de integração interrompem o adaptador com o js-controller 8.0.0-alpha.23 e posterior, o que bloqueou o 4.8.0",
+        "nl": "`@iobroker /testing` bijgewerkt naar 6.3.3: de integratietests stoppen de adapter opnieuw met js-controller 8.0.0-alpha.23 en nieuwer, waardoor de release van 4.8.0 werd geblokkeerd",
+        "fr": "Mise à jour de @iobroker /testing vers la version 6.3.3 : les tests d'intégration arrêtent à nouveau l'adaptateur avec js-controller 8.0.0-alpha.23 et versions ultérieures",
+        "it": "Aggiornato @iobroker /testing alla 6.3.3: i test di integrazione bloccano nuovamente l'adattatore con js-controller 8.0.0-alpha.23 e successivi, 4.8.0",
+        "es": "Se actualizó `@iobroker /testing` a 6.3.3: las pruebas de integración detienen el adaptador de nuevo con js-controller 8.0.0-alpha.23 y posterior, que bloqueó la versión 4.8.0",
+        "pl": "Zaktualizowano `@iobroker /testing „do 6.3.3: testy integracyjne ponownie zatrzymują adapter za pomocą js-controller 8.0.0-alpha.23 i nowszych, co zablokowało wydanie wersji 4.8.0",
+        "uk": "Оновлено `@iobroker /testing` до 6.3.3: тести інтеграції знову зупиняють адаптер за допомогою js-контролера 8.0.0-alpha.23 і новіших, що заблокувало випуск 4.8.0",
+        "zh-cn": "将 @iobroker /testing 更新到 6.3.3：集成测试使用 js-controller 8.0.0-alpha.23 及更高版本再次停止适配器，这阻止了 4.8.0 的发布"
+      },
       "4.8.0": {
         "en": "Added the standard commands of the shared catalog: media.getPlayers, media.getMedia, media.play, speech.playSound",
         "de": "Standardbefehle des Shared Catalog hinzugefügt: media.getPlayers, media.getMedia, media.play, speech.playSound",
@@ -80,19 +93,6 @@
         "pl": "Adapter wymaga teraz node.js >= 22.19.0\nPort zdarzenia nowego zaplecza (`@svrooij /sonos`) jest ustawiony w ustawieniach instancji zamiast zmiennej środowiskowej `SONOS_LISTENER_PORT`\nNaprawiono szerokości kolumn ustawień na dużych ekranach i niemiecki tekst dla fade-in\nObiekty głośników są tworzone bez przestarzałych `createChannel`/`CreateState`, więc js-controller nie rejestruje ich już jako przestarzałe (#238)\nNaprawiono `current_elapsed_s`: czas taki jak `1:02:03` przeskoczył do sekundy 3 zamiast 1 h 2 min 3 s\nAdapter zatrzymany podczas uruchamiania, nie uruchamia już biblioteki SONOS i jego timerów (ostrzeżenie „SetInterval wywołano, ale adapter wyłącza się”)\nDodano alarmy: każdy alarm aplikacji SONOS znajduje się pod „alarmami” i można go przełączać, zmieniać i usuwać, `alarms.create` tworzy nowe, a `alarm_next` każdego głośnika informuje, kiedy zadzwoni następny alarm (#65, #325)\nDodano baterię Move and Roam: `battery_level` i `battery_charging` (#116, #211)\nDodano `led` dla diody LED statusu - także Boost - `button_lock` i `sleep_timer` (#253, #66)\nDodano `autoplay`: ustaw na `fałszy`, aby załadować tylko ulubione lub playlistę za pomocą `favorites_set`/`playlist_set` bez rozpoczynania odtwarzania (#173)",
         "uk": "Адаптер вимагає node.js >= 22.19.0 зараз\nПорт події нового бекенда (`@svrooij /sonos`) задається в налаштуваннях екземпляра замість змінної середовища `SONOS_LISTENER_PORT`\nВиправлено ширину стовпців налаштувань на великих екранах та німецький текст для згасання\nОб'єкти динаміків створюються без застарілого `createChannel`/`createState`, тому js-controller більше не реєструє їх як застарілі (#238)\nВиправлено `current_elapsed_s`: час на кшталт `1:02:03` перескочив до секунди 3 замість 1 ч 2 хв 3 с\nАдаптер зупинився під час його запуску, більше не запускає бібліотеку SONOS та її таймери згодом (попередження «setInterval викликається, але адаптер вимикається»)\nДодано тривоги: кожен сигнал тривоги програми SONOS знаходиться під `alarms` і його можна перемикати, змінювати та видаляти, `alarms.create` створює нові, а `alarm_next` кожного динаміка повідомляє, коли дзвонить наступний будильник (#65, #325)\nДодано акумулятор Переміщення та Переміщення: `battery_level` та `battery_charging` (#116, #211)\nДодано `led` для індикатора стану - також підсилення - `button_lock` і `sleep_timer` (#253, #66)\nДодано `autoplay`: встановіть його на `false`, щоб завантажити лише улюблений або список відтворення з `favorites_set`/`playlist_set` без запуску відтворення (#173)",
         "zh-cn": "适配器现在需要 node.js >= 22.19.0\n新后端 (`@svrooij /sonos`) 的事件端口是在实例设置中设置的，而不是环境变量 `SONOS_LISTENER_PORT`\n修复了大屏幕上设置的列宽和淡入的德语文本\n创建扬声器的对象时没有过时的 `createChannel`/`createState`，因此 js-controller 不再将其记录为已弃用 (#238)\n修复了 `current_elapsed_s`：像 1:02:03 这样的时间跳到秒 3 而不是 1 h 2 分 3 秒\n适配器在启动时停止，之后不再启动 SONOS 库及其计时器（警告 “setInterval 已调用，但适配器正在关闭”）\n添加了警报：SONOS 应用程序的每个闹钟都处于 “警报” 之下，可以切换、更改和删除，`alarms.create` 创建新警报，每个扬声器的 “alarm_next” 会显示下一个警报何时响起 (#65, #325)\n添加了 Move and Roam 的电池：`battery_level` 和 `battery_charging` (#116, #211)\n为状态 LED 添加了 `led`（也是 Boost）—— `button_lock` 和 `sleep_timer` (#253, #66)\n添加了 `autoplay`：将其设置为 `false` 以仅加载带有 `favorites_set`/`playlist_set` 的收藏夹或播放列表而不开始播放 (#173)"
-      },
-      "4.2.16": {
-        "en": "`current_cover` changes with every new cover (`/sonos/coverImage/<ip>.png?v=<hash>`), so vis, Lovelace and the browser show the new cover instead of the old one - for example when switching back to a radio station (#204, #205)",
-        "de": "<ip>`current_cover` ändert sich mit jedem Cover (`/Sonos/CoverImage/ .png? v= <hash>`), also, Lovelace und der Browser zeigen das neue Cover statt des alten an, z. B. beim Umschalten zum Radiosender (#204, #205)",
-        "ru": "<ip>`current_cover` меняется с каждой новой обложкой (`/sonos/CoverImage/ .png? v= <hash>`), поэтому Лавлейс и браузер показывают новую обложку вместо старой — например, при повторном переходе на радиостанцию (#204, #205)",
-        "pt": "<ip>`current_cover` muda a cada nova capa (`/sonos/coverimage/ .png? v= <hash>`), então vis, Lovelace e o navegador mostram a nova capa em vez da antiga - por exemplo, ao voltar a uma rádio (#204, #205)",
-        "nl": "<ip>`current_cover` verandert bij elke nieuwe hoes (`/Sonos/CoverImage/.png? v= <hash>`), wat betekent dat Lovelace en de browser de nieuwe omslag tonen in plaats van de oude, bijvoorbeeld wanneer u terugschakelt naar een radiostation (#204, #205)",
-        "fr": "<ip>`current_cover` change à chaque nouvelle couverture (`/Sonos/CoverImage/ .png ? v= <hash>`), donc vis, Lovelace et le navigateur affichent la nouvelle couverture au lieu de l'ancienne, par exemple lors du retour à la radio (#204, #205)",
-        "it": "<ip>`current_cover` cambia ad ogni nuova cover (`/Sonos/coverImage/ .png? v= <hash>`), quindi vis, Lovelace e il browser mostrano la nuova copertina anziché la vecchia, ad esempio quando si torna a una radio (#204, #205)",
-        "es": "<ip>`current_cover` cambia con cada nueva portada (`/Sonos/CoverImage/ .png? v= <hash>`), así que vis, Lovelace y el navegador muestran la nueva portada en lugar de la anterior, por ejemplo, al volver a una emisora de radio (#204, #205)",
-        "pl": "<ip>`current_cover` zmienia się z każdą nową okładką (`/sonos/coverimage/ .png? v= <hash>`), więc vis, Lovelace i przeglądarka pokazują nową okładkę zamiast starej - na przykład podczas powrotu do stacji radiowej (#204, #205)",
-        "uk": "<ip>`current_cover` змінюється з кожною новою обкладинкою (`/Sonos/обкладинка/.png? v= <hash>`), тому vis, Lovelace та браузер показують нову обкладинку замість старої - наприклад, при перемиканні назад на радіостанцію (#204, #205)",
-        "zh-cn": "<ip>每增加一个新封面，`current_cover`都会发生变化（`/sonos/coverImage/ .png？v= <hash>`)，所以 vis、Lovelace 和浏览器显示的是新封面而不是旧封面，例如切换回广播电台时 (#204, #205)"
       }
     },
     "titleLang": {

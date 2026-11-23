@@ -478,7 +478,7 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
-### **WORK IN PROGRESS**
+### 4.8.1 (2026-11-23)
 * (@GermanBluefox) Updated `@iobroker/testing` to 6.3.3: the integration tests stop the adapter again with js-controller 8.0.0-alpha.23 and newer, which blocked the release of 4.8.0
 
 ### 4.8.0 (2026-11-23)
@@ -496,10 +496,6 @@ adapter to get a working state back.
 
 ### 4.5.1 (2026-11-04)
 * (@GermanBluefox) Fixed "Cannot process transport-state: Parameter "timeout" needs to be of type "number"": settings saved by the old admin page hold the update interval of the elapsed time as a string, which js-controller rejects. The error aborted every update of the playback, so title, artist and cover stayed at the first track after a restart
-
-### 4.5.0 (2026-11-04)
-* (@GermanBluefox) Stereo pairs are marked: `pair_role` (`left`/`right`) and `pair_partner` tell which speakers belong together, and the description of the channel says which of the two SONOS controls the pair through. The hidden speaker of a pair never got values and ignored commands without telling why - a command written to it now names the channel to use instead
-* (@GermanBluefox) A speaker that replaces another one at the same IP address takes over its channel once the old speaker is no longer part of the SONOS system. Since 4.4.0 the new speaker got no channel and the old channel stayed empty without a word in the log (#140)
 
 Older changes can be found in [CHANGELOG_OLD.md](CHANGELOG_OLD.md)
 
