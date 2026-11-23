@@ -478,6 +478,9 @@ adapter to get a working state back.
 	### **WORK IN PROGRESS**
 -->
 ## Changelog
+### **WORK IN PROGRESS**
+* (@GermanBluefox) Updated `@iobroker/testing` to 6.3.3: the integration tests stop the adapter again with js-controller 8.0.0-alpha.23 and newer, which blocked the release of 4.8.0
+
 ### 4.8.0 (2026-11-23)
 * (@GermanBluefox) Added the standard commands of the shared catalog: media.getPlayers, media.getMedia, media.play, speech.playSound
 
